@@ -28,6 +28,27 @@ const worker = new Worker(
       console.log(`[Worker] ✓ Task ${taskId} completed`);
     } catch (error) {
       console.error(`[Worker] ✗ Task ${taskId} failed:`, error);
+      
+      // Update task status to error
+      try {
+        await supabase
+          .from('mc_tasks')
+          .update({ 
+            status: 'error',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', taskId);
+        
+        // Post error as comment
+        await supabase.from('mc_comments').insert({
+          task_id: taskId,
+          content: `❌ Execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          created_at: new Date().toISOString(),
+        });
+      } catch (updateError) {
+        console.error(`[Worker] Failed to update error status:`, updateError);
+      }
+      
       throw error;
     }
   },

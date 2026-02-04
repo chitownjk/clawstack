@@ -85,13 +85,30 @@ export default function ExecutionSettingsPage() {
 
       if (mode === 'openclaw') {
         updates.gateway_url = gatewayUrl;
-        updates.gateway_token = gatewayToken; // TODO: Encrypt this
+        // Encrypt gateway token before storing
+        if (gatewayToken) {
+          const encryptRes = await fetch('/api/encrypt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: gatewayToken })
+          });
+          const { encrypted } = await encryptRes.json();
+          updates.gateway_token = encrypted;
+        }
         updates.gateway_connected = connectionStatus === 'success';
       } else if (mode === 'cloud-user-keys') {
-        updates.api_keys = {
-          anthropic: anthropicKey,
-          openai: openaiKey
-        }; // TODO: Encrypt this
+        // Encrypt API keys before storing
+        const keysToEncrypt: Record<string, string> = {};
+        if (anthropicKey) keysToEncrypt.anthropic = anthropicKey;
+        if (openaiKey) keysToEncrypt.openai = openaiKey;
+        
+        const encryptRes = await fetch('/api/encrypt-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys: keysToEncrypt })
+        });
+        const { encrypted } = await encryptRes.json();
+        updates.api_keys = encrypted;
       }
 
       const { error } = await supabase

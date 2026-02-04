@@ -51,6 +51,9 @@ SUPABASE_SECRET_KEY=your-service-role-key
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
+# Encryption (must match app ENCRYPTION_KEY)
+ENCRYPTION_KEY=your-encryption-key
+
 # Our API Keys (for cloud-our-keys mode)
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
