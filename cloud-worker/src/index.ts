@@ -10,10 +10,14 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!
 );
 
-const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-};
+// Support both REDIS_URL (Fly.io) and separate HOST/PORT (Upstash)
+const redisConnection = process.env.REDIS_URL
+  ? process.env.REDIS_URL
+  : {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD,
+    };
 
 // Worker that processes tasks
 const worker = new Worker(

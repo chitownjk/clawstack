@@ -11,7 +11,67 @@
 
 ---
 
-## Step 1: Set Up Redis (Upstash - Free)
+## Quick Start: Fly.io (Recommended - 10 minutes)
+
+**Why Fly.io:**
+- ✅ 3 free VMs (generous free tier)
+- ✅ Built-in Redis integration
+- ✅ One command deployment
+- ✅ Perfect for background workers
+
+### Step 1: Install Fly CLI (1 min)
+
+```bash
+curl -L https://fly.io/install.sh | sh
+fly auth login
+```
+
+### Step 2: Set Up Redis (2 min)
+
+```bash
+fly redis create tiker-redis --region sjc
+```
+
+Copy the `redis://...` URL it gives you.
+
+### Step 3: Deploy Worker (5 min)
+
+```bash
+cd ~/botnet/development/clawstack/cloud-worker
+
+# Launch (creates fly.toml if needed)
+fly launch --no-deploy
+
+# Set secrets
+fly secrets set \
+  NEXT_PUBLIC_SUPABASE_URL="your-supabase-url" \
+  SUPABASE_SECRET_KEY="your-service-role-key" \
+  ENCRYPTION_KEY="your-encryption-key" \
+  ANTHROPIC_API_KEY="your-anthropic-key" \
+  REDIS_URL="redis://... (from step 2)"
+
+# Deploy!
+fly deploy
+```
+
+### Step 4: Check Status
+
+```bash
+fly status
+fly logs
+```
+
+**Done! Worker is live.** ✅
+
+---
+
+## Alternative: Railway/Render
+
+If you prefer Railway or Render, see options below.
+
+---
+
+## Option A: Set Up Redis (Upstash - Free)
 
 1. Go to https://upstash.com
 2. Sign up / Log in
@@ -26,7 +86,7 @@
 
 ---
 
-## Step 2: Deploy Worker (Railway - Recommended)
+## Option B: Deploy Worker (Railway)
 
 ### Option A: Railway (Easiest)
 
@@ -91,6 +151,12 @@ NODE_ENV=production
 
 Add Redis config to main app (Vercel):
 
+**If using Fly.io Redis:**
+```bash
+REDIS_URL=redis://default:password@region.fly.dev:6379
+```
+
+**If using Upstash:**
 ```bash
 REDIS_HOST=usw1-xxx.upstash.io
 REDIS_PORT=6379
@@ -193,15 +259,20 @@ redis-cli -h your-host -p 6379 -a your-password
 
 ## Costs
 
-**Free tier:**
+**Free tier (Fly.io - Recommended):**
+- Redis: Fly.io Redis free (256MB)
+- Worker: 3 free shared-cpu VMs
+- Total: $0/month (forever, not a trial!)
+
+**Alternative (Upstash + Railway):**
 - Redis: Upstash free (10K commands/day)
 - Worker: Railway free ($5 credit/month)
 - Total: $0/month for testing
 
 **Paid (when you scale):**
-- Redis: Upstash Pro ~$10/mo (1M commands/day)
-- Worker: Railway Hobby ~$5/mo per worker
-- Total: ~$15/mo
+- Fly.io: ~$2/mo per worker (beyond free tier)
+- Redis: ~$2/mo for more memory
+- Total: ~$4-10/mo
 
 **Note:** Model costs (Anthropic/OpenAI) are separate - either user pays (cloud-user-keys) or we pay (cloud-our-keys).
 

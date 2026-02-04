@@ -1,0 +1,25 @@
+# Fly.io configuration for Tiker Cloud Worker
+app = "tiker-cloud-worker"
+primary_region = "sjc"
+
+[build]
+  [build.args]
+    NODE_VERSION = "20"
+
+[env]
+  NODE_ENV = "production"
+  WORKER_CONCURRENCY = "5"
+
+# No HTTP service needed - this is a background worker
+# But Fly requires a process, so we use the worker itself
+[processes]
+  worker = "npm start"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
+
+# Auto-restart if worker crashes
+[services]
+  # No HTTP service - background worker only
