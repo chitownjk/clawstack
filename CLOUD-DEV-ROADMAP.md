@@ -69,30 +69,39 @@ Task created → /api/tasks/enqueue → Redis
 
 ---
 
-## Phase 3: Integration & Testing (Next)
+## Phase 3: Integration & Testing - ✅ COMPLETE
 
 **Goal:** Wire everything together and test end-to-end
 
-### 3.1 Task Creation Flow
-- [ ] Update task creation to check `execution_mode`
-- [ ] If `openclaw` → Do nothing (already handled)
-- [ ] If `cloud-*` → Call `/api/tasks/enqueue`
-- [ ] Show "Executing..." status in UI
+### 3.1 Task Creation Flow ✅
+- [x] Update task creation to check `execution_mode`
+- [x] If `openclaw` → Do nothing (already handled)
+- [x] If `cloud-*` → Call `/api/tasks/enqueue`
+- [x] Update status to "executing" automatically
 
-### 3.2 Encryption
-- [ ] Encrypt `gateway_token` before storing
-- [ ] Encrypt `api_keys` before storing
-- [ ] Decrypt on worker side
+### 3.2 Encryption ✅
+- [x] `/api/encrypt` and `/api/encrypt-keys` endpoints
+- [x] Encrypt `gateway_token` before storing
+- [x] Encrypt `api_keys` before storing
+- [x] Decrypt on worker side (same AES-256-GCM)
 
-### 3.3 Deploy Worker
+### 3.3 Error Handling ✅
+- [x] Worker catches errors
+- [x] Updates task status to 'error'
+- [x] Posts error message as comment
+
+### 3.4 Deploy Worker (Next Step)
 - [ ] Set up Redis (Upstash free tier)
 - [ ] Deploy worker to Railway/Render
 - [ ] Set environment variables
+- [ ] Run migration (004-cloud-support.sql)
 - [ ] Test with real task
 
-### 3.4 Usage Tracking
-- [ ] Insert into `model_usage` table
-- [ ] Calculate costs based on model pricing
+**Deployment guide:** `DEPLOY-CLOUD-WORKER.md`
+
+### 3.5 Usage Tracking (Phase 4)
+- [x] `model_usage` table created
+- [x] Usage tracking function in worker
 - [ ] Show usage in settings page
 - [ ] Usage limits for cloud-our-keys mode
 
