@@ -6,7 +6,7 @@
 
 ---
 
-## Phase 1: Foundation (Week 1) - START HERE
+## Phase 1: Foundation (Week 1) - ✅ COMPLETE
 
 ### 1.1 Environment Setup ✅
 - [x] Create cloud-dev branch
@@ -15,100 +15,90 @@
 - [x] Set environment variables (all 10 configured)
 - [x] Configure Next.js framework preset
 
-### 1.2 Product Mode Detection
-**Files to create/modify:**
-- `lib/product-mode.ts` - Detect OSS vs Cloud
-- `lib/config.ts` - Environment-based config
-- `.env.local.example` - Document new variables
+### 1.2 Product Mode Detection ✅
+- [x] `lib/product-mode.ts` - Detect OSS vs Cloud
+- [x] Environment variables configured
 
-**Environment Variables Needed:**
-```bash
-# Add to Vercel project settings
-NEXT_PUBLIC_PRODUCT_MODE=cloud
-NEXT_PUBLIC_BASE_URL=https://testcloud.tiker.com
+### 1.3 Database Schema Updates ✅
+- [x] `supabase/migrations/004-cloud-support.sql`
+- [x] Added `execution_mode` (openclaw | cloud-user-keys | cloud-our-keys)
+- [x] Added `api_keys` (JSONB, encrypted)
+- [x] Added `model_usage` table for billing
+- [x] Added monthly usage function
 
-# For now, share Supabase with OSS (we'll separate later)
-NEXT_PUBLIC_SUPABASE_URL=<current>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<current>
+---
+
+## Phase 2: Cloud Execution MVP - ✅ COMPLETE
+
+**Goal:** Execute tasks in cloud with user's API keys or ours
+
+### 2.1 Settings Page ✅
+- [x] `app/settings/execution/page.tsx` - Choose execution mode
+- [x] OpenClaw gateway configuration (URL + token)
+- [x] Cloud user keys configuration (Anthropic/OpenAI)
+- [x] Cloud managed mode (fully hosted)
+- [x] Test connection button (for OpenClaw mode)
+
+### 2.2 Cloud Worker ✅
+- [x] `cloud-worker/` - Standalone Node.js service
+- [x] `src/index.ts` - BullMQ worker
+- [x] `src/executor.ts` - Agent→model→result logic
+- [x] Loads agent definition from DB
+- [x] Builds prompt (persona + task)
+- [x] Calls Anthropic (user keys or ours)
+- [x] Posts result as comment
+- [x] Tracks usage for billing
+
+### 2.3 Task Enqueueing ✅
+- [x] `app/api/tasks/enqueue/route.ts` - Add task to Redis queue
+- [x] Worker picks up from queue
+- [x] Execution happens async
+
+**Architecture:**
 ```
-
-### 1.3 Database Schema Updates
-**Files:** `supabase/migrations/XXX-cloud-support.sql`
-
-```sql
--- Add to accounts table
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS plan_tier TEXT DEFAULT 'free';
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS product_mode TEXT DEFAULT 'oss';
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS gateway_url TEXT;
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS gateway_token TEXT; -- encrypted
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS gateway_connected BOOLEAN DEFAULT FALSE;
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;
+Task created → /api/tasks/enqueue → Redis
+                                      ↓
+                              Worker picks up
+                                      ↓
+                    Load agent + account from DB
+                                      ↓
+                      Build prompt → Call model
+                                      ↓
+                    Post result → Update status
 ```
 
 ---
 
-## Phase 2: Bucket 2 - Cloud Management (Week 1-2)
+## Phase 3: Integration & Testing (Next)
 
-**Goal:** Let users connect their OpenClaw gateway and access MC from cloud
+**Goal:** Wire everything together and test end-to-end
 
-### 2.1 Settings Page: Connect Gateway
-**Files to create:**
-- `app/settings/gateway/page.tsx` - Gateway connection UI
-- `app/api/gateway/connect/route.ts` - Save gateway credentials
-- `app/api/gateway/status/route.ts` - Check gateway health
+### 3.1 Task Creation Flow
+- [ ] Update task creation to check `execution_mode`
+- [ ] If `openclaw` → Do nothing (already handled)
+- [ ] If `cloud-*` → Call `/api/tasks/enqueue`
+- [ ] Show "Executing..." status in UI
 
-**UI Features:**
-- Input: Gateway URL (e.g., http://192.168.1.100:18789)
-- Input: API Token (from OpenClaw)
-- Button: "Test Connection"
-- Status indicator: Connected ✅ / Offline 🔴
-- Instructions: How to get API token from OpenClaw
+### 3.2 Encryption
+- [ ] Encrypt `gateway_token` before storing
+- [ ] Encrypt `api_keys` before storing
+- [ ] Decrypt on worker side
 
-### 2.2 Gateway Proxy
-**Files to create:**
-- `lib/gateway-client.ts` - API client for OpenClaw
-- `app/api/tasks/route.ts` - Proxy task CRUD to gateway
-- `app/api/agents/route.ts` - Proxy agent queries to gateway
+### 3.3 Deploy Worker
+- [ ] Set up Redis (Upstash free tier)
+- [ ] Deploy worker to Railway/Render
+- [ ] Set environment variables
+- [ ] Test with real task
 
-**Logic:**
-```typescript
-// lib/gateway-client.ts
-export async function getAccountGateway(accountId: string) {
-  // Fetch gateway URL + token from accounts table
-  // Return configured axios instance
-}
-
-export async function proxyToGateway(accountId: string, endpoint: string, options) {
-  const gateway = await getAccountGateway(accountId);
-  if (!gateway) throw new Error('No gateway connected');
-  
-  return gateway.request({
-    url: endpoint,
-    ...options
-  });
-}
-```
-
-### 2.3 Update MC UI to Use Gateway
-**Files to modify:**
-- `app/command/page.tsx` - Fetch tasks via gateway proxy
-- `app/mc/page.tsx` - Same (if different page)
-- Components that hit Supabase directly → route via API
-
-**Pattern:**
-```typescript
-// OLD (direct Supabase)
-const { data } = await supabase.from('mc_tasks').select('*');
-
-// NEW (gateway-aware)
-const res = await fetch('/api/tasks');
-const data = await res.json();
-```
+### 3.4 Usage Tracking
+- [ ] Insert into `model_usage` table
+- [ ] Calculate costs based on model pricing
+- [ ] Show usage in settings page
+- [ ] Usage limits for cloud-our-keys mode
 
 ---
 
-## Phase 3: Bucket 3A - Cloud Hosted (Your Keys) (Week 2-3)
+## Phase 4: Pricing & Billing (Week 2-3)
 
 **Goal:** Run agents in cloud using user's API keys
 
