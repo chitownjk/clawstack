@@ -1,25 +1,23 @@
-# Fly.io configuration for Tiker Cloud Worker
-app = "tiker-cloud-worker"
-primary_region = "sjc"
+# fly.toml app configuration file generated for tiker-cloud-worker on 2026-02-04T23:38:02Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'tiker-cloud-worker'
+primary_region = 'sjc'
 
 [build]
-  [build.args]
-    NODE_VERSION = "20"
 
 [env]
-  NODE_ENV = "production"
-  WORKER_CONCURRENCY = "5"
+  NODE_ENV = 'production'
+  WORKER_CONCURRENCY = '5'
 
-# No HTTP service needed - this is a background worker
-# But Fly requires a process, so we use the worker itself
 [processes]
-  worker = "npm start"
+  app = 'npm start'
+
+# No HTTP service needed - this is a background worker that processes tasks from Redis
 
 [[vm]]
-  cpu_kind = "shared"
+  cpu_kind = 'shared'
   cpus = 1
   memory_mb = 256
-
-# Auto-restart if worker crashes
-[services]
-  # No HTTP service - background worker only
