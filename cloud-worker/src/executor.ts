@@ -81,13 +81,40 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     throw new Error(`Task not found: ${taskId}`);
   }
 
-  // 2. Update status to executing
+  // 2. Load account (need to check limits BEFORE executing)
+  const { data: account, error: accountError } = await supabase
+    .from('accounts')
+    .select('id, execution_mode, plan_tier, api_keys, features')
+    .eq('id', task.account_id)
+    .single();
+
+  if (accountError || !account) {
+    throw new Error(`Account not found: ${task.account_id}`);
+  }
+
+  // 3. Check if account is over limit (for paid tiers)
+  if (account.features?.task_limit) {
+    const isOver = await supabase.rpc('is_over_limit', { account_uuid: account.id });
+    if (isOver.data) {
+      // Don't execute, post comment explaining why
+      await supabase.from('mc_comments').insert({
+        task_id: taskId,
+        content: `⚠️ Monthly task limit reached (${account.features.task_limit} tasks). This task will queue until your limit resets. [Upgrade](/pricing) for more capacity.`,
+        created_at: new Date().toISOString(),
+      });
+      
+      // Keep task in inbox (don't mark as done or failed)
+      return;
+    }
+  }
+
+  // 4. Update status to executing
   await supabase
     .from('mc_tasks')
     .update({ status: 'executing', updated_at: new Date().toISOString() })
     .eq('id', taskId);
 
-  // 2. Load agent
+  // 5. Load agent
   const { data: agent, error: agentError } = await supabase
     .from('account_agent_templates')
     .select('*')
@@ -98,18 +125,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     throw new Error(`Agent not found: ${task.account_agent_id}`);
   }
 
-  // 3. Load account (for API keys)
-  const { data: account, error: accountError } = await supabase
-    .from('accounts')
-    .select('id, execution_mode, api_keys')
-    .eq('id', task.account_id)
-    .single();
-
-  if (accountError || !account) {
-    throw new Error(`Account not found: ${task.account_id}`);
-  }
-
-  // 4. Get Google OAuth token for tools (if available)
+  // 6. Get Google OAuth token for tools (if available)
   let googleAccessToken: string | undefined;
   try {
     const { data: authData } = await supabase.auth.admin.getUserById(account.id);
@@ -218,14 +234,42 @@ async function callModel(options: {
 }> {
   const { prompt, modelTier, account, googleAccessToken, supabase, taskId } = options;
 
-  // Determine which model to use based on tier
-  const modelMap = {
-    fast: 'claude-3-5-haiku-20241022',
-    standard: 'claude-3-5-sonnet-20241022',
-    reasoning: 'claude-3-7-sonnet-20250219',
-  };
-
-  const model = modelMap[modelTier] || modelMap.standard;
+  // Determine which model to use based on tier and account features
+  let model: string;
+  
+  // For paid tiers, respect tier and use cheapest appropriate model
+  if (account.execution_mode === 'cloud-our-keys') {
+    const availableModels = account.features?.models || [];
+    
+    // Cost containment: prefer cheaper models
+    if (modelTier === 'fast') {
+      model = 'claude-3-5-haiku-20241022'; // Cheapest
+    } else if (modelTier === 'reasoning') {
+      // Only if account has access to Opus
+      if (availableModels.includes('opus')) {
+        model = 'claude-3-7-sonnet-20250219';
+      } else {
+        // Fallback to Sonnet if no Opus access
+        model = 'claude-3-5-sonnet-20241022';
+      }
+    } else {
+      // Standard tier - use Kimi if available (much cheaper)
+      // Otherwise use Sonnet
+      if (availableModels.includes('kimi')) {
+        model = 'kimi-k2.5'; // 10x cheaper than Sonnet
+      } else {
+        model = 'claude-3-5-sonnet-20241022';
+      }
+    }
+  } else {
+    // BYOK mode - use what agent specifies
+    const modelMap = {
+      fast: 'claude-3-5-haiku-20241022',
+      standard: 'claude-3-5-sonnet-20241022',
+      reasoning: 'claude-3-7-sonnet-20250219',
+    };
+    model = modelMap[modelTier] || modelMap.standard;
+  }
 
   // Get and decrypt API keys
   let anthropicKey: string | undefined;
@@ -239,6 +283,18 @@ async function callModel(options: {
   } else {
     // Use our API key
     anthropicKey = process.env.ANTHROPIC_API_KEY;
+  }
+
+  // Check if using Kimi model
+  if (model.startsWith('kimi-')) {
+    return await callKimiModel({
+      model,
+      prompt,
+      account,
+      googleAccessToken,
+      supabase,
+      taskId,
+    });
   }
 
   if (!anthropicKey) {
@@ -331,6 +387,63 @@ async function callModel(options: {
     tokensIn: totalTokensIn,
     tokensOut: totalTokensOut,
     model,
+    cost,
+  };
+}
+
+async function callKimiModel(options: {
+  model: string;
+  prompt: string;
+  account: Account;
+  googleAccessToken?: string;
+  supabase: SupabaseClient;
+  taskId: string;
+}): Promise<{
+  result: string;
+  tokensIn: number;
+  tokensOut: number;
+  model: string;
+  cost: number;
+}> {
+  const { model, prompt, account } = options;
+
+  // Get Kimi API key
+  let kimiKey: string | undefined;
+  
+  if (account.execution_mode === 'cloud-user-keys') {
+    const encryptedKey = (account.api_keys as any)?.kimi;
+    if (encryptedKey) {
+      kimiKey = decrypt(encryptedKey);
+    }
+  } else {
+    kimiKey = process.env.KIMI_API_KEY;
+  }
+
+  if (!kimiKey) {
+    throw new Error('No Kimi API key configured');
+  }
+
+  // Kimi uses OpenAI-compatible API
+  const kimi = new OpenAI({
+    apiKey: kimiKey,
+    baseURL: 'https://api.moonshot.cn/v1',
+  });
+
+  const response = await kimi.chat.completions.create({
+    model: 'moonshot-v1-8k',
+    messages: [{ role: 'user', content: prompt }],
+    temperature: 0.3,
+  });
+
+  const tokensIn = response.usage?.prompt_tokens || 0;
+  const tokensOut = response.usage?.completion_tokens || 0;
+  const cost = calculateCost('kimi-k2.5', tokensIn, tokensOut);
+
+  return {
+    result: response.choices[0]?.message?.content || '',
+    tokensIn,
+    tokensOut,
+    model: 'kimi-k2.5',
     cost,
   };
 }
