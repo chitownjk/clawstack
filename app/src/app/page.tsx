@@ -436,30 +436,40 @@ export default async function LandingPage() {
               
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Free - No AI */}
-                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl">
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
                   <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Free</h3>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Simple to-do list</p>
                   <div className="mb-6">
                     <span className="text-3xl font-bold">$0</span>
                   </div>
-                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
                       Unlimited manual tasks
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
-                      Kanban or list view
+                      Kanban, list & calendar views
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Comments & attachments
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-neutral-400 mt-0.5">—</span>
                       <span className="text-neutral-400">No AI agents</span>
                     </li>
                   </ul>
+                  <a
+                    href="/auth/login"
+                    className="block w-full text-center px-4 py-2 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium"
+                  >
+                    Get Started
+                  </a>
                 </div>
 
                 {/* Free - BYOK */}
-                <div className="p-6 border-2 border-blue-500 dark:border-blue-600 rounded-xl bg-blue-50 dark:bg-blue-950/20">
+                <div className="p-6 border-2 border-blue-500 dark:border-blue-600 rounded-xl bg-blue-50 dark:bg-blue-950/20 flex flex-col">
                   <div className="flex items-center gap-2 mb-2">
                     <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Free</h3>
                     <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Popular</span>
@@ -469,10 +479,10 @@ export default async function LandingPage() {
                     <span className="text-3xl font-bold">$0</span>
                     <p className="text-xs text-neutral-500 mt-1">Forever</p>
                   </div>
-                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
-                      Unlimited AI tasks
+                      Unlimited AI tasks (fair use)
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
@@ -480,13 +490,23 @@ export default async function LandingPage() {
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
-                      You pay model costs
+                      All views & features
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 mt-0.5">$</span>
+                      You pay ~$0.06/task to provider
                     </li>
                   </ul>
+                  <a
+                    href="/auth/login"
+                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Get Started Free
+                  </a>
                 </div>
                 
                 {/* Solo */}
-                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl">
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
                   <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">For individuals</p>
                   <div className="mb-6">
@@ -494,24 +514,34 @@ export default async function LandingPage() {
                     <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
                     <p className="text-xs text-neutral-500 mt-1">100 AI tasks/month</p>
                   </div>
-                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
                       No key management
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
-                      Email support
+                      Haiku, Sonnet & Kimi models
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
-                      7-day trial
+                      Gmail & Calendar tools
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Email support
                     </li>
                   </ul>
+                  <a
+                    href="/api/stripe/checkout?plan=solo"
+                    className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium"
+                  >
+                    Start 7-Day Trial
+                  </a>
                 </div>
 
                 {/* Developer */}
-                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl">
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
                   <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Developer</h3>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Power features</p>
                   <div className="mb-6">
@@ -519,20 +549,30 @@ export default async function LandingPage() {
                     <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
                     <p className="text-xs text-neutral-500 mt-1">400 AI tasks/month</p>
                   </div>
-                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
-                      API access
+                      All models (Opus, GPT-4, Gemini)
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
-                      Webhooks
+                      API access & webhooks
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-green-600 mt-0.5">✓</span>
                       Custom agents
                     </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Priority support
+                    </li>
                   </ul>
+                  <a
+                    href="/api/stripe/checkout?plan=developer"
+                    className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium"
+                  >
+                    Start 7-Day Trial
+                  </a>
                 </div>
               </div>
 
@@ -557,13 +597,29 @@ export default async function LandingPage() {
                       </li>
                       <li className="flex items-center gap-2">
                         <span className="text-green-600">✓</span>
-                        Priority support
+                        All models & API access
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Role permissions
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Priority support + chat
                       </li>
                     </ul>
                   </div>
-                  <div className="text-right">
-                    <div className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">$99</div>
-                    <div className="text-sm text-neutral-500">per month</div>
+                  <div className="text-right flex flex-col items-end gap-4">
+                    <div>
+                      <div className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">$99</div>
+                      <div className="text-sm text-neutral-500">per month</div>
+                    </div>
+                    <a
+                      href="/services#contact"
+                      className="px-6 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium whitespace-nowrap"
+                    >
+                      Contact Sales
+                    </a>
                   </div>
                 </div>
               </div>

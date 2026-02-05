@@ -4,6 +4,19 @@ import { getStripe, TIERS } from '@/lib/stripe'
 
 export async function POST(request: NextRequest) {
   try {
+    // Get plan from query params or body
+    const url = new URL(request.url)
+    const plan = url.searchParams.get('plan') || 'solo'
+    
+    // Validate plan
+    const validPlans = ['solo', 'developer', 'team']
+    if (!validPlans.includes(plan)) {
+      return NextResponse.json(
+        { error: 'Invalid plan' },
+        { status: 400 }
+      )
+    }
+    
     // Get authenticated user
     const supabase = await createRealSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -19,7 +32,7 @@ export async function POST(request: NextRequest) {
     const adminClient = createAdminClient()
     const { data: account, error: accountError } = await adminClient
       .from('accounts')
-      .select('id, email, stripe_customer_id, tier')
+      .select('id, email, stripe_customer_id, plan_tier')
       .eq('auth_uid', user.id)
       .single()
 
@@ -30,10 +43,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if already on Pro tier
-    if (account.tier === 'pro') {
+    // Check if already on this tier or higher
+    const tierHierarchy: Record<string, number> = { solo: 1, developer: 2, team: 3 }
+    const currentTierLevel = tierHierarchy[account.plan_tier] || 0
+    const requestedTierLevel = tierHierarchy[plan] || 0
+    
+    if (currentTierLevel >= requestedTierLevel) {
       return NextResponse.json(
-        { error: 'Already subscribed to Pro' },
+        { error: `Already on ${account.plan_tier} tier or higher` },
         { status: 400 }
       )
     }
@@ -59,11 +76,13 @@ export async function POST(request: NextRequest) {
         .eq('id', account.id)
     }
 
-    // Ensure we have the Pro price ID
-    const proPriceId = TIERS.pro.priceId
-    if (!proPriceId) {
+    // Get tier configuration
+    const tierConfig = TIERS[plan as keyof typeof TIERS]
+    const priceId = tierConfig.priceId
+    
+    if (!priceId) {
       return NextResponse.json(
-        { error: 'Pro tier price not configured' },
+        { error: `${tierConfig.name} tier price not configured` },
         { status: 500 }
       )
     }
@@ -72,28 +91,37 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    const sessionConfig: any = {
       customer: customerId,
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [
         {
-          price: proPriceId,
+          price: priceId,
           quantity: 1,
         },
       ],
-      success_url: `${origin}/settings?success=true`,
-      cancel_url: `${origin}/settings?canceled=true`,
+      success_url: `${origin}/dashboard?success=true`,
+      cancel_url: `${origin}/?canceled=true`,
       metadata: {
         account_id: account.id,
+        plan: plan,
       },
       subscription_data: {
         metadata: {
           account_id: account.id,
+          plan: plan,
         },
       },
       allow_promotion_codes: true,
-    })
+    }
+    
+    // Add trial if configured
+    if (tierConfig.trialDays && tierConfig.trialDays > 0) {
+      sessionConfig.subscription_data.trial_period_days = tierConfig.trialDays
+    }
+    
+    const session = await stripe.checkout.sessions.create(sessionConfig)
 
     return NextResponse.json({ url: session.url })
   } catch (error) {
