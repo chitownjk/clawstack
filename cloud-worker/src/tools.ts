@@ -188,7 +188,7 @@ export async function executeTool(
 
   switch (toolName) {
     case 'gmail_send':
-      return await sendGmail(params, auth);
+      return await sendGmail(params, auth, supabase, accountId);
     
     case 'gmail_read':
       return await readGmail(params, auth);
@@ -227,16 +227,36 @@ export async function executeTool(
  */
 async function sendGmail(
   params: { to: string; subject: string; body: string; cc?: string },
-  auth: any
+  auth: any,
+  supabase?: any,
+  accountId?: string
 ): Promise<string> {
   const gmail = google.gmail({ version: 'v1', auth });
+
+  // Fetch and append email signature
+  let bodyWithSignature = params.body;
+  if (supabase && accountId) {
+    try {
+      const { data: account } = await supabase
+        .from('accounts')
+        .select('email_signature')
+        .eq('id', accountId)
+        .single();
+      
+      const signature = account?.email_signature || '\n\n---\nSent by my Tiker assistant';
+      bodyWithSignature = params.body + signature;
+    } catch (error) {
+      console.error('[Gmail] Failed to fetch signature:', error);
+      // Continue with original body
+    }
+  }
 
   const message = [
     `To: ${params.to}`,
     params.cc ? `Cc: ${params.cc}` : '',
     `Subject: ${params.subject}`,
     '',
-    params.body,
+    bodyWithSignature,
   ]
     .filter(Boolean)
     .join('\n');
@@ -443,12 +463,11 @@ async function saveFile(
     throw new Error(`Failed to save file metadata: ${dbError.message}`);
   }
   
-  // Generate signed URL
-  const { data: urlData } = await supabase.storage
-    .from(BUCKET_NAME)
-    .createSignedUrl(storagePath, 3600);
+  // Generate viewer URL (not direct Supabase link)
+  const viewerUrl = process.env.APP_URL || 'https://testcloud.tiker.com';
+  const fileUrl = `${viewerUrl}/files/${fileRecord.id}`;
   
-  return `File saved successfully: ${params.filename} (${formatBytes(buffer.length)})\nFile ID: ${fileRecord.id}\nDownload: ${urlData?.signedUrl || 'URL generation failed'}`;
+  return `File saved successfully: ${params.filename} (${formatBytes(buffer.length)})\nFile ID: ${fileRecord.id}\nView: ${fileUrl}`;
 }
 
 /**
