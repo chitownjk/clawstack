@@ -10,6 +10,7 @@ import CreateTaskModal from '@/components/CreateTaskModal'
 import TwoFactorVerifyModal from '@/components/TwoFactorVerifyModal'
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
+import FilesView from '@/components/FilesView'
 import { use2FA } from '@/hooks/use2FA'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase'
@@ -36,6 +37,7 @@ export default function MissionControlClient() {
   const [hideDone, setHideDone] = useState(true) // Hide completed by default
   const [deleteModal, setDeleteModal] = useState<{ task: Task; commentCount: number } | null>(null)
   const [executionMode, setExecutionMode] = useState<string | null>(null)
+  const [view, setView] = useState<'board' | 'files'>('board')
   
   // 2FA for write access
   const { 
@@ -465,6 +467,30 @@ export default function MissionControlClient() {
               {!hideDone && ` (${tasks.filter(t => t.status === 'done').length})`}
             </button>
             
+            {/* View Toggle */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setView('board')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  view === 'board'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Board
+              </button>
+              <button
+                onClick={() => setView('files')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  view === 'files'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Files
+              </button>
+            </div>
+
             <Link
               href={executionMode === 'openclaw' ? '/hub?type=agents' : '/agents'}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
@@ -487,6 +513,9 @@ export default function MissionControlClient() {
           </div>
         </div>
 
+        {/* Board View */}
+        {view === 'board' && (
+          <>
         {/* Kanban Board - Horizontal Scroll */}
         <div className="relative">
           {/* Scroll indicator */}
@@ -539,6 +568,15 @@ export default function MissionControlClient() {
             <ActivityFeed activities={activities} />
           </div>
         </div>
+          </>
+        )}
+
+        {/* Files View */}
+        {view === 'files' && (
+          <div className="bg-white rounded-lg min-h-[600px]">
+            <FilesView />
+          </div>
+        )}
       </div>
 
       {/* Task Detail Modal */}
