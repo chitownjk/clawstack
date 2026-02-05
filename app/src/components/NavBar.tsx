@@ -123,12 +123,16 @@ export function NavBar() {
                   >
                     Command
                   </Link>
-                  {/* Hub only for self-hosted users */}
-                  {account?.execution_mode === 'openclaw' && (
+                  {/* Agents link - different for cloud vs self-hosted */}
+                  {account?.execution_mode === 'openclaw' ? (
                     <Link href="/hub" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
+                      Hub
+                    </Link>
+                  ) : account ? (
+                    <Link href="/agents" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
                       Agents
                     </Link>
-                  )}
+                  ) : null}
                   <div ref={servicesRef} className="relative">
                     <button
                       onClick={() => setServicesOpen(!servicesOpen)}
