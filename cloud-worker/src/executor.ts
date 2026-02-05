@@ -237,7 +237,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
 
     if (!uploadError) {
       // Insert file record
-      const { data: fileRecord } = await supabase
+      const { data: fileRecord, error: fileInsertError } = await supabase
         .from('mc_files')
         .insert({
           account_id: task.account_id,
@@ -250,11 +250,18 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
         .select()
         .single();
 
+      if (fileInsertError) {
+        console.error('[Executor] Failed to insert file record:', fileInsertError);
+      }
+
       // Post summary comment with link
+      const fileId = fileRecord?.id;
+      const downloadLink = fileId ? ` [Download](/api/files/${fileId})` : '';
+      
       await supabase.from('mc_comments').insert({
         task_id: taskId,
         agent_id: task.account_agent_id,
-        content: `✅ Task complete. Response saved as file: **${filename}**\n\nView in Files tab or [download directly](/api/files/${fileRecord?.id}).`,
+        content: `✅ Task complete. Response saved as file: **${filename}**${downloadLink}`,
         created_at: new Date().toISOString(),
       });
     } else {
