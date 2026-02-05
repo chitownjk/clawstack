@@ -43,14 +43,10 @@ async function createCheckoutSession(request: NextRequest) {
       )
     }
 
-    // Check if already on this tier or higher
-    const tierHierarchy: Record<string, number> = { solo: 1, developer: 2, team: 3 }
-    const currentTierLevel = tierHierarchy[account.plan_tier] || 0
-    const requestedTierLevel = tierHierarchy[plan] || 0
-    
-    if (currentTierLevel >= requestedTierLevel) {
+    // Check if already on this exact tier
+    if (account.plan_tier === plan) {
       return NextResponse.json(
-        { error: `Already on ${account.plan_tier} tier or higher` },
+        { error: `You're already on the ${plan} plan` },
         { status: 400 }
       )
     }

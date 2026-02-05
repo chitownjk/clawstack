@@ -9,11 +9,21 @@ export default function UsagePage() {
   const [loading, setLoading] = useState(true);
   const [usage, setUsage] = useState<any>(null);
   const [recentTasks, setRecentTasks] = useState<any[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const supabase = createClient();
 
   useEffect(() => {
     loadUsage();
+    
+    // Check for error in URL
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    if (error === 'already_subscribed') {
+      setErrorMessage('You\'re already on this plan or a higher tier. Contact support to change plans.');
+    } else if (error === 'checkout_failed') {
+      setErrorMessage('Checkout failed. Please try again or contact support.');
+    }
   }, []);
 
   async function loadUsage() {
@@ -125,6 +135,33 @@ export default function UsagePage() {
         <SettingsNav />
 
         <div className="space-y-6">
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg p-4">
+              <p className="text-red-900 dark:text-red-100">{errorMessage}</p>
+            </div>
+          )}
+
+          {/* Trial Status Banner */}
+          {usage.plan_tier && usage.plan_tier !== 'free' && (
+            <div className="bg-green-50 dark:bg-green-950/30 border-2 border-green-500 dark:border-green-600 rounded-lg p-6">
+              <div className="flex items-start gap-4">
+                <div className="text-4xl">🎉</div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-1">
+                    Product Hunt Launch Special: 3 Months Free!
+                  </h3>
+                  <p className="text-green-800 dark:text-green-200 mb-2">
+                    You're on the <span className="font-semibold capitalize">{usage.plan_tier}</span> plan with <strong>3 months completely free</strong>. No credit card charged until May 5, 2026.
+                  </p>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    Enjoying Tiker? We'd love if you could <a href="https://www.producthunt.com/posts/tiker" target="_blank" rel="noopener noreferrer" className="underline font-medium">upvote us on Product Hunt</a> to help spread the word! 🚀
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Current Plan */}
           {usage.plan_tier && (
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
