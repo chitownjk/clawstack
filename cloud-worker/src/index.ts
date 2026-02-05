@@ -23,7 +23,7 @@ async function pollForTasks() {
   }
 
   try {
-    // Get inbox tasks and check their account's execution mode
+    // Get inbox AND assigned tasks (tasks ready for execution)
     // Only fetch tasks that have agents assigned (filter at DB level)
     const { data: tasks, error } = await supabase
       .from('mc_tasks')
@@ -33,7 +33,7 @@ async function pollForTasks() {
         assigned_agent_ids,
         accounts!inner(execution_mode)
       `)
-      .eq('status', 'inbox')
+      .in('status', ['inbox', 'assigned'])
       .not('assigned_agent_ids', 'is', null)
       .limit(20)
 
@@ -69,17 +69,22 @@ async function pollForTasks() {
     // Process each task
     for (const task of cloudTasks) {
       // Claim the task by updating status to 'executing'
-      const { error: updateError } = await supabase
+      // Accept both 'inbox' and 'assigned' as starting states
+      const { data: claimed, error: updateError } = await supabase
         .from('mc_tasks')
         .update({ 
           status: 'executing',
           updated_at: new Date().toISOString()
         })
         .eq('id', task.id)
-        .eq('status', 'inbox'); // Only update if still inbox (prevents race conditions)
+        .in('status', ['inbox', 'assigned']) // Accept both inbox and assigned
+        .select()
 
-      if (updateError) {
-        console.error(`[Worker] Failed to claim task ${task.id}:`, updateError);
+      if (updateError || !claimed || claimed.length === 0) {
+        // Another worker claimed it, or task was updated by user
+        if (updateError) {
+          console.error(`[Worker] Failed to claim task ${task.id}:`, updateError);
+        }
         continue;
       }
 
