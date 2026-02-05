@@ -459,28 +459,13 @@ async function callModel(options: {
     totalTokensIn += response.usage.input_tokens;
     totalTokensOut += response.usage.output_tokens;
 
-    // Check for tool use
-    const toolUseBlock = response.content.find((block) => block.type === 'tool_use');
+    // Check for tool use (may be multiple tool calls in one response)
+    const toolUseBlocks = response.content.filter((block) => block.type === 'tool_use');
     const textBlock = response.content.find((block) => block.type === 'text');
 
-    if (toolUseBlock && toolUseBlock.type === 'tool_use') {
-      // Agent wants to use a tool
-      console.log(`[Executor] Agent using tool: ${toolUseBlock.name}`);
-
-      // Execute the tool
-      let toolResult: string;
-      try {
-        toolResult = await executeTool(
-          toolUseBlock.name,
-          toolUseBlock.input,
-          googleAccessToken!,
-          supabase,
-          taskId,
-          account.id
-        );
-      } catch (error) {
-        toolResult = `Error executing tool: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      }
+    if (toolUseBlocks.length > 0) {
+      // Agent wants to use one or more tools
+      console.log(`[Executor] Agent using ${toolUseBlocks.length} tool(s)`);
 
       // Add assistant's tool use to messages
       messages.push({
@@ -488,16 +473,37 @@ async function callModel(options: {
         content: response.content,
       });
 
-      // Add tool result to messages
+      // Execute all tools and collect results
+      const toolResults = [];
+      for (const toolUseBlock of toolUseBlocks) {
+        if (toolUseBlock.type !== 'tool_use') continue;
+        
+        console.log(`[Executor] Executing tool: ${toolUseBlock.name}`);
+        let toolResult: string;
+        try {
+          toolResult = await executeTool(
+            toolUseBlock.name,
+            toolUseBlock.input,
+            googleAccessToken!,
+            supabase,
+            taskId,
+            account.id
+          );
+        } catch (error) {
+          toolResult = `Error executing tool: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        }
+
+        toolResults.push({
+          type: 'tool_result' as const,
+          tool_use_id: toolUseBlock.id,
+          content: toolResult,
+        });
+      }
+
+      // Add all tool results to messages
       messages.push({
         role: 'user',
-        content: [
-          {
-            type: 'tool_result',
-            tool_use_id: toolUseBlock.id,
-            content: toolResult,
-          },
-        ],
+        content: toolResults,
       });
 
       // Continue loop to get agent's next response
