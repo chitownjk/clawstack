@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import SettingsNav from '@/components/SettingsNav';
-import { decrypt } from '@/lib/crypto';
 
 export default function UsagePage() {
   const [loading, setLoading] = useState(true);
@@ -66,21 +65,17 @@ export default function UsagePage() {
         cost_usd: 0
       });
 
-      // Get recent tasks
-      const { data: tasks } = await supabase
-        .from('mc_tasks')
-        .select('id, title, status, created_at')
-        .eq('account_id', account.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      // Decrypt task titles
-      const decryptedTasks = (tasks || []).map(task => ({
-        ...task,
-        title: task.title ? decrypt(task.title) : 'Untitled'
-      }));
-
-      setRecentTasks(decryptedTasks);
+      // Get recent tasks (decrypted server-side)
+      const tasksResponse = await fetch('/api/tasks/recent', {
+        credentials: 'include'
+      });
+      
+      if (tasksResponse.ok) {
+        const tasks = await tasksResponse.json();
+        setRecentTasks(tasks);
+      } else {
+        setRecentTasks([]);
+      }
     } catch (error) {
       console.error('Error loading usage:', error);
     } finally {
