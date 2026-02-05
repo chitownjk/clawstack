@@ -34,6 +34,7 @@ export default function MissionControlClient() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [hideDone, setHideDone] = useState(true) // Hide completed by default
   const [deleteModal, setDeleteModal] = useState<{ task: Task; commentCount: number } | null>(null)
+  const [executionMode, setExecutionMode] = useState<string | null>(null)
   
   // 2FA for write access
   const { 
@@ -96,6 +97,20 @@ export default function MissionControlClient() {
       setAgents(botsData)
       setTasks(tasksData)
       setActivities(activitiesData)
+      
+      // Get execution mode to determine if user is cloud or self-hosted
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: account } = await supabase
+          .from('accounts')
+          .select('execution_mode')
+          .eq('auth_uid', user.id)
+          .single()
+        if (account) {
+          setExecutionMode(account.execution_mode)
+        }
+      }
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -450,7 +465,7 @@ export default function MissionControlClient() {
             </button>
             
             <Link
-              href="/hub?type=agents"
+              href={executionMode === 'openclaw' ? '/hub?type=agents' : '/agents'}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
             >
               + Add Agent

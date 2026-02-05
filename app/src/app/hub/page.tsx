@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase-server'
 import { createRealSupabaseClient } from '@/lib/supabase-server'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import HubContent from './HubContent'
 
@@ -21,7 +22,7 @@ export default async function HubPage({
   const selectedType = searchParams.type || 'all'
   const selectedCategory = searchParams.category || 'all'
   
-  // Get current user's plan
+  // Get current user's plan and execution mode
   let isTeamPlan = false
   try {
     const authSupabase = await createRealSupabaseClient()
@@ -30,11 +31,16 @@ export default async function HubPage({
     if (session?.user) {
       const { data: account } = await supabase
         .from('accounts')
-        .select('plan')
+        .select('plan_tier, execution_mode')
         .eq('auth_uid', session.user.id)
         .single()
       
-      isTeamPlan = account?.plan === 'team'
+      // Cloud users should use /agents page instead of Hub
+      if (account?.execution_mode && account.execution_mode !== 'openclaw') {
+        redirect('/agents')
+      }
+      
+      isTeamPlan = account?.plan_tier === 'team'
     }
   } catch {
     // Not logged in or error - default to free
