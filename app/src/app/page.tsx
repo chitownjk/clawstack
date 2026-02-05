@@ -80,18 +80,36 @@ export default async function LandingPage() {
           {/* Split Screen Hero */}
           <SplitScreenHero />
 
-          {/* The Problem - One punchy statement */}
-          <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800">
-            <div className="max-w-6xl mx-auto px-6">
-              <div className="max-w-3xl">
-                <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-4 uppercase tracking-wider">The problem</p>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mb-8">
-                  Your AI tools don't talk to each other. They only work when YOU work. Context dies between sessions.
-                </h2>
-                <p className="text-xl text-neutral-500 dark:text-neutral-400">
-                  You're not scaling AI. You're babysitting it.
-                </p>
+          {/* Hero Section */}
+          <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-b from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900">
+            <div className="max-w-6xl mx-auto px-6 text-center">
+              <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-neutral-900 dark:text-neutral-100 leading-tight mb-6">
+                Your To-Do List.
+                <br />
+                <span className="text-blue-600 dark:text-blue-400">On Autopilot.</span>
+              </h1>
+              <p className="text-xl md:text-2xl text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto mb-12">
+                AI agents handle email, calendar, research, and more.
+                <br />
+                You handle the strategy.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Link
+                  href="/auth/login"
+                  className="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-lg"
+                >
+                  Start Free
+                </Link>
+                <Link
+                  href="/#pricing"
+                  className="px-8 py-4 bg-white dark:bg-neutral-800 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 rounded-lg font-semibold hover:border-neutral-400 dark:hover:border-neutral-600 transition text-lg"
+                >
+                  View Pricing
+                </Link>
               </div>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-6">
+                Free forever (with your API keys) • No credit card required
+              </p>
             </div>
           </section>
 
@@ -407,96 +425,154 @@ export default async function LandingPage() {
           {/* Pricing - Editorial style */}
           <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800" id="pricing">
             <div className="max-w-6xl mx-auto px-6">
-              <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-4 uppercase tracking-wider">Pricing</p>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mb-16">
-                Simple pricing.
-              </h2>
+              <div className="text-center mb-16">
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mb-4">
+                  Simple, Honest Pricing
+                </h2>
+                <p className="text-xl text-neutral-600 dark:text-neutral-400">
+                  Start free. Upgrade anytime. Keep your data forever.
+                </p>
+              </div>
               
-              <div className="grid md:grid-cols-3 gap-8">
-                {/* Solo */}
-                <div className="py-8 border-t-2 border-neutral-200 dark:border-neutral-800">
-                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
-                  <p className="text-neutral-500 dark:text-neutral-400 mb-6">Just getting started</p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Free - No AI */}
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl">
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Free</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Simple to-do list</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-semibold text-neutral-900 dark:text-neutral-100">$0</span>
-                    <span className="text-neutral-500 dark:text-neutral-400">/month</span>
+                    <span className="text-3xl font-bold">$0</span>
                   </div>
-                  <ul className="space-y-3 text-neutral-600 dark:text-neutral-400">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      1 general-purpose agent
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Unlimited manual tasks
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Command dashboard
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Kanban or list view
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Community support
+                    <li className="flex items-start gap-2">
+                      <span className="text-neutral-400 mt-0.5">—</span>
+                      <span className="text-neutral-400">No AI agents</span>
                     </li>
                   </ul>
                 </div>
-                
-                {/* Team */}
-                <div className="py-8 border-t-2 border-neutral-900 dark:border-neutral-100">
+
+                {/* Free - BYOK */}
+                <div className="p-6 border-2 border-blue-500 dark:border-blue-600 rounded-xl bg-blue-50 dark:bg-blue-950/20">
                   <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Team</h3>
-                    <span className="text-xs bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-2 py-0.5 rounded">Popular</span>
+                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Free</h3>
+                    <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Popular</span>
                   </div>
-                  <p className="text-neutral-500 dark:text-neutral-400 mb-6">Build your AI team</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Bring your API keys</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-semibold text-neutral-900 dark:text-neutral-100">$7</span>
-                    <span className="text-neutral-500 dark:text-neutral-400">/month</span>
+                    <span className="text-3xl font-bold">$0</span>
+                    <p className="text-xs text-neutral-500 mt-1">Forever</p>
                   </div>
-                  <ul className="space-y-3 text-neutral-600 dark:text-neutral-400">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      All specialist agents
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Unlimited AI tasks
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Invite collaborators
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Gmail & Calendar tools
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Priority support
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      You pay model costs
                     </li>
                   </ul>
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-6">
-                    First 3 months FREE this week
-                  </p>
                 </div>
                 
-                {/* Self-hosted */}
-                <div className="py-8 border-t-2 border-neutral-200 dark:border-neutral-800">
-                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Self-hosted</h3>
-                  <p className="text-neutral-500 dark:text-neutral-400 mb-6">Full control</p>
+                {/* Solo */}
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl">
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">For individuals</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-semibold text-neutral-900 dark:text-neutral-100">Free</span>
+                    <span className="text-3xl font-bold">$19</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
+                    <p className="text-xs text-neutral-500 mt-1">100 AI tasks/month</p>
                   </div>
-                  <ul className="space-y-3 text-neutral-600 dark:text-neutral-400">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Run on your infrastructure
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      No key management
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Full data control
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Email support
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      OSS on GitHub
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      7-day trial
                     </li>
                   </ul>
-                  <a 
-                    href="https://github.com/chitownjk/tiker" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-neutral-900 dark:text-neutral-100 underline underline-offset-4 mt-6 inline-block"
-                  >
-                    View on GitHub
-                  </a>
                 </div>
+
+                {/* Developer */}
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl">
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Developer</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Power features</p>
+                  <div className="mb-6">
+                    <span className="text-3xl font-bold">$49</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
+                    <p className="text-xs text-neutral-500 mt-1">400 AI tasks/month</p>
+                  </div>
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      API access
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Webhooks
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Custom agents
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Team tier - full width below */}
+              <div className="mt-6 p-8 border-2 border-neutral-900 dark:border-neutral-100 rounded-xl">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Team</h3>
+                    <p className="text-neutral-600 dark:text-neutral-400 mb-4">Collaboration features for teams</p>
+                    <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-neutral-600 dark:text-neutral-400">
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        1,000 AI tasks/month
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Up to 10 members
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Shared boards
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Priority support
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">$99</div>
+                    <div className="text-sm text-neutral-500">per month</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Switch anytime callout */}
+              <div className="mt-12 p-6 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-center">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <strong className="text-neutral-900 dark:text-neutral-100">Switch anytime.</strong> Change tiers without losing data. Cancel with one click.
+                </p>
               </div>
             </div>
           </section>
