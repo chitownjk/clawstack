@@ -23,7 +23,7 @@ export default function PrivacyPolicy() {
             
             <li><strong>OAuth Tokens:</strong> If you connect Google services (Gmail, Calendar), we store OAuth access tokens encrypted in our database. These are used only to execute tasks you explicitly create.</li>
             
-            <li><strong>API Keys:>/strong> If using BYOK (Bring Your Own Keys) mode, your API keys are encrypted and only decrypted when your agents execute tasks.</li>
+            <li><strong>API Keys:</strong> If using BYOK (Bring Your Own Keys) mode, your API keys are encrypted and only decrypted when your agents execute tasks.</li>
             
             <li><strong>Usage Data:</strong> We collect anonymous usage statistics to improve the Service, including feature usage and performance metrics.</li>
           </ul>
