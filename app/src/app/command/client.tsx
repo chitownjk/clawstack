@@ -279,7 +279,7 @@ export default function MissionControlClient() {
     setActiveId(null)
   }
 
-  const activeAgents = agents.filter(a => a.status === 'active').length
+  const totalAgents = agents.length
   const tasksInQueue = tasks.filter(t => t.status !== 'done').length
   const reviewCount = tasks.filter(t => t.status === 'review').length
   
@@ -319,8 +319,8 @@ export default function MissionControlClient() {
 
             <div className="flex items-center gap-8 text-sm">
               <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">{activeAgents}</div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide">Agents Active</div>
+                <div className="text-3xl font-bold text-gray-900">{totalAgents}</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wide">Agents</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-gray-900">{tasksInQueue}</div>
