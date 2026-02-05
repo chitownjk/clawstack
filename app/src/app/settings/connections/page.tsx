@@ -98,6 +98,14 @@ export default function ConnectionsPage() {
 
   useEffect(() => {
     checkGoogleConnection();
+    
+    // Check if redirected back from OAuth
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('google_connected') === 'true') {
+      // Remove query param and refresh connection status
+      window.history.replaceState({}, '', '/settings/connections');
+      setTimeout(() => checkGoogleConnection(), 500);
+    }
   }, []);
 
   const checkGoogleConnection = async () => {
