@@ -292,14 +292,14 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
         console.error('[Executor] Failed to insert file record:', fileInsertError);
       }
 
-      // Post summary comment with link
+      // Post summary comment with link to viewer
       const fileId = fileRecord?.id;
-      const downloadLink = fileId ? ` [Download](/api/files/${fileId})` : '';
+      const viewLink = fileId ? ` [View response](/files/${fileId})` : '';
       
       await supabase.from('mc_comments').insert({
         task_id: taskId,
         agent_id: task.account_agent_id,
-        content: `✅ Task complete. Response saved as file: **${filename}**${downloadLink}`,
+        content: `✅ Task complete. Response saved as file: **${filename}**${viewLink}`,
         created_at: new Date().toISOString(),
       });
     } else {
