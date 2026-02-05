@@ -34,32 +34,33 @@ export default function UsagePage() {
         return;
       }
 
-      // Get current month's usage
+      // Get current month's task count
       const firstOfMonth = new Date();
       firstOfMonth.setDate(1);
       firstOfMonth.setHours(0, 0, 0, 0);
 
-      const { data: monthlyUsage } = await supabase
-        .from('monthly_usage')
-        .select('*')
+      const { count: tasksThisMonth } = await supabase
+        .from('mc_tasks')
+        .select('*', { count: 'exact', head: true })
         .eq('account_id', account.id)
-        .eq('month_start', firstOfMonth.toISOString().split('T')[0])
-        .single();
+        .gte('created_at', firstOfMonth.toISOString());
 
-      setUsage(monthlyUsage || {
-        tasks_used: 0,
+      setUsage({
+        tasks_used: tasksThisMonth || 0,
         tasks_limit: account.plan_tier === 'team' ? 1000 : account.plan_tier === 'developer' ? 400 : account.plan_tier === 'solo' ? 100 : null,
+        plan_tier: account.plan_tier,
+        execution_mode: account.execution_mode,
         tokens_in_used: 0,
         tokens_out_used: 0,
         cost_usd: 0
       });
 
-      // Get recent tasks with usage stats
+      // Get recent tasks
       const { data: tasks } = await supabase
-        .from('task_usage')
-        .select('*')
+        .from('mc_tasks')
+        .select('id, title, status, created_at')
         .eq('account_id', account.id)
-        .order('executed_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(10);
 
       setRecentTasks(tasks || []);
@@ -106,11 +107,11 @@ export default function UsagePage() {
   const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const daysUntilReset = Math.ceil((resetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-  // Group tasks by model for breakdown
-  const modelBreakdown: Record<string, number> = {};
+  // Group tasks by status for breakdown
+  const statusBreakdown: Record<string, number> = {};
   recentTasks.forEach(task => {
-    if (task.model_used) {
-      modelBreakdown[task.model_used] = (modelBreakdown[task.model_used] || 0) + 1;
+    if (task.status) {
+      statusBreakdown[task.status] = (statusBreakdown[task.status] || 0) + 1;
     }
   });
 
@@ -124,6 +125,43 @@ export default function UsagePage() {
         <SettingsNav />
 
         <div className="space-y-6">
+          {/* Current Plan */}
+          {usage.plan_tier && (
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
+                    Current Plan
+                  </h2>
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl font-bold text-blue-600 capitalize">
+                      {usage.plan_tier}
+                    </span>
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                      {usage.tasks_limit} tasks/month
+                    </span>
+                  </div>
+                  {usage.execution_mode === 'managed' && (
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
+                      Managed mode - we handle API keys and billing
+                    </p>
+                  )}
+                  {usage.execution_mode === 'byok' && (
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
+                      BYOK mode - unlimited tasks with your API keys
+                    </p>
+                  )}
+                </div>
+                <Link
+                  href="/#pricing"
+                  className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm"
+                >
+                  Change Plan
+                </Link>
+              </div>
+            </div>
+          )}
+
           <div>
             <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">Usage This Month</h2>
             <p className="text-neutral-600 dark:text-neutral-400 mt-1">
@@ -211,17 +249,17 @@ export default function UsagePage() {
         )}
       </div>
 
-      {/* Model Breakdown */}
-      {Object.keys(modelBreakdown).length > 0 && (
+      {/* Status Breakdown */}
+      {Object.keys(statusBreakdown).length > 0 && (
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
-          <h2 className="font-semibold mb-4">Model Usage Breakdown</h2>
+          <h2 className="font-semibold mb-4">Task Status Breakdown</h2>
           <div className="space-y-2">
-            {Object.entries(modelBreakdown)
+            {Object.entries(statusBreakdown)
               .sort(([, a], [, b]) => b - a)
-              .map(([model, count]) => (
-                <div key={model} className="flex justify-between items-center text-sm">
-                  <span className="text-neutral-700 dark:text-neutral-300">
-                    {model.replace('claude-3-5-', '').replace('claude-', '')}
+              .map(([status, count]) => (
+                <div key={status} className="flex justify-between items-center text-sm">
+                  <span className="text-neutral-700 dark:text-neutral-300 capitalize">
+                    {status}
                   </span>
                   <span className="font-mono text-neutral-600 dark:text-neutral-400">
                     {count} tasks
@@ -229,26 +267,13 @@ export default function UsagePage() {
                 </div>
               ))}
           </div>
-
-          {usage.cost_usd > 0 && (
-            <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-neutral-600 dark:text-neutral-400">
-                  Estimated cost to us:
-                </span>
-                <span className="font-mono font-medium">
-                  ${usage.cost_usd.toFixed(2)}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
       {/* Recent Tasks */}
       {recentTasks.length > 0 && (
         <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
-          <h2 className="font-semibold mb-4">Recent AI Tasks</h2>
+          <h2 className="font-semibold mb-4">Recent Tasks</h2>
           <div className="space-y-3">
             {recentTasks.map(task => (
               <div
@@ -258,14 +283,18 @@ export default function UsagePage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{task.title}</p>
                   <p className="text-xs text-neutral-500 mt-1">
-                    {new Date(task.created_at).toLocaleDateString()} • {task.model_used}
+                    {new Date(task.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                <div className="text-right text-xs text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
-                  <div>{((task.tokens_in + task.tokens_out) / 1000).toFixed(1)}k tokens</div>
-                  {task.cost_usd > 0 && (
-                    <div className="font-mono">${task.cost_usd.toFixed(3)}</div>
-                  )}
+                <div className="text-right text-xs whitespace-nowrap">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    task.status === 'done' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' :
+                    task.status === 'review' ? 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' :
+                    task.status === 'error' ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' :
+                    'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                  }`}>
+                    {task.status}
+                  </span>
                 </div>
               </div>
             ))}
