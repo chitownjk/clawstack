@@ -35,6 +35,7 @@ export const TIERS = {
     maxBots: 1,
     maxTasks: 50,
     canInviteGuests: false,
+    trialDays: 0,
   },
   pro: {
     name: 'Pro',
@@ -44,6 +45,7 @@ export const TIERS = {
     maxTasks: -1, // unlimited
     canInviteGuests: true,
     maxGuests: 5,
+    trialDays: 0,
   },
   
   // Cloud product tiers
