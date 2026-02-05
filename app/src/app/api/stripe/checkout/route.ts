@@ -43,14 +43,6 @@ async function createCheckoutSession(request: NextRequest) {
       )
     }
 
-    // Check if already on this exact tier
-    if (account.plan_tier === plan) {
-      return NextResponse.json(
-        { error: `You're already on the ${plan} plan` },
-        { status: 400 }
-      )
-    }
-
     // Get or create Stripe customer
     const stripe = getStripe()
     let customerId = account.stripe_customer_id
