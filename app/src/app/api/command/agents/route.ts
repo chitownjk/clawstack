@@ -26,11 +26,12 @@ export async function GET() {
     // Try new table first, fall back to old if it doesn't exist
     let agents: any[] = []
     
-    // Try account_agent_templates (new unified system)
+    // Try account_agent_templates (new unified system) - only active agents
     const { data: agentTemplates, error: templateError } = await adminClient
       .from('account_agent_templates')
       .select('*')
       .eq('account_id', account.id)
+      .eq('is_active', true)
       .order('name')
 
     if (!templateError && agentTemplates) {
