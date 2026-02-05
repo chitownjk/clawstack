@@ -115,8 +115,22 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     .eq('id', taskId);
 
   // 5. Load agent (use first assigned agent)
-  if (!task.assigned_agent_ids || task.assigned_agent_ids.length === 0) {
-    throw new Error(`Task has no agents assigned`);
+  if (!Array.isArray(task.assigned_agent_ids) || task.assigned_agent_ids.length === 0) {
+    // This shouldn't happen - worker should filter these out
+    // Post helpful comment and reset to inbox
+    await supabase.from('mc_comments').insert({
+      task_id: taskId,
+      agent_id: null,
+      content: '⚠️ This task has no agents assigned. Please assign an agent from the task menu.',
+      account_id: task.account_id
+    });
+    
+    await supabase
+      .from('mc_tasks')
+      .update({ status: 'inbox', updated_at: new Date().toISOString() })
+      .eq('id', taskId);
+    
+    return; // Don't throw, just skip execution
   }
   
   const agentId = task.assigned_agent_ids[0];
@@ -127,7 +141,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     .single();
 
   if (agentError || !agent) {
-    throw new Error(`Agent not found: ${agentId}`);
+    throw new Error(`Agent not found: ${agentId}. Please reassign this task to a valid agent.`);
   }
 
   // 6. Get Google OAuth token for tools (if available)

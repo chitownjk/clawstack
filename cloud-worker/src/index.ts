@@ -24,6 +24,7 @@ async function pollForTasks() {
 
   try {
     // Get inbox tasks and check their account's execution mode
+    // Only fetch tasks that have agents assigned (filter at DB level)
     const { data: tasks, error } = await supabase
       .from('mc_tasks')
       .select(`
@@ -33,7 +34,8 @@ async function pollForTasks() {
         accounts!inner(execution_mode)
       `)
       .eq('status', 'inbox')
-      .limit(20); // Get more than needed, filter client-side
+      .not('assigned_agent_ids', 'is', null)
+      .limit(20)
 
     if (error) {
       console.error('[Worker] Error fetching tasks:', error);
@@ -48,7 +50,13 @@ async function pollForTasks() {
     const cloudTasks = tasks.filter((task: any) => {
       const mode = task.accounts?.execution_mode;
       const isCloud = mode === 'cloud-user-keys' || mode === 'cloud-our-keys';
-      const hasAgent = task.assigned_agent_ids && task.assigned_agent_ids.length > 0;
+      const hasAgent = Array.isArray(task.assigned_agent_ids) && task.assigned_agent_ids.length > 0;
+      
+      // Debug: Log filtered-out tasks
+      if (isCloud && !hasAgent) {
+        console.log(`[Worker] Skipping task ${task.id}: no agents assigned (${JSON.stringify(task.assigned_agent_ids)})`);
+      }
+      
       return isCloud && hasAgent;
     }).slice(0, MAX_CONCURRENT - activeTasks);
 
