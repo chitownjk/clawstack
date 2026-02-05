@@ -3,7 +3,6 @@ import { cookies } from 'next/headers'
 import crypto from 'crypto'
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
-const GOOGLE_REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL + '/api/auth/google/callback'
 
 // Scopes needed for calendar and email
 const SCOPES = [
@@ -14,7 +13,11 @@ const SCOPES = [
   'https://www.googleapis.com/auth/gmail.modify',
 ].join(' ')
 
-export async function GET() {
+export async function GET(request: Request) {
+  // Get the origin from the request URL
+  const { origin } = new URL(request.url)
+  const redirectUri = origin + '/api/auth/google/callback'
+
   // Generate state token for CSRF protection
   const state = crypto.randomBytes(32).toString('hex')
 
@@ -31,7 +34,7 @@ export async function GET() {
   // Build Google OAuth URL
   const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
   authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID)
-  authUrl.searchParams.set('redirect_uri', GOOGLE_REDIRECT_URI)
+  authUrl.searchParams.set('redirect_uri', redirectUri)
   authUrl.searchParams.set('response_type', 'code')
   authUrl.searchParams.set('scope', SCOPES)
   authUrl.searchParams.set('access_type', 'offline') // Get refresh token
