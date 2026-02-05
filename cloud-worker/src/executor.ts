@@ -346,7 +346,10 @@ async function callModel(options: {
         toolResult = await executeTool(
           toolUseBlock.name,
           toolUseBlock.input,
-          googleAccessToken!
+          googleAccessToken!,
+          supabase,
+          taskId,
+          account.id
         );
       } catch (error) {
         toolResult = `Error executing tool: ${error instanceof Error ? error.message : 'Unknown error'}`;
