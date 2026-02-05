@@ -46,7 +46,7 @@ async function checkAccountTasks(accountId: string) {
         accounts!inner(execution_mode)
       `)
       .eq('account_id', accountId)
-      .in('status', ['inbox', 'assigned'])
+      .in('status', ['inbox', 'assigned', 'review'])
       .not('assigned_agent_ids', 'is', null)
       .limit(10);
 
@@ -83,7 +83,7 @@ async function checkAccountTasks(accountId: string) {
           updated_at: new Date().toISOString()
         })
         .eq('id', task.id)
-        .in('status', ['inbox', 'assigned'])
+        .in('status', ['inbox', 'assigned', 'review'])
         .select();
 
       if (updateError || !claimed || claimed.length === 0) {
@@ -114,7 +114,7 @@ async function pollAllAccounts() {
         assigned_agent_ids,
         accounts!inner(execution_mode)
       `)
-      .in('status', ['inbox', 'assigned'])
+      .in('status', ['inbox', 'assigned', 'review'])
       .not('assigned_agent_ids', 'is', null)
       .limit(20);
 
