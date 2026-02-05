@@ -568,6 +568,109 @@ export default async function LandingPage() {
                 </div>
               </div>
 
+              {/* Feature Comparison */}
+              <div className="mt-16">
+                <h3 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mb-8 text-center">
+                  Feature Comparison
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-neutral-200 dark:border-neutral-800">
+                        <th className="text-left p-4 font-semibold">Feature</th>
+                        <th className="text-center p-4 font-semibold">Free<br />(No AI)</th>
+                        <th className="text-center p-4 font-semibold bg-blue-50 dark:bg-blue-950/20">Free<br />(BYOK)</th>
+                        <th className="text-center p-4 font-semibold">Solo</th>
+                        <th className="text-center p-4 font-semibold">Developer</th>
+                        <th className="text-center p-4 font-semibold">Team</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-neutral-600 dark:text-neutral-400">
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Manual tasks</td>
+                        <td className="text-center p-4">∞</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">∞</td>
+                        <td className="text-center p-4">∞</td>
+                        <td className="text-center p-4">∞</td>
+                        <td className="text-center p-4">∞</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4 font-medium">AI tasks per month</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 font-semibold">∞</td>
+                        <td className="text-center p-4 font-semibold">100</td>
+                        <td className="text-center p-4 font-semibold">400</td>
+                        <td className="text-center p-4 font-semibold">1,000</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Gmail & Calendar tools</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">✓</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Available models</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 text-xs">Your keys</td>
+                        <td className="text-center p-4 text-xs">Haiku<br/>Sonnet<br/>Kimi</td>
+                        <td className="text-center p-4 text-xs">All models<br/>+ Opus<br/>+ GPT-4</td>
+                        <td className="text-center p-4 text-xs">All models</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">API access</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Webhooks</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Custom agents</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Team members</td>
+                        <td className="text-center p-4">1</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">1</td>
+                        <td className="text-center p-4">1</td>
+                        <td className="text-center p-4">1</td>
+                        <td className="text-center p-4 font-semibold">10</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Shared boards</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr>
+                        <td className="p-4">Support</td>
+                        <td className="text-center p-4 text-xs">Community</td>
+                        <td className="text-center p-4 text-xs bg-blue-50 dark:bg-blue-950/20">Community</td>
+                        <td className="text-center p-4 text-xs">Email</td>
+                        <td className="text-center p-4 text-xs">Priority</td>
+                        <td className="text-center p-4 text-xs">Priority<br/>+ Chat</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
               {/* Switch anytime callout */}
               <div className="mt-12 p-6 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-center">
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
