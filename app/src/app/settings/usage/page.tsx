@@ -153,7 +153,7 @@ export default function UsagePage() {
                   )}
                 </div>
                 <Link
-                  href="/#pricing"
+                  href="/pricing"
                   className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm"
                 >
                   Change Plan
