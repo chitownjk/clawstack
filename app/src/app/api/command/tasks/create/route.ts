@@ -153,36 +153,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
     }
 
-    // Check execution mode and enqueue if cloud
-    const { data: accountWithMode } = await adminClient
-      .from('accounts')
-      .select('execution_mode')
-      .eq('id', account.id)
-      .single()
-
-    const executionMode = accountWithMode?.execution_mode || 'openclaw'
-
-    // If cloud execution, enqueue the task
-    if (executionMode === 'cloud-user-keys' || executionMode === 'cloud-our-keys') {
-      try {
-        // Enqueue task to cloud worker
-        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/tasks/enqueue`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ taskId: task.id })
-        })
-
-        // Update status to executing
-        await adminClient
-          .from('mc_tasks')
-          .update({ status: 'executing' })
-          .eq('id', task.id)
-      } catch (enqueueError) {
-        console.error('Error enqueueing task:', enqueueError)
-        // Don't fail the task creation, just log it
-      }
-    }
-
+    // Cloud execution: Worker polls database for tasks with status="inbox"
+    // and execution_mode starting with "cloud-". No enqueue needed.
+    
     // Return with decrypted fields for immediate use
     return NextResponse.json({
       ...task,

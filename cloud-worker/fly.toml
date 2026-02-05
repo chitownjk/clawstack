@@ -15,7 +15,7 @@ primary_region = 'sjc'
 [processes]
   app = 'npm start'
 
-# No HTTP service needed - this is a background worker that processes tasks from Redis
+# No HTTP service needed - this is a background worker that polls Supabase for tasks
 
 [[vm]]
   cpu_kind = 'shared'

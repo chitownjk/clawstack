@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { isCloudMode } from '@/lib/product-mode';
+import { createClient } from '@/lib/supabase';
+import { isCloudMode } from '../../../lib/product-mode';
 
 type ExecutionMode = 'openclaw' | 'cloud-user-keys' | 'cloud-our-keys';
 
