@@ -134,7 +134,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
   const prompt = buildPrompt(task, agent);
 
   // 6. Call model (with tools if Google token available)
-  const result = await callModel({
+  const { result, tokensIn, tokensOut, model, cost } = await callModel({
     prompt,
     modelTier: agent.model_tier,
     account,
@@ -143,7 +143,29 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     taskId: task.id,
   });
 
-  // 6. Post result as comment
+  // 7. Track usage (for paid tiers)
+  if (account.execution_mode === 'cloud-our-keys') {
+    // Update task with usage stats
+    await supabase
+      .from('mc_tasks')
+      .update({
+        tokens_in: tokensIn,
+        tokens_out: tokensOut,
+        model_used: model,
+        cost_usd: cost,
+      })
+      .eq('id', taskId);
+
+    // Increment monthly usage
+    await supabase.rpc('increment_task_usage', {
+      account_uuid: account.id,
+      tokens_input: tokensIn,
+      tokens_output: tokensOut,
+      cost,
+    });
+  }
+
+  // 8. Post result as comment
   await supabase.from('mc_comments').insert({
     task_id: taskId,
     agent_id: task.account_agent_id,
@@ -151,7 +173,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     created_at: new Date().toISOString(),
   });
 
-  // 7. Update task status
+  // 9. Update task status
   await supabase
     .from('mc_tasks')
     .update({
@@ -187,7 +209,13 @@ async function callModel(options: {
   googleAccessToken?: string;
   supabase: SupabaseClient;
   taskId: string;
-}): Promise<string> {
+}): Promise<{
+  result: string;
+  tokensIn: number;
+  tokensOut: number;
+  model: string;
+  cost: number;
+}> {
   const { prompt, modelTier, account, googleAccessToken, supabase, taskId } = options;
 
   // Determine which model to use based on tier
@@ -295,40 +323,33 @@ async function callModel(options: {
     throw new Error('Unexpected response format from Anthropic');
   }
 
-  // Track usage if using our keys
-  if (account.execution_mode === 'cloud-our-keys') {
-    await trackUsage({
-      accountId: account.id,
-      model,
-      provider: 'anthropic',
-      tokensIn: totalTokensIn,
-      tokensOut: totalTokensOut,
-    });
-  }
+  // Calculate cost based on model
+  const cost = calculateCost(model, totalTokensIn, totalTokensOut);
 
-  return finalResponse || 'Task completed (no text response from agent)';
+  return {
+    result: finalResponse || 'Task completed (no text response from agent)',
+    tokensIn: totalTokensIn,
+    tokensOut: totalTokensOut,
+    model,
+    cost,
+  };
 }
 
-async function trackUsage(data: {
-  accountId: string;
-  model: string;
-  provider: string;
-  tokensIn: number;
-  tokensOut: number;
-}) {
-  // TODO: Calculate cost based on model pricing
-  const costPer1kIn = 0.003; // Example pricing
-  const costPer1kOut = 0.015;
+function calculateCost(model: string, tokensIn: number, tokensOut: number): number {
+  // Pricing per 1M tokens
+  const pricing: Record<string, { in: number; out: number }> = {
+    'claude-3-5-sonnet-20241022': { in: 3, out: 15 },
+    'claude-3-5-haiku-20241022': { in: 0.25, out: 1.25 },
+    'claude-opus-4.5': { in: 15, out: 75 },
+    'claude-3-7-sonnet-20250219': { in: 15, out: 75 },
+    'kimi-k2.5': { in: 0.3, out: 0.3 },
+    'gpt-4-turbo': { in: 10, out: 30 },
+  };
 
-  const cost =
-    (data.tokensIn / 1000) * costPer1kIn +
-    (data.tokensOut / 1000) * costPer1kOut;
-
-  // TODO: Insert into model_usage table
-  console.log('[Usage]', {
-    account: data.accountId,
-    model: data.model,
-    tokens: data.tokensIn + data.tokensOut,
-    cost: `$${cost.toFixed(4)}`,
-  });
+  const rates = pricing[model] || pricing['claude-3-5-sonnet-20241022'];
+  
+  const costIn = (tokensIn / 1_000_000) * rates.in;
+  const costOut = (tokensOut / 1_000_000) * rates.out;
+  
+  return costIn + costOut;
 }
