@@ -89,6 +89,16 @@ export async function sendEmail(
     throw new Error('No valid Google OAuth token. Please reconnect Google in Settings.');
   }
 
+  // Fetch email signature
+  const { data: account } = await supabase
+    .from('accounts')
+    .select('email_signature')
+    .eq('id', accountId)
+    .single();
+
+  const signature = account?.email_signature || '\n\n---\nSent by my Tiker assistant';
+  const bodyWithSignature = args.body + signature;
+
   // Build email in RFC 2822 format
   const lines = [
     `To: ${args.to}`,
@@ -97,7 +107,7 @@ export async function sendEmail(
     `Subject: ${args.subject}`,
     'Content-Type: text/plain; charset=utf-8',
     '',
-    args.body,
+    bodyWithSignature,
   ].filter(Boolean);
 
   const email = lines.join('\r\n');
