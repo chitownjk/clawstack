@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import { isCloudMode } from '@/lib/product-mode';
+import SettingsNav from '@/components/SettingsNav';
 
 type ExecutionMode = 'openclaw' | 'cloud-user-keys' | 'cloud-our-keys';
 
@@ -140,13 +141,21 @@ export default function ExecutionSettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">Execution Settings</h1>
-        <p className="text-gray-600 mt-2">
-          Choose how your agents execute tasks
-        </p>
-      </div>
+    <main className="min-h-screen">
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+          Settings
+        </h1>
+        
+        <SettingsNav />
+
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">Execution Settings</h2>
+            <p className="text-neutral-600 dark:text-neutral-400 mt-2">
+              Choose how your agents execute tasks
+            </p>
+          </div>
 
       {/* Execution Mode Selection */}
       <div className="space-y-4">
@@ -360,6 +369,8 @@ export default function ExecutionSettingsPage() {
           {saving ? 'Saving...' : 'Save Settings'}
         </button>
       </div>
-    </div>
+        </div>
+      </div>
+    </main>
   );
 }

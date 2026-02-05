@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
+import SettingsNav from '@/components/SettingsNav';
 
 export default function UsagePage() {
   const [loading, setLoading] = useState(true);
@@ -68,7 +69,7 @@ export default function UsagePage() {
             You're on a free plan with unlimited tasks (fair use applies).
           </p>
           <Link
-            href="/pricing"
+            href="/#pricing"
             className="inline-block mt-4 text-blue-600 dark:text-blue-400 hover:underline"
           >
             View paid plans →
@@ -96,13 +97,21 @@ export default function UsagePage() {
   });
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Usage This Month</h1>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-          Track your task usage and costs
-        </p>
-      </div>
+    <main className="min-h-screen">
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+          Settings
+        </h1>
+        
+        <SettingsNav />
+
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">Usage This Month</h2>
+            <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+              Track your task usage and costs
+            </p>
+          </div>
 
       {/* Main Usage Card */}
       <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
@@ -150,7 +159,7 @@ export default function UsagePage() {
             </p>
             <div className="flex gap-2">
               <Link
-                href="/pricing"
+                href="/#pricing"
                 className="inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
               >
                 Upgrade Plan
@@ -175,7 +184,7 @@ export default function UsagePage() {
               Consider upgrading for more capacity.
             </p>
             <Link
-              href="/pricing"
+              href="/#pricing"
               className="inline-block mt-2 text-yellow-700 dark:text-yellow-300 hover:underline text-sm"
             >
               View upgrade options →
@@ -251,6 +260,8 @@ export default function UsagePage() {
           </Link>
         </div>
       )}
-    </div>
+        </div>
+      </div>
+    </main>
   );
 }
