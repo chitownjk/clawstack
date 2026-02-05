@@ -493,8 +493,8 @@ export default async function LandingPage() {
                       All views & features
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-blue-600 mt-0.5">$</span>
-                      You pay ~$0.06/task to provider
+                      <span className="text-blue-600 mt-0.5">💳</span>
+                      You handle AI billing directly
                     </li>
                   </ul>
                   <a
