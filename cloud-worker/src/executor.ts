@@ -216,8 +216,8 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     // Continue without tools
   }
 
-  // 5. Build prompt
-  const prompt = buildPrompt(task, agent);
+  // 5. Build prompt (including comment history)
+  const prompt = await buildPrompt(task, agent, supabase);
 
   // 6. Call model (with tools if Google token available)
   const { result, tokensIn, tokensOut, model, cost } = await callModel({
@@ -331,7 +331,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     .eq('id', taskId);
 }
 
-function buildPrompt(task: Task, agent: Agent): string {
+async function buildPrompt(task: Task, agent: Agent, supabase: SupabaseClient): Promise<string> {
   let prompt = '';
 
   // Add agent personality if set
@@ -345,6 +345,23 @@ function buildPrompt(task: Task, agent: Agent): string {
   prompt += `Task: ${task.title}\n`;
   if (task.description && task.description !== task.title) {
     prompt += `\nDetails: ${task.description}\n`;
+  }
+
+  // Load and add comment history (for context on review/ongoing tasks)
+  const { data: comments } = await supabase
+    .from('mc_comments')
+    .select('content, created_at, agent_name')
+    .eq('task_id', task.id)
+    .order('created_at', { ascending: true });
+
+  if (comments && comments.length > 0) {
+    prompt += `\n\n## Previous Discussion:\n`;
+    comments.forEach((comment) => {
+      const author = comment.agent_name || 'User';
+      const timestamp = new Date(comment.created_at).toLocaleString();
+      prompt += `\n[${timestamp}] ${author}:\n${comment.content}\n`;
+    });
+    prompt += `\n## Your Response:\n`;
   }
 
   return prompt;
