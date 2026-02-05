@@ -157,15 +157,16 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     throw new Error(`Agent not found: ${agentId}. Please reassign this task to a valid agent.`);
   }
 
-  // 6. Get Google OAuth token and AgentMail credentials for tools
+  // 6. Get OAuth tokens and credentials for tools
   let googleAccessToken: string | undefined;
   let agentmailApiKey: string | undefined;
+  let githubToken: string | undefined;
   
   try {
-    // Check if account has google_tokens and agentmail_credentials
+    // Check if account has credentials
     const { data: refreshedAccount } = await supabase
       .from('accounts')
-      .select('google_tokens, agentmail_credentials')
+      .select('google_tokens, agentmail_credentials, github_tokens')
       .eq('id', task.account_id)
       .single();
 
@@ -173,6 +174,12 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     if (refreshedAccount?.agentmail_credentials) {
       agentmailApiKey = refreshedAccount.agentmail_credentials.api_key;
       console.log('[Executor] AgentMail credentials found');
+    }
+
+    // Get GitHub token if available
+    if (refreshedAccount?.github_tokens) {
+      githubToken = refreshedAccount.github_tokens.access_token;
+      console.log('[Executor] GitHub token found');
     }
 
     if (refreshedAccount?.google_tokens) {
@@ -535,7 +542,8 @@ async function callModel(options: {
             supabase,
             taskId,
             account.id,
-            agentmailApiKey
+            agentmailApiKey,
+            githubToken
           );
           console.log(`[Executor] Tool result: ${toolResult.substring(0, 200)}`);
         } catch (error) {

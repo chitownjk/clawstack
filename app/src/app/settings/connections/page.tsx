@@ -62,8 +62,9 @@ const CONNECTIONS: Connection[] = [
     name: 'GitHub',
     description: 'Manage repos, issues, PRs, and code reviews',
     icon: '🐙',
-    scopes: ['repo', 'user', 'workflow'],
-    comingSoon: true,
+    scopes: ['repo', 'user', 'read:org'],
+    comingSoon: false,
+    connectUrl: '/api/auth/github/initiate',
   },
   {
     id: 'linear',
@@ -102,6 +103,7 @@ const CONNECTIONS: Connection[] = [
 export default function ConnectionsPage() {
   const [connecting, setConnecting] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
   const [agentmailConnected, setAgentmailConnected] = useState<boolean | null>(null);
   const [showAgentmailModal, setShowAgentmailModal] = useState(false);
   const [agentmailApiKey, setAgentmailApiKey] = useState('');
@@ -110,14 +112,18 @@ export default function ConnectionsPage() {
 
   useEffect(() => {
     checkGoogleConnection();
+    checkGithubConnection();
     checkAgentmailConnection();
     
     // Check if redirected back from OAuth
     const params = new URLSearchParams(window.location.search);
     if (params.get('google_connected') === 'true') {
-      // Remove query param and refresh connection status
       window.history.replaceState({}, '', '/settings/connections');
       setTimeout(() => checkGoogleConnection(), 500);
+    }
+    if (params.get('github_connected') === 'true') {
+      window.history.replaceState({}, '', '/settings/connections');
+      setTimeout(() => checkGithubConnection(), 500);
     }
   }, []);
 
@@ -158,6 +164,17 @@ export default function ConnectionsPage() {
     }
   };
 
+  const checkGithubConnection = async () => {
+    try {
+      const response = await fetch('/api/auth/github/status');
+      const data = await response.json();
+      setGithubConnected(data.connected);
+    } catch (error) {
+      console.error('Error checking GitHub:', error);
+      setGithubConnected(false);
+    }
+  };
+
   const handleConnect = async (connection: Connection) => {
     if (connection.comingSoon) {
       alert('Coming soon!');
@@ -165,13 +182,16 @@ export default function ConnectionsPage() {
     }
 
     if (connection.id === 'google' && connection.connectUrl) {
-      // Redirect to Google OAuth
+      window.location.href = connection.connectUrl;
+      return;
+    }
+
+    if (connection.id === 'github' && connection.connectUrl) {
       window.location.href = connection.connectUrl;
       return;
     }
 
     if (connection.id === 'agentmail') {
-      // Show AgentMail modal
       setShowAgentmailModal(true);
       return;
     }
@@ -217,7 +237,7 @@ export default function ConnectionsPage() {
 
   const handleDisconnect = async (connectionId: string) => {
     if (connectionId === 'google') {
-      if (!confirm('Disconnect Google? Agents will lose access to Gmail and Calendar.')) {
+      if (!confirm('Disconnect Google? Agents will lose access to Gmail, Calendar, and Drive.')) {
         return;
       }
 
@@ -229,6 +249,28 @@ export default function ConnectionsPage() {
         if (response.ok) {
           setGoogleConnected(false);
           alert('Google disconnected');
+        } else {
+          alert('Failed to disconnect');
+        }
+      } catch (error) {
+        console.error('Disconnect error:', error);
+        alert('Error disconnecting');
+      }
+    }
+
+    if (connectionId === 'github') {
+      if (!confirm('Disconnect GitHub? Agents will lose access to repositories.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/github/disconnect', {
+          method: 'POST',
+        });
+
+        if (response.ok) {
+          setGithubConnected(false);
+          alert('GitHub disconnected');
         } else {
           alert('Failed to disconnect');
         }
@@ -282,6 +324,7 @@ export default function ConnectionsPage() {
       <div className="space-y-4">
         {CONNECTIONS.map((connection) => {
           const isConnected = connection.id === 'google' ? googleConnected : 
+                             connection.id === 'github' ? githubConnected :
                              connection.id === 'agentmail' ? agentmailConnected :
                              connection.connected;
           

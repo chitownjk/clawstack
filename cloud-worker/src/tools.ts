@@ -225,6 +225,158 @@ export const TOOLS = [
     },
   },
   {
+    name: 'github_list_repos',
+    description: 'List GitHub repositories the user has access to',
+    input_schema: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          description: 'Filter by type: all, owner, member. Default: all',
+        },
+        sort: {
+          type: 'string',
+          description: 'Sort by: created, updated, pushed, full_name. Default: updated',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum results (default: 20)',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'github_list_issues',
+    description: 'List issues in a GitHub repository',
+    input_schema: {
+      type: 'object',
+      properties: {
+        owner: {
+          type: 'string',
+          description: 'Repository owner (username or org)',
+        },
+        repo: {
+          type: 'string',
+          description: 'Repository name',
+        },
+        state: {
+          type: 'string',
+          description: 'Filter by state: open, closed, all. Default: open',
+        },
+        labels: {
+          type: 'string',
+          description: 'Comma-separated list of label names to filter by',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum results (default: 20)',
+        },
+      },
+      required: ['owner', 'repo'],
+    },
+  },
+  {
+    name: 'github_create_issue',
+    description: 'Create a new issue in a GitHub repository',
+    input_schema: {
+      type: 'object',
+      properties: {
+        owner: {
+          type: 'string',
+          description: 'Repository owner (username or org)',
+        },
+        repo: {
+          type: 'string',
+          description: 'Repository name',
+        },
+        title: {
+          type: 'string',
+          description: 'Issue title',
+        },
+        body: {
+          type: 'string',
+          description: 'Issue body/description (supports Markdown)',
+        },
+        labels: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Labels to apply to the issue',
+        },
+        assignees: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'GitHub usernames to assign',
+        },
+      },
+      required: ['owner', 'repo', 'title'],
+    },
+  },
+  {
+    name: 'github_list_pull_requests',
+    description: 'List pull requests in a GitHub repository',
+    input_schema: {
+      type: 'object',
+      properties: {
+        owner: {
+          type: 'string',
+          description: 'Repository owner (username or org)',
+        },
+        repo: {
+          type: 'string',
+          description: 'Repository name',
+        },
+        state: {
+          type: 'string',
+          description: 'Filter by state: open, closed, all. Default: open',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum results (default: 20)',
+        },
+      },
+      required: ['owner', 'repo'],
+    },
+  },
+  {
+    name: 'github_create_pull_request',
+    description: 'Create a new pull request in a GitHub repository',
+    input_schema: {
+      type: 'object',
+      properties: {
+        owner: {
+          type: 'string',
+          description: 'Repository owner (username or org)',
+        },
+        repo: {
+          type: 'string',
+          description: 'Repository name',
+        },
+        title: {
+          type: 'string',
+          description: 'PR title',
+        },
+        body: {
+          type: 'string',
+          description: 'PR description (supports Markdown)',
+        },
+        head: {
+          type: 'string',
+          description: 'Branch containing changes (e.g., "feature-branch")',
+        },
+        base: {
+          type: 'string',
+          description: 'Branch to merge into (e.g., "main")',
+        },
+        draft: {
+          type: 'boolean',
+          description: 'Create as draft PR',
+        },
+      },
+      required: ['owner', 'repo', 'title', 'head', 'base'],
+    },
+  },
+  {
     name: 'save_file',
     description: 'Save content to a file attached to the current task. Use for outputs that are too large for comments (reports, code, data, images). File will be accessible to the user in their Files section.',
     input_schema: {
@@ -298,7 +450,8 @@ export async function executeTool(
   supabase?: any,
   taskId?: string,
   accountId?: string,
-  agentmailApiKey?: string
+  agentmailApiKey?: string,
+  githubToken?: string
 ): Promise<string> {
   const auth = new google.auth.OAuth2();
   auth.setCredentials({ access_token: googleAccessToken });
@@ -324,6 +477,26 @@ export async function executeTool(
 
     case 'drive_read_document':
       return await driveReadDocument(params, auth);
+
+    case 'github_list_repos':
+      if (!githubToken) throw new Error('GitHub not connected');
+      return await githubListRepos(params, githubToken);
+
+    case 'github_list_issues':
+      if (!githubToken) throw new Error('GitHub not connected');
+      return await githubListIssues(params, githubToken);
+
+    case 'github_create_issue':
+      if (!githubToken) throw new Error('GitHub not connected');
+      return await githubCreateIssue(params, githubToken);
+
+    case 'github_list_pull_requests':
+      if (!githubToken) throw new Error('GitHub not connected');
+      return await githubListPRs(params, githubToken);
+
+    case 'github_create_pull_request':
+      if (!githubToken) throw new Error('GitHub not connected');
+      return await githubCreatePR(params, githubToken);
 
     case 'agentmail_send':
       if (!agentmailApiKey) throw new Error('AgentMail not connected');
@@ -997,5 +1170,179 @@ async function driveReadDocument(params: { fileId: string; format?: string }, au
     return `📄 ${name}\n\n${preview}${truncated}`;
   } catch (error: any) {
     return `❌ Failed to read document: ${error.message}`;
+  }
+}
+
+/**
+ * GitHub: List repositories
+ */
+async function githubListRepos(params: { type?: string; sort?: string; limit?: number }, token: string): Promise<string> {
+  try {
+    const url = new URL('https://api.github.com/user/repos');
+    url.searchParams.set('type', params.type || 'all');
+    url.searchParams.set('sort', params.sort || 'updated');
+    url.searchParams.set('per_page', String(params.limit || 20));
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.statusText}`);
+    }
+
+    const repos = await response.json();
+    if (!repos || repos.length === 0) {
+      return 'No repositories found';
+    }
+
+    const formatted = repos.map((r: any) => 
+      `${r.private ? '🔒' : '🌐'} ${r.full_name}\n   ${r.description || 'No description'} | ⭐ ${r.stargazers_count} | Updated: ${new Date(r.updated_at).toLocaleDateString()}`
+    ).join('\n\n');
+
+    return `Found ${repos.length} repository(ies):\n\n${formatted}`;
+  } catch (error: any) {
+    return `❌ Failed to list repos: ${error.message}`;
+  }
+}
+
+/**
+ * GitHub: List issues
+ */
+async function githubListIssues(params: { owner: string; repo: string; state?: string; labels?: string; limit?: number }, token: string): Promise<string> {
+  try {
+    const url = new URL(`https://api.github.com/repos/${params.owner}/${params.repo}/issues`);
+    url.searchParams.set('state', params.state || 'open');
+    url.searchParams.set('per_page', String(params.limit || 20));
+    if (params.labels) {
+      url.searchParams.set('labels', params.labels);
+    }
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.statusText}`);
+    }
+
+    const issues = await response.json();
+    if (!issues || issues.length === 0) {
+      return `No ${params.state || 'open'} issues found in ${params.owner}/${params.repo}`;
+    }
+
+    const formatted = issues.map((i: any) => 
+      `#${i.number}: ${i.title}\n   State: ${i.state} | Created: ${new Date(i.created_at).toLocaleDateString()} | Comments: ${i.comments}\n   ${i.html_link || i.html_url}`
+    ).join('\n\n');
+
+    return `Found ${issues.length} issue(s) in ${params.owner}/${params.repo}:\n\n${formatted}`;
+  } catch (error: any) {
+    return `❌ Failed to list issues: ${error.message}`;
+  }
+}
+
+/**
+ * GitHub: Create issue
+ */
+async function githubCreateIssue(params: { owner: string; repo: string; title: string; body?: string; labels?: string[]; assignees?: string[] }, token: string): Promise<string> {
+  try {
+    const response = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/issues`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: params.title,
+        body: params.body,
+        labels: params.labels,
+        assignees: params.assignees,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`GitHub API error: ${errorData}`);
+    }
+
+    const issue = await response.json();
+    return `✅ Issue created: #${issue.number} ${issue.title}\n   ${issue.html_url}`;
+  } catch (error: any) {
+    return `❌ Failed to create issue: ${error.message}`;
+  }
+}
+
+/**
+ * GitHub: List pull requests
+ */
+async function githubListPRs(params: { owner: string; repo: string; state?: string; limit?: number }, token: string): Promise<string> {
+  try {
+    const url = new URL(`https://api.github.com/repos/${params.owner}/${params.repo}/pulls`);
+    url.searchParams.set('state', params.state || 'open');
+    url.searchParams.set('per_page', String(params.limit || 20));
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.statusText}`);
+    }
+
+    const prs = await response.json();
+    if (!prs || prs.length === 0) {
+      return `No ${params.state || 'open'} PRs found in ${params.owner}/${params.repo}`;
+    }
+
+    const formatted = prs.map((pr: any) => 
+      `#${pr.number}: ${pr.title}\n   By: @${pr.user.login} | State: ${pr.state} | Created: ${new Date(pr.created_at).toLocaleDateString()}\n   ${pr.html_url}`
+    ).join('\n\n');
+
+    return `Found ${prs.length} PR(s) in ${params.owner}/${params.repo}:\n\n${formatted}`;
+  } catch (error: any) {
+    return `❌ Failed to list PRs: ${error.message}`;
+  }
+}
+
+/**
+ * GitHub: Create pull request
+ */
+async function githubCreatePR(params: { owner: string; repo: string; title: string; body?: string; head: string; base: string; draft?: boolean }, token: string): Promise<string> {
+  try {
+    const response = await fetch(`https://api.github.com/repos/${params.owner}/${params.repo}/pulls`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: params.title,
+        body: params.body,
+        head: params.head,
+        base: params.base,
+        draft: params.draft || false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`GitHub API error: ${errorData}`);
+    }
+
+    const pr = await response.json();
+    return `✅ Pull request created: #${pr.number} ${pr.title}\n   ${pr.html_url}`;
+  } catch (error: any) {
+    return `❌ Failed to create PR: ${error.message}`;
   }
 }
