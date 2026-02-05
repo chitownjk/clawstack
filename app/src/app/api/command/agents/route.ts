@@ -23,31 +23,46 @@ export async function GET() {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 })
     }
 
-    // Unified: All users fetch from account_agent_templates
-    const { data: agentTemplates, error } = await adminClient
+    // Try new table first, fall back to old if it doesn't exist
+    let agents: any[] = []
+    
+    // Try account_agent_templates (new unified system)
+    const { data: agentTemplates, error: templateError } = await adminClient
       .from('account_agent_templates')
       .select('*')
       .eq('account_id', account.id)
       .order('name')
 
-    if (error) {
-      console.error('Error fetching agent templates:', error)
-      return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
-    }
+    if (!templateError && agentTemplates) {
+      // New system working
+      agents = agentTemplates.map((template: any) => ({
+        id: template.id,
+        name: template.name,
+        session_key: template.agent_id,
+        role: template.personality || '',
+        level: 'specialist' as const,
+        emoji: template.emoji || '🤖',
+        status: 'idle' as const,
+        created_at: template.created_at,
+        updated_at: template.updated_at,
+        account_id: template.account_id,
+      }))
+    } else {
+      // Fall back to mc_agents (old system)
+      console.log('[Agents] Falling back to mc_agents:', templateError?.message)
+      const { data: mcAgents, error: mcError } = await adminClient
+        .from('mc_agents')
+        .select('*')
+        .eq('account_id', account.id)
+        .order('name')
 
-    // Transform to Agent format for Command UI
-    const agents = (agentTemplates || []).map((template: any) => ({
-      id: template.id,
-      name: template.name,
-      session_key: template.agent_id, // Reference to available_agents
-      role: template.personality || '',
-      level: 'specialist' as const,
-      emoji: template.emoji || '🤖',
-      status: 'idle' as const,
-      created_at: template.created_at,
-      updated_at: template.updated_at,
-      account_id: template.account_id,
-    }))
+      if (mcError) {
+        console.error('Error fetching mc_agents:', mcError)
+        return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
+      }
+
+      agents = mcAgents || []
+    }
 
     return NextResponse.json(agents)
   } catch (error) {
