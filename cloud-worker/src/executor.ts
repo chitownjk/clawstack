@@ -67,6 +67,11 @@ interface Account {
     anthropic?: string;
     openai?: string;
   } | null;
+  features?: {
+    models?: string[];
+    task_limit?: number;
+  } | null;
+  plan_tier?: string;
 }
 
 export async function executeTask(taskId: string, supabase: SupabaseClient) {
