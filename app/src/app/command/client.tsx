@@ -20,8 +20,10 @@ const COLUMNS: { status: TaskStatus; title: string }[] = [
   { status: 'inbox', title: 'Inbox' },
   { status: 'assigned', title: 'Assigned' },
   { status: 'in_progress', title: 'In Progress' },
+  { status: 'blocked', title: 'Blocked' },
   { status: 'review', title: 'Review' },
-  { status: 'done', title: 'Done' }
+  { status: 'done', title: 'Done' },
+  { status: 'error', title: 'Error' }
 ]
 
 export default function MissionControlClient() {
