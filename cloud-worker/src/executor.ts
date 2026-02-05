@@ -273,23 +273,23 @@ async function callModel(options: {
       if (availableModels.includes('opus')) {
         model = 'claude-3-7-sonnet-20250219';
       } else {
-        // Fallback to Sonnet if no Opus access
-        model = 'claude-3-5-sonnet-20241022';
+        // Fallback to Sonnet 4.5 if no Opus access
+        model = 'claude-sonnet-4-20250514';
       }
     } else {
       // Standard tier - use Kimi if available (much cheaper)
-      // Otherwise use Sonnet
+      // Otherwise use Sonnet 4.5
       if (availableModels.includes('kimi')) {
         model = 'kimi-k2.5'; // 10x cheaper than Sonnet
       } else {
-        model = 'claude-3-5-sonnet-20241022';
+        model = 'claude-sonnet-4-20250514';
       }
     }
   } else {
     // BYOK mode - use what agent specifies
     const modelMap = {
       fast: 'claude-3-5-haiku-20241022',
-      standard: 'claude-3-5-sonnet-20241022',
+      standard: 'claude-sonnet-4-20250514',
       reasoning: 'claude-3-7-sonnet-20250219',
     };
     model = modelMap[modelTier] || modelMap.standard;
@@ -479,6 +479,7 @@ function calculateCost(model: string, tokensIn: number, tokensOut: number): numb
   // Pricing per 1M tokens
   const pricing: Record<string, { in: number; out: number }> = {
     'claude-3-5-sonnet-20241022': { in: 3, out: 15 },
+    'claude-sonnet-4-20250514': { in: 3, out: 15 },
     'claude-3-5-haiku-20241022': { in: 0.25, out: 1.25 },
     'claude-opus-4.5': { in: 15, out: 75 },
     'claude-3-7-sonnet-20250219': { in: 15, out: 75 },
@@ -486,7 +487,7 @@ function calculateCost(model: string, tokensIn: number, tokensOut: number): numb
     'gpt-4-turbo': { in: 10, out: 30 },
   };
 
-  const rates = pricing[model] || pricing['claude-3-5-sonnet-20241022'];
+  const rates = pricing[model] || pricing['claude-sonnet-4-20250514'];
   
   const costIn = (tokensIn / 1_000_000) * rates.in;
   const costOut = (tokensOut / 1_000_000) * rates.out;
