@@ -175,8 +175,8 @@ export async function GET(request: Request) {
           }
         }
 
-        // New user - redirect to onboarding
-        return NextResponse.redirect(`${origin}/start`)
+        // New user - redirect to onboarding (pricing selection)
+        return NextResponse.redirect(`${origin}/onboarding`)
       }
 
       return NextResponse.redirect(`${origin}${next}`)

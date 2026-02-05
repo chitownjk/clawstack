@@ -1,338 +1,248 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
-type TechnicalLevel = 'very' | 'somewhat' | 'not';
-type ViewMode = 'board' | 'list';
-type UseCases = string[];
-
 export default function OnboardingPage() {
-  const [step, setStep] = useState(1);
-  const [technicalLevel, setTechnicalLevel] = useState<TechnicalLevel | null>(null);
-  const [useCases, setUseCases] = useState<UseCases>([]);
-  const [viewMode, setViewMode] = useState<ViewMode | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [selecting, setSelecting] = useState<string | null>(null);
   const supabase = createClient();
+  const router = useRouter();
 
-  const toggleUseCase = (useCase: string) => {
-    setUseCases(prev =>
-      prev.includes(useCase)
-        ? prev.filter(u => u !== useCase)
-        : [...prev, useCase]
-    );
-  };
+  useEffect(() => {
+    checkOnboarding();
+  }, []);
 
-  const getRecommendedTier = (): 'openclaw' | 'cloud-user-keys' | 'cloud-our-keys' => {
-    if (technicalLevel === 'very') return 'openclaw';
-    if (technicalLevel === 'somewhat') return 'cloud-user-keys';
-    return 'cloud-our-keys';
-  };
+  async function checkOnboarding() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
 
-  const completeOnboarding = async () => {
-    setLoading(true);
+    const { data: account } = await supabase
+      .from('accounts')
+      .select('onboarding_completed')
+      .eq('auth_uid', user.id)
+      .single();
+
+    if (account?.onboarding_completed) {
+      router.push('/dashboard');
+      return;
+    }
+
+    setLoading(false);
+  }
+
+  async function selectPlan(tier: 'free' | 'byok' | 'solo' | 'developer' | 'team') {
+    setSelecting(tier);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const recommendedTier = getRecommendedTier();
+      if (tier === 'free') {
+        // Set plan to free (no AI)
+        await supabase
+          .from('accounts')
+          .update({
+            plan_tier: 'free',
+            execution_mode: 'openclaw',
+            onboarding_completed: true,
+          })
+          .eq('auth_uid', user.id);
 
-      // Save onboarding data
-      await supabase
-        .from('accounts')
-        .update({
-          onboarding_completed: true,
-          onboarding_data: {
-            technical_level: technicalLevel,
-            use_cases: useCases,
-            view_mode: viewMode,
-            recommended_tier: recommendedTier,
-          },
-          ui_preferences: {
-            view: viewMode,
-          },
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
+        router.push('/dashboard');
+      } else if (tier === 'byok') {
+        // Set plan to free BYOK (cloud-user-keys)
+        await supabase
+          .from('accounts')
+          .update({
+            plan_tier: 'free',
+            execution_mode: 'cloud-user-keys',
+            onboarding_completed: true,
+          })
+          .eq('auth_uid', user.id);
 
-      // Redirect to setup based on recommendation
-      if (recommendedTier === 'openclaw') {
-        router.push('/onboarding/setup-openclaw');
-      } else if (recommendedTier === 'cloud-user-keys') {
-        router.push('/onboarding/setup-keys');
+        router.push('/dashboard');
       } else {
-        router.push('/onboarding/trial');
+        // Redirect to Stripe checkout for paid tiers
+        const response = await fetch(`/api/stripe/checkout?plan=${tier}`);
+        const { url } = await response.json();
+        
+        if (url) {
+          window.location.href = url;
+        } else {
+          alert('Failed to start checkout. Please try again.');
+          setSelecting(null);
+        }
       }
     } catch (error) {
-      console.error('Error completing onboarding:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error selecting plan:', error);
+      alert('Something went wrong. Please try again.');
+      setSelecting(null);
     }
-  };
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-neutral-500">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900 py-12 px-6">
-      <div className="max-w-3xl mx-auto">
-        {/* Progress bar */}
-        <div className="mb-12">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-neutral-600 dark:text-neutral-400">
-              Step {step} of 3
-            </span>
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center px-6 py-12">
+      <div className="max-w-5xl w-full">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+            Welcome to Tiker! 🎉
+          </h1>
+          <p className="text-lg text-neutral-600 dark:text-neutral-400">
+            Choose the plan that's right for you. You can always upgrade later.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          {/* Free (No AI) */}
+          <div className="p-6 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Free</h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Simple to-do list</p>
+            <div className="mb-6">
+              <span className="text-3xl font-bold">$0</span>
+            </div>
+            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                Unlimited manual tasks
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                All views (Kanban, list, calendar)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-neutral-400 mt-0.5">—</span>
+                <span className="text-neutral-400">No AI agents</span>
+              </li>
+            </ul>
             <button
-              onClick={() => router.push('/command')}
-              className="text-sm text-neutral-600 dark:text-neutral-400 hover:underline"
+              onClick={() => selectPlan('free')}
+              disabled={selecting !== null}
+              className="block w-full text-center px-4 py-2 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50"
             >
-              Skip →
+              {selecting === 'free' ? 'Setting up...' : 'Get Started'}
             </button>
           </div>
-          <div className="h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-600 transition-all duration-300"
-              style={{ width: `${(step / 3) * 100}%` }}
-            />
+
+          {/* Free - BYOK */}
+          <div className="p-6 bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-500 dark:border-blue-600 rounded-xl flex flex-col">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Free</h3>
+              <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Popular</span>
+            </div>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Bring your API keys</p>
+            <div className="mb-6">
+              <span className="text-3xl font-bold">$0</span>
+              <p className="text-xs text-neutral-500 mt-1">Forever</p>
+            </div>
+            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                Unlimited AI tasks (fair use)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                All features & tools
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 mt-0.5">💳</span>
+                You handle AI billing directly
+              </li>
+            </ul>
+            <button
+              onClick={() => selectPlan('byok')}
+              disabled={selecting !== null}
+              className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+            >
+              {selecting === 'byok' ? 'Setting up...' : 'Get Started Free'}
+            </button>
+          </div>
+
+          {/* Solo */}
+          <div className="p-6 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">For individuals</p>
+            <div className="mb-6">
+              <span className="text-3xl font-bold">$19</span>
+              <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
+              <p className="text-xs text-neutral-500 mt-1">100 AI tasks/month</p>
+            </div>
+            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                No key management
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                Haiku, Sonnet & Kimi
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                Email support
+              </li>
+            </ul>
+            <button
+              onClick={() => selectPlan('solo')}
+              disabled={selecting !== null}
+              className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium disabled:opacity-50"
+            >
+              {selecting === 'solo' ? 'Redirecting...' : 'Start 7-Day Trial'}
+            </button>
+          </div>
+
+          {/* Developer */}
+          <div className="p-6 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Developer</h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Power features</p>
+            <div className="mb-6">
+              <span className="text-3xl font-bold">$49</span>
+              <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
+              <p className="text-xs text-neutral-500 mt-1">400 AI tasks/month</p>
+            </div>
+            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                All models (Opus, GPT-4)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                API & webhooks
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">✓</span>
+                Priority support
+              </li>
+            </ul>
+            <button
+              onClick={() => selectPlan('developer')}
+              disabled={selecting !== null}
+              className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium disabled:opacity-50"
+            >
+              {selecting === 'developer' ? 'Redirecting...' : 'Start 7-Day Trial'}
+            </button>
           </div>
         </div>
 
-        {/* Step 1: Technical Level */}
-        {step === 1 && (
-          <div className="space-y-8">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
-                Let's find the best setup for you
-              </h1>
-              <p className="text-xl text-neutral-600 dark:text-neutral-400">
-                Just 3 quick questions to get started
-              </p>
-            </div>
-
-            <div>
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
-                How comfortable are you with technical tools?
-              </h2>
-
-              <div className="space-y-4">
-                <button
-                  onClick={() => {
-                    setTechnicalLevel('very');
-                    setStep(2);
-                  }}
-                  className={`w-full p-6 border-2 rounded-xl text-left transition ${
-                    technicalLevel === 'very'
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20'
-                      : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-400'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">💻</div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-                        Very technical
-                      </h3>
-                      <p className="text-neutral-600 dark:text-neutral-400 text-sm">
-                        I run servers, use CLIs, and have API keys ready
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setTechnicalLevel('somewhat');
-                    setStep(2);
-                  }}
-                  className={`w-full p-6 border-2 rounded-xl text-left transition ${
-                    technicalLevel === 'somewhat'
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20'
-                      : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-400'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">⚙️</div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-                        Somewhat technical
-                      </h3>
-                      <p className="text-neutral-600 dark:text-neutral-400 text-sm">
-                        I can follow setup guides and copy/paste API keys
-                      </p>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setTechnicalLevel('not');
-                    setStep(2);
-                  }}
-                  className={`w-full p-6 border-2 rounded-xl text-left transition ${
-                    technicalLevel === 'not'
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20'
-                      : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-400'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="text-4xl">✨</div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-                        Not technical
-                      </h3>
-                      <p className="text-neutral-600 dark:text-neutral-400 text-sm">
-                        I just want something that works, no setup required
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Use Cases */}
-        {step === 2 && (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
-                What do you want AI agents to help with?
-              </h2>
-              <p className="text-neutral-600 dark:text-neutral-400 mb-8">
-                Select all that apply
-              </p>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                {[
-                  { id: 'email', icon: '📧', label: 'Email & calendar management' },
-                  { id: 'research', icon: '🔍', label: 'Research & analysis' },
-                  { id: 'writing', icon: '✍️', label: 'Writing & content' },
-                  { id: 'projects', icon: '📋', label: 'Project management' },
-                  { id: 'code', icon: '💻', label: 'Software development' },
-                  { id: 'personal', icon: '✅', label: 'Personal to-dos' },
-                  { id: 'team', icon: '👥', label: 'Team coordination' },
-                  { id: 'other', icon: '🎯', label: 'Something else' },
-                ].map(useCase => (
-                  <button
-                    key={useCase.id}
-                    onClick={() => toggleUseCase(useCase.id)}
-                    className={`p-4 border-2 rounded-xl text-left transition ${
-                      useCases.includes(useCase.id)
-                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20'
-                        : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-400'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{useCase.icon}</span>
-                      <span className="text-sm font-medium">{useCase.label}</span>
-                      {useCases.includes(useCase.id) && (
-                        <span className="ml-auto text-blue-600">✓</span>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setStep(1)}
-                className="px-6 py-3 border-2 border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={() => setStep(3)}
-                disabled={useCases.length === 0}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Continue →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: View Mode */}
-        {step === 3 && (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mb-6">
-                How do you prefer to organize tasks?
-              </h2>
-
-              <div className="space-y-4">
-                <button
-                  onClick={() => setViewMode('board')}
-                  className={`w-full p-6 border-2 rounded-xl text-left transition ${
-                    viewMode === 'board'
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20'
-                      : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-400'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center gap-2">
-                        <span>📊</span>
-                        Project Board (Kanban style)
-                      </h3>
-                      <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-4">
-                        Columns for Inbox/In Progress/Done. Great for teams & projects.
-                      </p>
-                      <div className="h-32 bg-neutral-100 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-400 text-sm">
-                        [Kanban screenshot preview]
-                      </div>
-                    </div>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`w-full p-6 border-2 rounded-xl text-left transition ${
-                    viewMode === 'list'
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/20'
-                      : 'border-neutral-200 dark:border-neutral-800 hover:border-blue-400'
-                  }`}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center gap-2">
-                        <span>☰</span>
-                        Simple To-Do List
-                      </h3>
-                      <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-4">
-                        Just checkboxes, no complexity. Great for personal tasks.
-                      </p>
-                      <div className="h-32 bg-neutral-100 dark:bg-neutral-800 rounded border border-neutral-200 dark:border-neutral-700 flex items-center justify-center text-neutral-400 text-sm">
-                        [List screenshot preview]
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-4 text-center">
-                (You can change this anytime in Settings)
-              </p>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={() => setStep(2)}
-                className="px-6 py-3 border-2 border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={completeOnboarding}
-                disabled={!viewMode || loading}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Saving...' : 'Continue →'}
-              </button>
-            </div>
-          </div>
-        )}
+        <div className="text-center">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+            Need a team plan? Contact us for pricing.
+          </p>
+          <a href="/services#contact" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            Contact Sales →
+          </a>
+        </div>
       </div>
     </div>
   );
