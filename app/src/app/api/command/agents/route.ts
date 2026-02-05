@@ -23,61 +23,31 @@ export async function GET() {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 })
     }
 
-    let agents: any[] = []
+    // Unified: All users fetch from account_agent_templates
+    const { data: agentTemplates, error } = await adminClient
+      .from('account_agent_templates')
+      .select('*')
+      .eq('account_id', account.id)
+      .order('name')
 
-    // Cloud users: Fetch from available_agents (enabled agents)
-    if (account.execution_mode === 'cloud-user-keys' || account.execution_mode === 'cloud-our-keys') {
-      const { data: enabledAgents, error } = await adminClient
-        .from('account_agents')
-        .select(`
-          agent_id,
-          enabled,
-          available_agents (
-            id,
-            name,
-            description,
-            icon,
-            required_tier,
-            required_models,
-            tags
-          )
-        `)
-        .eq('account_id', account.id)
-        .eq('enabled', true)
-
-      if (error) {
-        console.error('Error fetching enabled agents:', error)
-        return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
-      }
-
-      // Transform to Agent format for Command UI
-      agents = (enabledAgents || []).map((ea: any) => ({
-        id: ea.available_agents.id,
-        name: ea.available_agents.name,
-        session_key: ea.available_agents.id, // Use agent ID as session key for cloud
-        role: ea.available_agents.description || '',
-        level: 'specialist' as const,
-        emoji: ea.available_agents.icon || '🤖',
-        status: 'idle' as const,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        account_id: account.id,
-      }))
-    } 
-    // Self-hosted users: Fetch from mc_agents (bots/skills)
-    else {
-      const { data: mcAgents, error } = await adminClient
-        .from('mc_agents')
-        .select('*')
-        .eq('account_id', account.id)
-        .order('name')
-
-      if (error) {
-        return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
-      }
-
-      agents = mcAgents || []
+    if (error) {
+      console.error('Error fetching agent templates:', error)
+      return NextResponse.json({ error: 'Failed to fetch agents' }, { status: 500 })
     }
+
+    // Transform to Agent format for Command UI
+    const agents = (agentTemplates || []).map((template: any) => ({
+      id: template.id,
+      name: template.name,
+      session_key: template.agent_id, // Reference to available_agents
+      role: template.personality || '',
+      level: 'specialist' as const,
+      emoji: template.emoji || '🤖',
+      status: 'idle' as const,
+      created_at: template.created_at,
+      updated_at: template.updated_at,
+      account_id: template.account_id,
+    }))
 
     return NextResponse.json(agents)
   } catch (error) {
