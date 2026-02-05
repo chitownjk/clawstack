@@ -334,6 +334,14 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
 async function buildPrompt(task: Task, agent: Agent, supabase: SupabaseClient): Promise<string> {
   let prompt = '';
 
+  // Add current date/time (critical for calendar/scheduling tasks)
+  const now = new Date();
+  prompt += `Current date and time: ${now.toLocaleString('en-US', { 
+    timeZone: 'America/Chicago',
+    dateStyle: 'full',
+    timeStyle: 'long'
+  })}\n\n`;
+
   // Add agent personality if set
   if (agent.personality) {
     prompt += `${agent.personality}\n\n`;
