@@ -186,7 +186,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
         });
 
         if (refreshResponse.ok) {
-          const newTokens = await refreshResponse.json();
+          const newTokens = await refreshResponse.json() as { access_token: string; expires_in: number };
           const expiresAt = now + newTokens.expires_in;
 
           // Update tokens
