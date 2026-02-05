@@ -242,8 +242,8 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
         .insert({
           account_id: task.account_id,
           task_id: taskId,
-          filename,
-          storage_path: storagePath,
+          name: filename,
+          path: storagePath,
           mime_type: 'text/markdown',
           size_bytes: new TextEncoder().encode(result).length,
         })
