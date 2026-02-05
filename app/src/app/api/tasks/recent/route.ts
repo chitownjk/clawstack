@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createRealSupabaseClient } from '@/lib/supabase-server'
 import { decrypt } from '@/lib/crypto'
 
 export async function GET() {
   try {
-    const supabase = createClient()
+    const supabase = await createRealSupabaseClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {

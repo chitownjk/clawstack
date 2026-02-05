@@ -11,6 +11,7 @@ export default function ExecutionSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState<ExecutionMode>('openclaw');
+  const [planTier, setPlanTier] = useState<string>('solo');
   const [gatewayUrl, setGatewayUrl] = useState('');
   const [gatewayToken, setGatewayToken] = useState('');
   const [anthropicKey, setAnthropicKey] = useState('');
@@ -22,6 +23,16 @@ export default function ExecutionSettingsPage() {
 
   const supabase = createClient();
   const isCloud = isCloudMode();
+
+  // Get task limit based on plan tier
+  const getTaskLimit = () => {
+    switch (planTier) {
+      case 'solo': return 100;
+      case 'developer': return 400;
+      case 'team': return 1000;
+      default: return 100;
+    }
+  };
 
   useEffect(() => {
     loadSettings();
@@ -41,6 +52,7 @@ export default function ExecutionSettingsPage() {
       if (account) {
         setMode((account.execution_mode as ExecutionMode) || 'openclaw');
         setGatewayUrl(account.gateway_url || '');
+        setPlanTier(account.plan_tier || 'solo');
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -214,7 +226,7 @@ export default function ExecutionSettingsPage() {
               <div className="ml-3">
                 <div className="font-medium">Cloud Execution - Fully Managed ($19/mo)</div>
                 <div className="text-sm text-gray-600">
-                  Everything included. 500 tasks/month, no setup required.
+                  Everything included. {getTaskLimit()} tasks/month, no setup required.
                 </div>
               </div>
             </label>
@@ -351,7 +363,7 @@ export default function ExecutionSettingsPage() {
         <div className="p-4 bg-blue-50 rounded-lg">
           <h3 className="font-semibold">Fully Managed Execution</h3>
           <p className="text-sm text-gray-600 mt-2">
-            No setup required! We handle everything. Your plan includes 500 tasks per month.
+            No setup required! We handle everything. Your plan includes {getTaskLimit()} tasks per month.
           </p>
           <a href="/pricing" className="text-blue-600 text-sm hover:underline">
             View pricing details →
