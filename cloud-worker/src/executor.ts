@@ -157,24 +157,62 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     throw new Error(`Agent not found: ${agentId}. Please reassign this task to a valid agent.`);
   }
 
-  // 6. Get Google OAuth token for tools (if available)
+  // 6. Get Google OAuth token for tools (refresh if needed)
   let googleAccessToken: string | undefined;
   try {
-    const { data: authData } = await supabase.auth.admin.getUserById(account.id);
-    if (authData?.user) {
-      // Check if user has Google provider linked
-      const googleIdentity = authData.user.identities?.find(
-        (id: any) => id.provider === 'google'
-      );
-      if (googleIdentity) {
-        // Fetch session to get provider token
-        // Note: This requires the user to have logged in recently
-        // In production, we'd need token refresh logic
-        googleAccessToken = (googleIdentity as any).access_token;
+    // Check if account has google_tokens
+    const { data: refreshedAccount } = await supabase
+      .from('accounts')
+      .select('google_tokens')
+      .eq('id', task.account_id)
+      .single();
+
+    if (refreshedAccount?.google_tokens) {
+      const tokens = refreshedAccount.google_tokens as any;
+      const now = Math.floor(Date.now() / 1000);
+
+      // Check if token needs refresh (expires in < 5 min)
+      if (tokens.expires_at < now + 300) {
+        // Refresh token
+        const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: process.env.GOOGLE_CLIENT_ID!,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+            refresh_token: tokens.refresh_token,
+            grant_type: 'refresh_token',
+          }),
+        });
+
+        if (refreshResponse.ok) {
+          const newTokens = await refreshResponse.json();
+          const expiresAt = now + newTokens.expires_in;
+
+          // Update tokens
+          await supabase
+            .from('accounts')
+            .update({
+              google_tokens: {
+                access_token: newTokens.access_token,
+                refresh_token: tokens.refresh_token,
+                expires_at: expiresAt,
+                scope: tokens.scope,
+              },
+            })
+            .eq('id', task.account_id);
+
+          googleAccessToken = newTokens.access_token;
+        } else {
+          console.log('[Executor] Token refresh failed');
+        }
+      } else {
+        // Token still valid
+        googleAccessToken = tokens.access_token;
       }
     }
   } catch (error) {
-    console.log('[Executor] Could not fetch Google token:', error);
+    console.log('[Executor] Could not fetch/refresh Google token:', error);
     // Continue without tools
   }
 
