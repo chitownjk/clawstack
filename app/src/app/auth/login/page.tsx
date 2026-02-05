@@ -18,7 +18,7 @@ export default function LoginPage() {
           access_type: 'offline',
           prompt: 'consent',
         },
-        scopes: 'email profile openid https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar',
+        scopes: 'email profile openid',
       },
     })
     if (error) {
