@@ -49,10 +49,11 @@ async function checkWriteAccess(request: Request): Promise<{ hasAccess: boolean;
     })
 
     // Cloud users (cloud-user-keys, cloud-our-keys) - 2FA optional, always have write access
+    // If execution_mode is null/undefined, treat as cloud user (safe default for OAuth users)
     const isSelfHosted = account?.execution_mode === 'openclaw'
 
     if (!isSelfHosted) {
-      console.log('[Tasks/Create] Cloud user - granting write access')
+      console.log('[Tasks/Create] Cloud user (or execution_mode not set) - granting write access')
       return { hasAccess: true, requires2FA: false }
     }
 
@@ -160,7 +161,11 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
+      console.error('[Tasks/Create] Insert error:', error)
+      return NextResponse.json({ 
+        error: 'Failed to create task',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+      }, { status: 500 })
     }
 
     // Cloud execution: Worker polls database for tasks with status="inbox"
@@ -173,7 +178,10 @@ export async function POST(request: Request) {
       description: description || null,
     })
   } catch (error) {
-    console.error('Error creating task:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[Tasks/Create] Unhandled error:', error)
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+    }, { status: 500 })
   }
 }

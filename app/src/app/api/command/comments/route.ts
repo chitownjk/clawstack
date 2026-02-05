@@ -34,6 +34,7 @@ async function checkWriteAccess(request: Request): Promise<{ hasAccess: boolean;
       .single()
 
     // Cloud users (cloud-user-keys, cloud-our-keys) - 2FA optional, always have write access
+    // If execution_mode is null/undefined, treat as cloud user (safe default for OAuth users)
     const isSelfHosted = account?.execution_mode === 'openclaw'
 
     if (!isSelfHosted) {
