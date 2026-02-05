@@ -155,7 +155,8 @@ export async function GET(request: NextRequest) {
     }
   }
   
-  // Otherwise redirect to pricing with error
+  // If already on tier or other error, redirect to usage page
   const url = new URL(request.url)
-  return NextResponse.redirect(new URL('/?error=checkout_failed', url.origin))
+  const errorParam = result.status === 400 ? 'already_subscribed' : 'checkout_failed'
+  return NextResponse.redirect(new URL(`/settings/usage?error=${errorParam}`, url.origin))
 }

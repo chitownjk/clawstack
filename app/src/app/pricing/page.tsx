@@ -40,7 +40,7 @@ export default async function PricingPage() {
           <div className="bg-white dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 rounded-xl p-8">
             <h3 className="text-2xl font-semibold mb-2">Solo</h3>
             <div className="mb-6">
-              <span className="text-4xl font-bold">$20</span>
+              <span className="text-4xl font-bold">$19</span>
               <span className="text-neutral-600 dark:text-neutral-400">/month</span>
             </div>
             <ul className="space-y-3 mb-8 text-sm">
@@ -76,7 +76,7 @@ export default async function PricingPage() {
             </div>
             <h3 className="text-2xl font-semibold mb-2">Developer</h3>
             <div className="mb-6">
-              <span className="text-4xl font-bold">$50</span>
+              <span className="text-4xl font-bold">$49</span>
               <span className="text-neutral-600 dark:text-neutral-400">/month</span>
             </div>
             <ul className="space-y-3 mb-8 text-sm">
@@ -113,7 +113,7 @@ export default async function PricingPage() {
           <div className="bg-white dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 rounded-xl p-8">
             <h3 className="text-2xl font-semibold mb-2">Team</h3>
             <div className="mb-6">
-              <span className="text-4xl font-bold">$200</span>
+              <span className="text-4xl font-bold">$99</span>
               <span className="text-neutral-600 dark:text-neutral-400">/month</span>
             </div>
             <ul className="space-y-3 mb-8 text-sm">
