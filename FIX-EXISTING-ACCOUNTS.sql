@@ -1,26 +1,52 @@
--- Fix existing accounts that don't have execution_mode set properly
--- Run this in Supabase SQL Editor AFTER running migration 008
+-- ============================================================
+-- FIX EXISTING ACCOUNTS
+-- Run this AFTER running RUN-ALL-MISSING-MIGRATIONS.sql
+-- ============================================================
 
 -- Set execution_mode for accounts that don't have it set
--- Default cloud users to 'cloud-our-keys' (paid tier)
+-- Default to 'cloud-our-keys' (paid cloud tier)
 UPDATE accounts
 SET execution_mode = 'cloud-our-keys'
 WHERE execution_mode IS NULL;
 
+-- Fix Jay's account specifically (set to team tier, cloud mode)
+UPDATE accounts
+SET 
+  execution_mode = 'cloud-our-keys',
+  plan_tier = 'team',
+  onboarding_completed = TRUE
+WHERE email = 'jklauminzer@gmail.com' OR email LIKE '%@tiker.com' OR email LIKE '%@solisinteractive.com';
+
+-- Enable all agents for team tier users
+INSERT INTO account_agents (account_id, agent_id, enabled)
+SELECT a.id, ag.id, TRUE
+FROM accounts a
+CROSS JOIN available_agents ag
+WHERE a.plan_tier = 'team'
+ON CONFLICT DO NOTHING;
+
 -- If you want to set specific accounts to different modes:
 
--- Set specific account to BYOK (replace email with actual email)
+-- Set to BYOK (replace email)
 -- UPDATE accounts
--- SET execution_mode = 'cloud-user-keys'
+-- SET execution_mode = 'cloud-user-keys', plan_tier = 'free'
 -- WHERE email = 'your-email@example.com';
 
--- Set specific account to self-hosted
+-- Set to self-hosted
 -- UPDATE accounts
--- SET execution_mode = 'openclaw'
+-- SET execution_mode = 'openclaw', plan_tier = 'free'
 -- WHERE email = 'self-hosted-user@example.com';
 
--- Verify the changes
-SELECT id, email, plan_tier, execution_mode, stripe_customer_id
+-- ============================================================
+-- VERIFY
+-- ============================================================
+
+SELECT 
+  email, 
+  plan_tier, 
+  execution_mode, 
+  onboarding_completed,
+  (SELECT COUNT(*) FROM account_agents WHERE account_id = accounts.id AND enabled = TRUE) as enabled_agents
 FROM accounts
 ORDER BY created_at DESC
 LIMIT 10;
