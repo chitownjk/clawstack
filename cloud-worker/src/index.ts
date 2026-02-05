@@ -29,6 +29,7 @@ async function pollForTasks() {
       .select(`
         id, 
         account_id,
+        assigned_agent_ids,
         accounts!inner(execution_mode)
       `)
       .eq('status', 'inbox')
@@ -43,10 +44,12 @@ async function pollForTasks() {
       return;
     }
 
-    // Filter for cloud execution modes only
+    // Filter for cloud execution modes AND tasks with agents assigned
     const cloudTasks = tasks.filter((task: any) => {
       const mode = task.accounts?.execution_mode;
-      return mode === 'cloud-user-keys' || mode === 'cloud-our-keys';
+      const isCloud = mode === 'cloud-user-keys' || mode === 'cloud-our-keys';
+      const hasAgent = task.assigned_agent_ids && task.assigned_agent_ids.length > 0;
+      return isCloud && hasAgent;
     }).slice(0, MAX_CONCURRENT - activeTasks);
 
     if (cloudTasks.length === 0) {

@@ -49,7 +49,7 @@ interface Task {
   title: string;
   description: string;
   status: string;
-  account_agent_id: string;
+  assigned_agent_ids: string[];
 }
 
 interface Agent {
@@ -114,15 +114,20 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     .update({ status: 'executing', updated_at: new Date().toISOString() })
     .eq('id', taskId);
 
-  // 5. Load agent
+  // 5. Load agent (use first assigned agent)
+  if (!task.assigned_agent_ids || task.assigned_agent_ids.length === 0) {
+    throw new Error(`Task has no agents assigned`);
+  }
+  
+  const agentId = task.assigned_agent_ids[0];
   const { data: agent, error: agentError } = await supabase
     .from('account_agent_templates')
     .select('*')
-    .eq('id', task.account_agent_id)
+    .eq('id', agentId)
     .single();
 
   if (agentError || !agent) {
-    throw new Error(`Agent not found: ${task.account_agent_id}`);
+    throw new Error(`Agent not found: ${agentId}`);
   }
 
   // 6. Get Google OAuth token for tools (if available)
