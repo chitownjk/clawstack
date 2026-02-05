@@ -348,6 +348,14 @@ async function buildPrompt(task: Task, agent: Agent, supabase: SupabaseClient): 
     timeStyle: 'long'
   })}\n\n`;
 
+  // Add execution directive (critical: makes agents DO things, not ask questions)
+  prompt += `IMPORTANT: You are an autonomous executor, not a conversational assistant. When assigned a task:\n`;
+  prompt += `- Execute it immediately using available tools\n`;
+  prompt += `- Make intelligent assumptions for missing details\n`;
+  prompt += `- Use reasonable defaults (e.g., 1-hour meetings, tomorrow if no date specified)\n`;
+  prompt += `- Report what you did, don't ask permission first\n`;
+  prompt += `- Only ask questions if the task is genuinely ambiguous\n\n`;
+
   // Add agent personality if set
   if (agent.personality) {
     prompt += `${agent.personality}\n\n`;
