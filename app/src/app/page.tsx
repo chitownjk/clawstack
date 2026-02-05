@@ -432,10 +432,50 @@ export default async function LandingPage() {
             </div>
           </section>
 
+          {/* Home Lab Setup Offer */}
+          <section className="py-16 border-b border-neutral-200 dark:border-neutral-800 bg-blue-50 dark:bg-blue-950/20">
+            <div className="max-w-4xl mx-auto px-6">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/50 border border-blue-300 dark:border-blue-700 rounded-full text-sm text-blue-700 dark:text-blue-300 mb-4">
+                  <span>🏠</span>
+                  <span className="font-semibold">Self-Hosted Setup Service</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+                  We'll Set Up Your Home Lab
+                </h2>
+                <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-6 max-w-2xl mx-auto">
+                  Want Tiker running on your own hardware (Raspberry Pi, NUC, home server)? We'll install and configure OpenClaw for you—completely free.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <a
+                    href="/services#contact"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    Request Free Setup
+                  </a>
+                  <a
+                    href="https://docs.openclaw.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition font-medium"
+                  >
+                    View Self-Host Docs
+                  </a>
+                </div>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-4">
+                  Perfect for power users who want full control and unlimited usage with their own API keys
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Pricing - Editorial style */}
           <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800" id="pricing">
             <div className="max-w-6xl mx-auto px-6">
               <div className="text-center mb-16">
+                <div className="inline-block mb-6 px-6 py-3 bg-green-100 dark:bg-green-900/30 border-2 border-green-500 dark:border-green-600 rounded-full">
+                  <span className="text-green-700 dark:text-green-300 font-semibold text-lg">🎉 Product Hunt Launch: 3 Months Free on All Plans!</span>
+                </div>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mb-4">
                   Simple, Honest Pricing
                 </h2>
@@ -558,7 +598,7 @@ export default async function LandingPage() {
                     href="/api/stripe/checkout?plan=solo"
                     className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium"
                   >
-                    Start 7-Day Trial
+                    Start 3-Month Trial
                   </a>
                 </div>
 
@@ -597,7 +637,7 @@ export default async function LandingPage() {
                     href="/api/stripe/checkout?plan=developer"
                     className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium"
                   >
-                    Start 7-Day Trial
+                    Start 3-Month Trial
                   </a>
                 </div>
               </div>
