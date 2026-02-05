@@ -170,6 +170,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     if (refreshedAccount?.google_tokens) {
       const tokens = refreshedAccount.google_tokens as any;
       const now = Math.floor(Date.now() / 1000);
+      console.log('[Executor] Google tokens found, expires_at:', tokens.expires_at, 'now:', now);
 
       // Check if token needs refresh (expires in < 5 min)
       if (tokens.expires_at < now + 300) {
@@ -203,16 +204,21 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
             .eq('id', task.account_id);
 
           googleAccessToken = newTokens.access_token;
+          console.log('[Executor] Token refreshed successfully');
         } else {
-          console.log('[Executor] Token refresh failed');
+          const errorBody = await refreshResponse.text();
+          console.error('[Executor] Token refresh failed:', refreshResponse.status, errorBody);
         }
       } else {
         // Token still valid
         googleAccessToken = tokens.access_token;
+        console.log('[Executor] Using existing valid token');
       }
+    } else {
+      console.log('[Executor] No Google tokens found for account');
     }
   } catch (error) {
-    console.log('[Executor] Could not fetch/refresh Google token:', error);
+    console.error('[Executor] Error fetching/refreshing Google token:', error);
     // Continue without tools
   }
 
