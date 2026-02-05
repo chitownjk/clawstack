@@ -47,7 +47,7 @@ export default function TermsOfUse() {
           <ul className="list-disc pl-6 mb-6 space-y-2">
             <li>Tasks you create and their outcomes</li>
             <li>Verifying AI-generated content before acting on it</li>
-            >li>Ensuring compliance with third-party terms of service</li>
+            <li>Ensuring compliance with third-party terms of service</li>
             <li>Monitoring agent actions and reviewing results</li>
           </ul>
 
