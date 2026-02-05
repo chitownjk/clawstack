@@ -15,7 +15,7 @@ function getHmacSecret(): string {
 }
 
 /**
- * Check if user has valid write access (2FA verified)
+ * Check if user has valid write access (2FA verified for self-hosted, automatic for cloud)
  */
 async function checkWriteAccess(request: Request): Promise<{ hasAccess: boolean; requires2FA: boolean; needsSetup?: boolean }> {
   try {
@@ -37,16 +37,26 @@ async function checkWriteAccess(request: Request): Promise<{ hasAccess: boolean;
     const adminClient = createAdminClient()
     const { data: account, error: accountError } = await adminClient
       .from('accounts')
-      .select('two_factor_enabled')
+      .select('two_factor_enabled, execution_mode')
       .eq('auth_uid', session.user.id)
       .single()
 
     console.log('[Tasks/Create] Account lookup:', {
       hasAccount: !!account,
       two_factor_enabled: account?.two_factor_enabled,
+      execution_mode: account?.execution_mode,
       accountError: accountError?.message
     })
 
+    // Cloud users (cloud-user-keys, cloud-our-keys) - 2FA optional, always have write access
+    const isSelfHosted = account?.execution_mode === 'openclaw'
+
+    if (!isSelfHosted) {
+      console.log('[Tasks/Create] Cloud user - granting write access')
+      return { hasAccess: true, requires2FA: false }
+    }
+
+    // Self-hosted user - 2FA mandatory
     if (!account?.two_factor_enabled) {
       return { hasAccess: false, requires2FA: true, needsSetup: true }
     }

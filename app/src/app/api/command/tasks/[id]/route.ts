@@ -19,32 +19,39 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
-    // Check 2FA
-    const cookieStore = await cookies()
-    const writeAccess = cookieStore.get('tiker_write_access')
-    if (!writeAccess?.value) {
-      // Check if user has 2FA enabled
-      const { data: account } = await adminClient
-        .from('accounts')
-        .select('id, two_factor_enabled')
-        .eq('auth_uid', session.user.id)
-        .single()
-      
-      if (account?.two_factor_enabled) {
-        return NextResponse.json({ error: '2FA_REQUIRED' }, { status: 403 })
-      }
-    }
-    
-    // Get account ID
+    // Get account and check execution mode
     const { data: account } = await adminClient
       .from('accounts')
-      .select('id')
+      .select('id, two_factor_enabled, execution_mode')
       .eq('auth_uid', session.user.id)
       .single()
     
     if (!account) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 })
     }
+    
+    // Check 2FA (only required for self-hosted)
+    const isSelfHosted = account.execution_mode === 'openclaw'
+    
+    if (isSelfHosted) {
+      const cookieStore = await cookies()
+      const writeAccess = cookieStore.get('tiker_write_access')
+      
+      if (!account.two_factor_enabled) {
+        return NextResponse.json({ 
+          error: '2FA_SETUP_REQUIRED',
+          message: 'Please enable 2FA in Settings'
+        }, { status: 403 })
+      }
+      
+      if (!writeAccess?.value) {
+        return NextResponse.json({ 
+          error: '2FA_REQUIRED',
+          message: 'Please verify 2FA'
+        }, { status: 403 })
+      }
+    }
+    // Cloud users have automatic write access
     
     // Verify task belongs to this account
     const { data: task, error: taskError } = await adminClient
