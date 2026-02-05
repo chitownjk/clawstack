@@ -33,19 +33,22 @@ ORDER BY t.created_at DESC;
 
 -- 3. Check agents for Jay's account
 SELECT 
-  aat.id,
-  aat.name,
-  aat.emoji,
-  aat.model_tier,
-  aat.account_id,
-  aat.created_at
-FROM account_agent_templates aat
-WHERE aat.account_id IN (
+  aa.account_id,
+  aa.agent_id,
+  aa.enabled,
+  aa.enabled_at,
+  av.name,
+  av.icon,
+  av.description,
+  av.required_tier
+FROM account_agents aa
+JOIN available_agents av ON aa.agent_id = av.id
+WHERE aa.account_id IN (
   SELECT id FROM accounts WHERE auth_uid IN (
     SELECT id FROM auth.users WHERE email LIKE '%jay%'
   )
 )
-ORDER BY aat.created_at DESC;
+ORDER BY aa.enabled_at DESC;
 
 -- 4. Check RLS policies are enabled
 SELECT 
@@ -57,7 +60,7 @@ SELECT
   cmd,
   qual
 FROM pg_policies
-WHERE tablename IN ('mc_tasks', 'mc_comments', 'account_agent_templates')
+WHERE tablename IN ('mc_tasks', 'mc_comments', 'account_agents', 'available_agents')
 ORDER BY tablename, policyname;
 
 -- 5. Test RLS from user perspective (run as authenticated user)
@@ -65,5 +68,5 @@ ORDER BY tablename, policyname;
 -- SET LOCAL role = 'authenticated';
 -- SET LOCAL request.jwt.claims = '{"sub": "<auth_uid_here>"}';
 -- SELECT * FROM mc_tasks LIMIT 5;
--- SELECT * FROM account_agent_templates LIMIT 5;
+-- SELECT * FROM account_agents LIMIT 5;
 -- RESET role;
