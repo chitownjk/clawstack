@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createRealSupabaseClient } from '@/lib/supabase-server'
 import { SplitScreenHero } from '@/components/SplitScreenHero'
+import CommandRedirect from '@/components/CommandRedirect'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +18,9 @@ export default async function LandingPage() {
     <main className="min-h-screen">
       {/* Hero - Logged in */}
       {user ? (
-        <section className="relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+        <>
+          <CommandRedirect />
+          <section className="relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
           <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
             <div className="max-w-4xl">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-900 text-sm text-green-700 dark:text-green-300 mb-6">
@@ -75,6 +78,7 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
+        </>
       ) : (
         <>
           {/* Split Screen Hero */}
