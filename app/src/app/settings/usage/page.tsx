@@ -21,6 +21,19 @@ export default function UsagePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // First get account to get the account ID and plan details
+      const { data: account } = await supabase
+        .from('accounts')
+        .select('id, plan_tier, execution_mode')
+        .eq('auth_uid', user.id)
+        .single();
+
+      if (!account) {
+        console.error('Account not found');
+        setLoading(false);
+        return;
+      }
+
       // Get current month's usage
       const firstOfMonth = new Date();
       firstOfMonth.setDate(1);
@@ -29,19 +42,24 @@ export default function UsagePage() {
       const { data: monthlyUsage } = await supabase
         .from('monthly_usage')
         .select('*')
-        .eq('account_id', user.id)
-        .eq('month', firstOfMonth.toISOString().split('T')[0])
+        .eq('account_id', account.id)
+        .eq('month_start', firstOfMonth.toISOString().split('T')[0])
         .single();
 
-      setUsage(monthlyUsage);
+      setUsage(monthlyUsage || {
+        tasks_used: 0,
+        tasks_limit: account.plan_tier === 'team' ? 1000 : account.plan_tier === 'developer' ? 400 : account.plan_tier === 'solo' ? 100 : null,
+        tokens_in_used: 0,
+        tokens_out_used: 0,
+        cost_usd: 0
+      });
 
       // Get recent tasks with usage stats
       const { data: tasks } = await supabase
-        .from('mc_tasks')
-        .select('id, title, model_used, tokens_in, tokens_out, cost_usd, created_at')
-        .eq('account_id', user.id)
-        .not('model_used', 'is', null)
-        .order('created_at', { ascending: false })
+        .from('task_usage')
+        .select('*')
+        .eq('account_id', account.id)
+        .order('executed_at', { ascending: false })
         .limit(10);
 
       setRecentTasks(tasks || []);

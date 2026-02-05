@@ -34,8 +34,8 @@ export default function ExecutionSettingsPage() {
 
       const { data: account } = await supabase
         .from('accounts')
-        .select('execution_mode, gateway_url, gateway_connected')
-        .eq('id', user.id)
+        .select('execution_mode, gateway_url, gateway_connected, plan_tier')
+        .eq('auth_uid', user.id)
         .single();
 
       if (account) {
@@ -119,7 +119,7 @@ export default function ExecutionSettingsPage() {
       const { error } = await supabase
         .from('accounts')
         .update(updates)
-        .eq('id', user.id);
+        .eq('auth_uid', user.id);
 
       if (error) throw error;
 
