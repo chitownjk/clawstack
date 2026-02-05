@@ -140,6 +140,13 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const result = await createCheckoutSession(request)
   
+  // If authentication required, redirect to login
+  if (result.status === 401) {
+    const url = new URL(request.url)
+    const plan = url.searchParams.get('plan') || 'solo'
+    return NextResponse.redirect(new URL(`/auth/login?next=/api/stripe/checkout?plan=${plan}`, request.url))
+  }
+  
   // If successful, redirect to Stripe Checkout
   if (result.status === 200) {
     const data = await result.json()
@@ -148,6 +155,7 @@ export async function GET(request: NextRequest) {
     }
   }
   
-  // Otherwise return error JSON
-  return result
+  // Otherwise redirect to pricing with error
+  const url = new URL(request.url)
+  return NextResponse.redirect(new URL('/?error=checkout_failed', url.origin))
 }
