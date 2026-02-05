@@ -495,7 +495,7 @@ async function callModel(options: {
       for (const toolUseBlock of toolUseBlocks) {
         if (toolUseBlock.type !== 'tool_use') continue;
         
-        console.log(`[Executor] Executing tool: ${toolUseBlock.name}`);
+        console.log(`[Executor] Executing tool: ${toolUseBlock.name}`, JSON.stringify(toolUseBlock.input));
         let toolResult: string;
         try {
           toolResult = await executeTool(
@@ -506,7 +506,9 @@ async function callModel(options: {
             taskId,
             account.id
           );
+          console.log(`[Executor] Tool result: ${toolResult.substring(0, 200)}`);
         } catch (error) {
+          console.error(`[Executor] Tool error:`, error);
           toolResult = `Error executing tool: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
 
