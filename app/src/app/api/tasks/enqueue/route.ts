@@ -14,7 +14,7 @@ if (process.env.REDIS_URL) {
 }
 
 const taskQueue = new Queue('tiker-tasks', {
-  connection: redisConnection,
+  connection: redisConnection as any,
 });
 
 export async function POST(request: NextRequest) {
