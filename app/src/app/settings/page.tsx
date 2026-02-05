@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import TwoFactorSetup from '@/components/TwoFactorSetup'
+import SettingsNav from '@/components/SettingsNav'
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
@@ -135,9 +136,11 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen">
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-8">
+        <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
           Settings
         </h1>
+        
+        <SettingsNav />
 
         {/* Account Info */}
         <section className="card p-6 mb-8">
