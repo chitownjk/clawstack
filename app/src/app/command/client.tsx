@@ -168,7 +168,7 @@ export default function MissionControlClient() {
     }
     
     // Check if over.id is a valid TaskStatus
-    const validStatuses: TaskStatus[] = ['inbox', 'assigned', 'in_progress', 'review', 'done', 'blocked']
+    const validStatuses: TaskStatus[] = ['inbox', 'assigned', 'in_progress', 'review', 'error', 'done', 'blocked']
     if (!validStatuses.includes(over.id as TaskStatus)) {
       console.log('Invalid drop target:', over.id)
       return
