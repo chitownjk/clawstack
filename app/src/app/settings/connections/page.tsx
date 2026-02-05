@@ -18,10 +18,10 @@ interface Connection {
 const CONNECTIONS: Connection[] = [
   {
     id: 'google',
-    name: 'Google (Gmail & Calendar)',
-    description: 'Send emails, create calendar events, manage your schedule',
+    name: 'Google (Gmail, Calendar & Drive)',
+    description: 'Send emails, manage calendar, access Google Drive files',
     icon: '🔐',
-    scopes: ['gmail.send', 'gmail.readonly', 'calendar', 'calendar.events'],
+    scopes: ['gmail.send', 'gmail.readonly', 'calendar', 'calendar.events', 'drive.file', 'drive.readonly'],
     comingSoon: false,
     connectUrl: '/api/auth/google/initiate',
   },

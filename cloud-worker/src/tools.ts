@@ -163,6 +163,68 @@ export const TOOLS = [
     },
   },
   {
+    name: 'drive_list_files',
+    description: 'List files in Google Drive. Search by name or filter by folder.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Search query (e.g., "name contains report", "mimeType = application/pdf"). Leave empty for recent files.',
+        },
+        folderId: {
+          type: 'string',
+          description: 'Folder ID to list contents of specific folder',
+        },
+        pageSize: {
+          type: 'number',
+          description: 'Number of results (default: 20, max: 100)',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'drive_search',
+    description: 'Search for files in Google Drive by name, type, or content',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Full-text search query (e.g., "quarterly report 2024", "project proposal")',
+        },
+        fileType: {
+          type: 'string',
+          description: 'Filter by file type: document, spreadsheet, presentation, pdf, folder',
+        },
+        maxResults: {
+          type: 'number',
+          description: 'Maximum results (default: 20)',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'drive_read_document',
+    description: 'Read the contents of a Google Docs, Sheets, or Slides file by ID',
+    input_schema: {
+      type: 'object',
+      properties: {
+        fileId: {
+          type: 'string',
+          description: 'Google Drive file ID',
+        },
+        format: {
+          type: 'string',
+          description: 'Export format: text, html, markdown (for Docs), csv (for Sheets). Default: text',
+        },
+      },
+      required: ['fileId'],
+    },
+  },
+  {
     name: 'save_file',
     description: 'Save content to a file attached to the current task. Use for outputs that are too large for comments (reports, code, data, images). File will be accessible to the user in their Files section.',
     input_schema: {
@@ -253,6 +315,15 @@ export async function executeTool(
     
     case 'calendar_list_events':
       return await listCalendarEvents(params, auth);
+
+    case 'drive_list_files':
+      return await driveListFiles(params, auth);
+
+    case 'drive_search':
+      return await driveSearchFiles(params, auth);
+
+    case 'drive_read_document':
+      return await driveReadDocument(params, auth);
 
     case 'agentmail_send':
       if (!agentmailApiKey) throw new Error('AgentMail not connected');
@@ -792,5 +863,139 @@ async function readAgentmail(params: { message_id: string }, apiKey: string): Pr
     return `From: ${message.from}\nTo: ${message.to}\nSubject: ${message.subject}\nDate: ${new Date(message.created_at).toLocaleString()}\n\n${message.text || message.html || '(no body)'}`;
   } catch (error: any) {
     return `❌ Failed to read message: ${error.message}`;
+  }
+}
+
+/**
+ * Google Drive: List files
+ */
+async function driveListFiles(params: { query?: string; folderId?: string; pageSize?: number }, auth: any): Promise<string> {
+  try {
+    const drive = google.drive({ version: 'v3', auth });
+    
+    let q = params.query || '';
+    if (params.folderId) {
+      q = q ? `${q} and '${params.folderId}' in parents` : `'${params.folderId}' in parents`;
+    }
+    
+    const response = await drive.files.list({
+      q: q || undefined,
+      pageSize: params.pageSize || 20,
+      fields: 'files(id, name, mimeType, modifiedTime, size, webViewLink)',
+      orderBy: 'modifiedTime desc',
+    });
+
+    const files = response.data.files;
+    if (!files || files.length === 0) {
+      return 'No files found';
+    }
+
+    const formatted = files.map((f: any) => {
+      const type = f.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄';
+      const size = f.size ? ` (${formatBytes(parseInt(f.size))})` : '';
+      return `${type} ${f.name}${size}\n   ID: ${f.id} | Modified: ${new Date(f.modifiedTime!).toLocaleDateString()}`;
+    }).join('\n\n');
+
+    return `Found ${files.length} file(s):\n\n${formatted}`;
+  } catch (error: any) {
+    return `❌ Failed to list files: ${error.message}`;
+  }
+}
+
+/**
+ * Google Drive: Search files
+ */
+async function driveSearchFiles(params: { query: string; fileType?: string; maxResults?: number }, auth: any): Promise<string> {
+  try {
+    const drive = google.drive({ version: 'v3', auth });
+    
+    let q = `fullText contains '${params.query.replace(/'/g, "\\'")}'`;
+    
+    if (params.fileType) {
+      const mimeTypes: Record<string, string> = {
+        document: 'application/vnd.google-apps.document',
+        spreadsheet: 'application/vnd.google-apps.spreadsheet',
+        presentation: 'application/vnd.google-apps.presentation',
+        pdf: 'application/pdf',
+        folder: 'application/vnd.google-apps.folder',
+      };
+      if (mimeTypes[params.fileType]) {
+        q += ` and mimeType = '${mimeTypes[params.fileType]}'`;
+      }
+    }
+    
+    const response = await drive.files.list({
+      q,
+      pageSize: params.maxResults || 20,
+      fields: 'files(id, name, mimeType, modifiedTime, webViewLink)',
+    });
+
+    const files = response.data.files;
+    if (!files || files.length === 0) {
+      return `No files found matching "${params.query}"`;
+    }
+
+    const formatted = files.map((f: any) => {
+      const type = f.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄';
+      return `${type} ${f.name}\n   ID: ${f.id} | Open: ${f.webViewLink}`;
+    }).join('\n\n');
+
+    return `Found ${files.length} result(s) for "${params.query}":\n\n${formatted}`;
+  } catch (error: any) {
+    return `❌ Search failed: ${error.message}`;
+  }
+}
+
+/**
+ * Google Drive: Read document content
+ */
+async function driveReadDocument(params: { fileId: string; format?: string }, auth: any): Promise<string> {
+  try {
+    const drive = google.drive({ version: 'v3', auth });
+    
+    // Get file metadata first
+    const metadata = await drive.files.get({
+      fileId: params.fileId,
+      fields: 'name, mimeType, size',
+    });
+
+    const mimeType = metadata.data.mimeType;
+    const name = metadata.data.name;
+
+    // For Google Docs/Sheets/Slides, export to requested format
+    if (mimeType?.startsWith('application/vnd.google-apps.')) {
+      const exportFormats: Record<string, string> = {
+        'application/vnd.google-apps.document': params.format === 'markdown' ? 'text/markdown' : 'text/plain',
+        'application/vnd.google-apps.spreadsheet': params.format === 'csv' ? 'text/csv' : 'text/csv',
+        'application/vnd.google-apps.presentation': 'text/plain',
+      };
+
+      const exportMime = exportFormats[mimeType] || 'text/plain';
+      
+      const response = await drive.files.export({
+        fileId: params.fileId,
+        mimeType: exportMime,
+      }, { responseType: 'text' });
+
+      const content = response.data as string;
+      const preview = content.substring(0, 3000);
+      const truncated = content.length > 3000 ? '\n\n...[content truncated]' : '';
+      
+      return `📄 ${name}\n\n${preview}${truncated}`;
+    }
+
+    // For other files, download and return base64 or text
+    const response = await drive.files.get({
+      fileId: params.fileId,
+      alt: 'media',
+    }, { responseType: 'text' });
+
+    const content = response.data as string;
+    const preview = content.substring(0, 3000);
+    const truncated = content.length > 3000 ? '\n\n...[content truncated]' : '';
+
+    return `📄 ${name}\n\n${preview}${truncated}`;
+  } catch (error: any) {
+    return `❌ Failed to read document: ${error.message}`;
   }
 }
