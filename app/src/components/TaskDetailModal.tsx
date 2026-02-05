@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase'
 import SimpleMarkdown from '@/components/SimpleMarkdown'
 import MentionInput from '@/components/MentionInput'
 import CommentContent from '@/components/CommentContent'
+import FileAttachments from '@/components/FileAttachments'
 
 interface TaskDetailModalProps {
   task: Task
@@ -23,6 +24,7 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
   const [submitting, setSubmitting] = useState(false)
   const [descriptionExpanded, setDescriptionExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showAttachments, setShowAttachments] = useState(true)
 
   useEffect(() => {
     loadComments()
@@ -223,40 +225,64 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
           )}
         </div>
 
-        {/* Comments - scrollable area */}
-        <div className="flex-1 overflow-y-auto p-6 min-h-0">
-          <h3 className="font-semibold text-gray-900 mb-4 sticky top-0 bg-white pb-2">Activity</h3>
-          
-          {loading ? (
-            <div className="text-center text-gray-400 py-8">Loading...</div>
-          ) : comments.length > 0 ? (
-            <div className="space-y-4">
-              {comments.map(comment => (
-                <div key={comment.id} className="flex gap-3">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
-                      {comment.agent?.emoji}
+        {/* Comments & Attachments - scrollable area */}
+        <div className="flex-1 overflow-y-auto p-6 min-h-0 space-y-6">
+          {/* Attachments Section */}
+          <div>
+            <button
+              onClick={() => setShowAttachments(!showAttachments)}
+              className="flex items-center gap-2 font-semibold text-gray-900 mb-4 sticky top-0 bg-white pb-2 w-full hover:text-blue-600 transition-colors"
+            >
+              <svg 
+                className={`w-4 h-4 transition-transform ${showAttachments ? 'rotate-90' : ''}`}
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+              <span>Attachments</span>
+            </button>
+            {showAttachments && (
+              <FileAttachments taskId={task.id} />
+            )}
+          </div>
+
+          {/* Activity/Comments Section */}
+          <div>
+            <h3 className="font-semibold text-gray-900 mb-4 sticky top-0 bg-white pb-2">Activity</h3>
+            
+            {loading ? (
+              <div className="text-center text-gray-400 py-8">Loading...</div>
+            ) : comments.length > 0 ? (
+              <div className="space-y-4">
+                {comments.map(comment => (
+                  <div key={comment.id} className="flex gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center">
+                        {comment.agent?.emoji}
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-2 mb-1">
+                        <span className="font-medium text-gray-900 text-sm">
+                          {comment.agent?.name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(comment.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-sm">
+                        <CommentContent content={comment.content} />
+                      </p>
                     </div>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <span className="font-medium text-gray-900 text-sm">
-                        {comment.agent?.name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(comment.created_at).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="text-gray-700 text-sm">
-                      <CommentContent content={comment.content} />
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-gray-400 py-8">No comments yet</div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-400 py-8">No comments yet</div>
+            )}
+          </div>
         </div>
 
         {/* Comment Input */}
