@@ -213,13 +213,68 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     });
   }
 
-  // 8. Post result as comment
-  await supabase.from('mc_comments').insert({
-    task_id: taskId,
-    agent_id: task.account_agent_id,
-    content: result,
-    created_at: new Date().toISOString(),
-  });
+  // 8. Post result (as file if long/markdown, otherwise as comment)
+  const shouldSaveAsFile = result.length > 500 || 
+                           result.includes('```') || 
+                           result.includes('\n#') ||
+                           result.split('\n').length > 15;
+
+  if (shouldSaveAsFile) {
+    // Save response as file
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const filename = `response-${Date.now()}.md`;
+    const storagePath = `${task.account_id}/${year}/${month}/${taskId}/${filename}`;
+
+    // Upload to storage
+    const { error: uploadError } = await supabase.storage
+      .from('mc-files')
+      .upload(storagePath, result, {
+        contentType: 'text/markdown',
+        upsert: false,
+      });
+
+    if (!uploadError) {
+      // Insert file record
+      const { data: fileRecord } = await supabase
+        .from('mc_files')
+        .insert({
+          account_id: task.account_id,
+          task_id: taskId,
+          filename,
+          storage_path: storagePath,
+          mime_type: 'text/markdown',
+          size_bytes: new TextEncoder().encode(result).length,
+        })
+        .select()
+        .single();
+
+      // Post summary comment with link
+      await supabase.from('mc_comments').insert({
+        task_id: taskId,
+        agent_id: task.account_agent_id,
+        content: `✅ Task complete. Response saved as file: **${filename}**\n\nView in Files tab or [download directly](/api/files/${fileRecord?.id}).`,
+        created_at: new Date().toISOString(),
+      });
+    } else {
+      // Fallback to comment if upload fails
+      await supabase.from('mc_comments').insert({
+        task_id: taskId,
+        agent_id: task.account_agent_id,
+        content: result,
+        created_at: new Date().toISOString(),
+      });
+    }
+  } else {
+    // Short response - post as comment
+    await supabase.from('mc_comments').insert({
+      task_id: taskId,
+      agent_id: task.account_agent_id,
+      content: result,
+      created_at: new Date().toISOString(),
+    });
+  }
 
   // 9. Update task status to review (so user can see the response)
   await supabase
