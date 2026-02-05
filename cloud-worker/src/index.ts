@@ -11,34 +11,47 @@ const supabase = createClient(
   process.env.SUPABASE_SECRET_KEY!
 );
 
-const POLL_INTERVAL_MS = 5000; // Poll every 5 seconds
+const BACKUP_POLL_INTERVAL_MS = 60000; // Backup poll every 60s (not 5s)
 const MAX_CONCURRENT = parseInt(process.env.WORKER_CONCURRENCY || '5');
 
 let activeTasks = 0;
+const recentlyCheckedAccounts = new Set<string>();
 
-async function pollForTasks() {
-  // Don't poll if at max capacity
+// Clear recently-checked cache every 10 seconds
+setInterval(() => {
+  recentlyCheckedAccounts.clear();
+}, 10000);
+
+async function checkAccountTasks(accountId: string) {
+  // Skip if we just checked this account
+  if (recentlyCheckedAccounts.has(accountId)) {
+    return;
+  }
+  recentlyCheckedAccounts.add(accountId);
+
+  // Don't check if at max capacity
   if (activeTasks >= MAX_CONCURRENT) {
     return;
   }
 
   try {
-    // Get inbox AND assigned tasks (tasks ready for execution)
-    // Only fetch tasks that have agents assigned (filter at DB level)
+    // Get ALL executable tasks for this account (inbox, assigned)
     const { data: tasks, error } = await supabase
       .from('mc_tasks')
       .select(`
         id, 
         account_id,
         assigned_agent_ids,
+        status,
         accounts!inner(execution_mode)
       `)
+      .eq('account_id', accountId)
       .in('status', ['inbox', 'assigned'])
       .not('assigned_agent_ids', 'is', null)
-      .limit(20)
+      .limit(10);
 
     if (error) {
-      console.error('[Worker] Error fetching tasks:', error);
+      console.error(`[Worker] Error fetching tasks for account ${accountId}:`, error);
       return;
     }
 
@@ -51,12 +64,6 @@ async function pollForTasks() {
       const mode = task.accounts?.execution_mode;
       const isCloud = mode === 'cloud-user-keys' || mode === 'cloud-our-keys';
       const hasAgent = Array.isArray(task.assigned_agent_ids) && task.assigned_agent_ids.length > 0;
-      
-      // Debug: Log filtered-out tasks
-      if (isCloud && !hasAgent) {
-        console.log(`[Worker] Skipping task ${task.id}: no agents assigned (${JSON.stringify(task.assigned_agent_ids)})`);
-      }
-      
       return isCloud && hasAgent;
     }).slice(0, MAX_CONCURRENT - activeTasks);
 
@@ -64,12 +71,11 @@ async function pollForTasks() {
       return;
     }
 
-    console.log(`[Worker] Found ${cloudTasks.length} cloud tasks to process`);
+    console.log(`[Worker] Account ${accountId}: Found ${cloudTasks.length} tasks to process`);
 
     // Process each task
     for (const task of cloudTasks) {
       // Claim the task by updating status to 'executing'
-      // Accept both 'inbox' and 'assigned' as starting states
       const { data: claimed, error: updateError } = await supabase
         .from('mc_tasks')
         .update({ 
@@ -77,23 +83,53 @@ async function pollForTasks() {
           updated_at: new Date().toISOString()
         })
         .eq('id', task.id)
-        .in('status', ['inbox', 'assigned']) // Accept both inbox and assigned
-        .select()
+        .in('status', ['inbox', 'assigned'])
+        .select();
 
       if (updateError || !claimed || claimed.length === 0) {
-        // Another worker claimed it, or task was updated by user
-        if (updateError) {
-          console.error(`[Worker] Failed to claim task ${task.id}:`, updateError);
-        }
         continue;
       }
 
-      // Execute task in background (don't await)
+      // Execute task in background
       activeTasks++;
       executeTaskWithTracking(task.id);
     }
   } catch (error) {
-    console.error('[Worker] Poll error:', error);
+    console.error(`[Worker] Error checking account ${accountId}:`, error);
+  }
+}
+
+async function pollAllAccounts() {
+  // Backup poll for all cloud accounts (failsafe)
+  if (activeTasks >= MAX_CONCURRENT) {
+    return;
+  }
+
+  try {
+    const { data: tasks, error } = await supabase
+      .from('mc_tasks')
+      .select(`
+        id, 
+        account_id,
+        assigned_agent_ids,
+        accounts!inner(execution_mode)
+      `)
+      .in('status', ['inbox', 'assigned'])
+      .not('assigned_agent_ids', 'is', null)
+      .limit(20);
+
+    if (error || !tasks || tasks.length === 0) {
+      return;
+    }
+
+    // Get unique account IDs
+    const accountIds = [...new Set(tasks.map((t: any) => t.account_id))];
+    
+    for (const accountId of accountIds) {
+      await checkAccountTasks(accountId);
+    }
+  } catch (error) {
+    console.error('[Worker] Backup poll error:', error);
   }
 }
 
@@ -129,21 +165,60 @@ async function executeTaskWithTracking(taskId: string) {
   }
 }
 
-// Start polling
-console.log('[Worker] Cloud worker started');
+// Subscribe to realtime events
+console.log('[Worker] Cloud worker started (event-driven mode)');
 console.log(`[Worker] Concurrency: ${MAX_CONCURRENT}`);
-console.log(`[Worker] Poll interval: ${POLL_INTERVAL_MS}ms`);
+console.log(`[Worker] Backup poll interval: ${BACKUP_POLL_INTERVAL_MS}ms`);
 
-setInterval(pollForTasks, POLL_INTERVAL_MS);
+// Subscribe to task changes (new tasks, agent assignments)
+supabase
+  .channel('task_changes')
+  .on('postgres_changes', 
+    { event: '*', schema: 'public', table: 'mc_tasks' },
+    (payload: any) => {
+      const task = payload.new || payload.old;
+      if (task?.account_id) {
+        console.log(`[Worker] Task event: ${payload.eventType} for account ${task.account_id}`);
+        checkAccountTasks(task.account_id);
+      }
+    }
+  )
+  .subscribe();
+
+// Subscribe to comment changes (agents posting updates triggers checking for more work)
+supabase
+  .channel('comment_changes')
+  .on('postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'mc_comments' },
+    async (payload: any) => {
+      const comment = payload.new;
+      if (comment?.task_id) {
+        // Get task's account_id
+        const { data: task } = await supabase
+          .from('mc_tasks')
+          .select('account_id')
+          .eq('id', comment.task_id)
+          .single();
+        
+        if (task?.account_id) {
+          console.log(`[Worker] Comment added to task, checking account ${task.account_id}`);
+          checkAccountTasks(task.account_id);
+        }
+      }
+    }
+  )
+  .subscribe();
+
+// Backup polling (every 60s instead of 5s)
+setInterval(pollAllAccounts, BACKUP_POLL_INTERVAL_MS);
 
 // Initial poll
-pollForTasks();
+pollAllAccounts();
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('[Worker] SIGTERM received, waiting for active tasks to complete...');
   
-  // Wait for active tasks to finish (max 30 seconds)
   const startTime = Date.now();
   while (activeTasks > 0 && Date.now() - startTime < 30000) {
     await new Promise(resolve => setTimeout(resolve, 1000));
