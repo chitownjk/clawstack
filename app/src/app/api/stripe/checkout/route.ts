@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
 import { getStripe, TIERS } from '@/lib/stripe'
 
-export async function POST(request: NextRequest) {
+async function createCheckoutSession(request: NextRequest) {
   try {
     // Get plan from query params or body
     const url = new URL(request.url)
@@ -131,4 +131,23 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export async function POST(request: NextRequest) {
+  return createCheckoutSession(request)
+}
+
+export async function GET(request: NextRequest) {
+  const result = await createCheckoutSession(request)
+  
+  // If successful, redirect to Stripe Checkout
+  if (result.status === 200) {
+    const data = await result.json()
+    if (data.url) {
+      return NextResponse.redirect(data.url)
+    }
+  }
+  
+  // Otherwise return error JSON
+  return result
 }
