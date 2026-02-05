@@ -60,12 +60,33 @@ async function checkAccountTasks(accountId: string) {
     }
 
     // Filter for cloud execution modes AND tasks with agents assigned
-    const cloudTasks = tasks.filter((task: any) => {
+    let cloudTasks = tasks.filter((task: any) => {
       const mode = task.accounts?.execution_mode;
       const isCloud = mode === 'cloud-user-keys' || mode === 'cloud-our-keys';
       const hasAgent = Array.isArray(task.assigned_agent_ids) && task.assigned_agent_ids.length > 0;
       return isCloud && hasAgent;
-    }).slice(0, MAX_CONCURRENT - activeTasks);
+    });
+
+    // For tasks in 'review', only execute if there's a new human comment
+    const reviewTasks = cloudTasks.filter((t: any) => t.status === 'review');
+    if (reviewTasks.length > 0) {
+      // Check each review task for new human comments
+      for (const task of reviewTasks) {
+        const { data: comments } = await supabase
+          .from('mc_comments')
+          .select('agent_name, created_at')
+          .eq('task_id', task.id)
+          .order('created_at', { ascending: false })
+          .limit(2);
+        
+        // If last comment is from agent, skip (agent already responded)
+        if (comments && comments.length > 0 && comments[0].agent_name) {
+          cloudTasks = cloudTasks.filter((t: any) => t.id !== task.id);
+        }
+      }
+    }
+
+    cloudTasks = cloudTasks.slice(0, MAX_CONCURRENT - activeTasks);
 
     if (cloudTasks.length === 0) {
       return;
