@@ -68,9 +68,9 @@ CREATE TABLE IF NOT EXISTS model_usage (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_usage_account ON model_usage(account_id, created_at DESC);
-CREATE INDEX idx_usage_task ON model_usage(task_id);
-CREATE INDEX idx_usage_account_month ON model_usage(account_id, DATE_TRUNC('month', created_at));
+CREATE INDEX IF NOT EXISTS idx_usage_account ON model_usage(account_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_usage_task ON model_usage(task_id);
+CREATE INDEX IF NOT EXISTS idx_usage_account_month ON model_usage(account_id, DATE_TRUNC('month', created_at));
 
 COMMENT ON TABLE model_usage IS 'Track model token usage for billing (cloud-our-keys mode)';
 

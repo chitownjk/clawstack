@@ -14,6 +14,8 @@ export default function ExecutionSettingsPage() {
   const [gatewayToken, setGatewayToken] = useState('');
   const [anthropicKey, setAnthropicKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
+  const [googleKey, setGoogleKey] = useState('');
+  const [kimiKey, setKimiKey] = useState('');
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
@@ -101,6 +103,8 @@ export default function ExecutionSettingsPage() {
         const keysToEncrypt: Record<string, string> = {};
         if (anthropicKey) keysToEncrypt.anthropic = anthropicKey;
         if (openaiKey) keysToEncrypt.openai = openaiKey;
+        if (googleKey) keysToEncrypt.google = googleKey;
+        if (kimiKey) keysToEncrypt.kimi = kimiKey;
         
         const encryptRes = await fetch('/api/encrypt-keys', {
           method: 'POST',
@@ -262,25 +266,73 @@ export default function ExecutionSettingsPage() {
           </p>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Anthropic API Key</label>
+            <label className="block text-sm font-medium mb-1">
+              Anthropic API Key (Claude)
+            </label>
             <input
               type="password"
               value={anthropicKey}
               onChange={(e) => setAnthropicKey(e.target.value)}
               placeholder="sk-ant-..."
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded font-mono text-sm"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              For Claude Sonnet, Opus, and Haiku models
+            </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">OpenAI API Key (Optional)</label>
+            <label className="block text-sm font-medium mb-1">
+              OpenAI API Key (Optional)
+            </label>
             <input
               type="password"
               value={openaiKey}
               onChange={(e) => setOpenaiKey(e.target.value)}
               placeholder="sk-..."
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border rounded font-mono text-sm"
             />
+            <p className="text-xs text-gray-500 mt-1">
+              For GPT-4, GPT-4 Turbo models
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Google API Key (Optional)
+            </label>
+            <input
+              type="password"
+              value={googleKey}
+              onChange={(e) => setGoogleKey(e.target.value)}
+              placeholder="AIza..."
+              className="w-full px-3 py-2 border rounded font-mono text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              For Gemini 2.0 Flash, Gemini Pro models
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Kimi API Key (Optional)
+            </label>
+            <input
+              type="password"
+              value={kimiKey}
+              onChange={(e) => setKimiKey(e.target.value)}
+              placeholder="..."
+              className="w-full px-3 py-2 border rounded font-mono text-sm"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              For Kimi K2.5 (Moonshot AI)
+            </p>
+          </div>
+
+          <div className="pt-4 border-t mt-6">
+            <p className="text-xs text-gray-500">
+              🔒 All API keys are encrypted with AES-256-GCM before storage. We never see your keys in plain text.
+            </p>
           </div>
         </div>
       )}

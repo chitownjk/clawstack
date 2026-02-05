@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { createHash, createDecipheriv } from 'crypto';
+import { TOOLS, executeTool } from './tools';
 
 // Crypto functions (matching app/src/lib/crypto.ts)
 const ALGORITHM = 'aes-256-gcm';
@@ -108,14 +109,38 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     throw new Error(`Account not found: ${task.account_id}`);
   }
 
-  // 4. Build prompt
+  // 4. Get Google OAuth token for tools (if available)
+  let googleAccessToken: string | undefined;
+  try {
+    const { data: authData } = await supabase.auth.admin.getUserById(account.id);
+    if (authData?.user) {
+      // Check if user has Google provider linked
+      const googleIdentity = authData.user.identities?.find(
+        (id: any) => id.provider === 'google'
+      );
+      if (googleIdentity) {
+        // Fetch session to get provider token
+        // Note: This requires the user to have logged in recently
+        // In production, we'd need token refresh logic
+        googleAccessToken = (googleIdentity as any).access_token;
+      }
+    }
+  } catch (error) {
+    console.log('[Executor] Could not fetch Google token:', error);
+    // Continue without tools
+  }
+
+  // 5. Build prompt
   const prompt = buildPrompt(task, agent);
 
-  // 5. Call model
+  // 6. Call model (with tools if Google token available)
   const result = await callModel({
     prompt,
     modelTier: agent.model_tier,
     account,
+    googleAccessToken,
+    supabase,
+    taskId: task.id,
   });
 
   // 6. Post result as comment
@@ -159,8 +184,11 @@ async function callModel(options: {
   prompt: string;
   modelTier: ModelTier;
   account: Account;
+  googleAccessToken?: string;
+  supabase: SupabaseClient;
+  taskId: string;
 }): Promise<string> {
-  const { prompt, modelTier, account } = options;
+  const { prompt, modelTier, account, googleAccessToken, supabase, taskId } = options;
 
   // Determine which model to use based on tier
   const modelMap = {
@@ -189,37 +217,96 @@ async function callModel(options: {
     throw new Error('No Anthropic API key configured');
   }
 
-  // Call Anthropic
+  // Call Anthropic (with tools if Google token available)
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-  const response = await anthropic.messages.create({
-    model,
-    max_tokens: 4096,
-    messages: [
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-  });
+  const messages: Anthropic.MessageParam[] = [
+    {
+      role: 'user',
+      content: prompt,
+    },
+  ];
 
-  const content = response.content[0];
-  if (content.type === 'text') {
-    // Track usage if using our keys
-    if (account.execution_mode === 'cloud-our-keys') {
-      await trackUsage({
-        accountId: account.id,
-        model,
-        provider: 'anthropic',
-        tokensIn: response.usage.input_tokens,
-        tokensOut: response.usage.output_tokens,
+  let totalTokensIn = 0;
+  let totalTokensOut = 0;
+  let finalResponse = '';
+
+  // Agentic loop: up to 5 turns for tool use
+  for (let turn = 0; turn < 5; turn++) {
+    const response = await anthropic.messages.create({
+      model,
+      max_tokens: 4096,
+      messages,
+      ...(googleAccessToken ? { tools: TOOLS as any } : {}),
+    });
+
+    totalTokensIn += response.usage.input_tokens;
+    totalTokensOut += response.usage.output_tokens;
+
+    // Check for tool use
+    const toolUseBlock = response.content.find((block) => block.type === 'tool_use');
+    const textBlock = response.content.find((block) => block.type === 'text');
+
+    if (toolUseBlock && toolUseBlock.type === 'tool_use') {
+      // Agent wants to use a tool
+      console.log(`[Executor] Agent using tool: ${toolUseBlock.name}`);
+
+      // Execute the tool
+      let toolResult: string;
+      try {
+        toolResult = await executeTool(
+          toolUseBlock.name,
+          toolUseBlock.input,
+          googleAccessToken!
+        );
+      } catch (error) {
+        toolResult = `Error executing tool: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      }
+
+      // Add assistant's tool use to messages
+      messages.push({
+        role: 'assistant',
+        content: response.content,
       });
+
+      // Add tool result to messages
+      messages.push({
+        role: 'user',
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: toolUseBlock.id,
+            content: toolResult,
+          },
+        ],
+      });
+
+      // Continue loop to get agent's next response
+      continue;
     }
 
-    return content.text;
+    // No tool use - this is the final response
+    if (textBlock && textBlock.type === 'text') {
+      finalResponse = textBlock.text;
+      break;
+    }
+
+    // Shouldn't reach here
+    throw new Error('Unexpected response format from Anthropic');
   }
 
-  throw new Error('Unexpected response type from Anthropic');
+  // Track usage if using our keys
+  if (account.execution_mode === 'cloud-our-keys') {
+    await trackUsage({
+      accountId: account.id,
+      model,
+      provider: 'anthropic',
+      tokensIn: totalTokensIn,
+      tokensOut: totalTokensOut,
+    });
+  }
+
+  return finalResponse || 'Task completed (no text response from agent)';
 }
 
 async function trackUsage(data: {
