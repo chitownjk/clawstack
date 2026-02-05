@@ -100,33 +100,33 @@ export default function SecurityPage() {
           
           <div className="bg-white dark:bg-neutral-800 rounded-xl p-6 md:p-8 border border-neutral-200 dark:border-neutral-700 mb-8">
             <p className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-              Read is utility. Write is power.
+              Security should match the threat model.
             </p>
             <p className="text-neutral-600 dark:text-neutral-400">
-              Anyone can look. Not everyone should touch.
+              Cloud sandboxes and local systems need different protection levels.
             </p>
           </div>
           
           <div className="prose prose-neutral dark:prose-invert max-w-none">
             <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
-              At Tiker, we separate read and write access at a fundamental level:
+              At Command Center, we match security requirements to actual risk:
             </p>
             
             <ul className="space-y-3 text-neutral-600 dark:text-neutral-400">
               <li>
-                <strong className="text-neutral-900 dark:text-neutral-100">Read access</strong> is free and open. See what your agents are doing. Monitor. Review. Learn.
+                <strong className="text-neutral-900 dark:text-neutral-100">Cloud users (Free, Team, BYOK)</strong> — OAuth handles authentication, sandboxed execution prevents infrastructure access. 2FA is available but optional.
               </li>
               <li>
-                <strong className="text-neutral-900 dark:text-neutral-100">Write access</strong> requires proof. You must verify with an authenticator app before any action that changes state.
+                <strong className="text-neutral-900 dark:text-neutral-100">Self-hosted users</strong> — Direct Gateway connection means root-level system access. 2FA is required before connecting. No exceptions.
               </li>
             </ul>
             
             <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
-              This isn't friction. It's intentional.
+              This isn't arbitrary. It's intentional.
             </p>
             
             <p className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
-              Because the moment you're annoyed by a 6-digit code is the same moment an attacker is stopped cold.
+              Because cloud users shouldn't suffer friction for a threat that doesn't exist in their environment. And self-hosted users shouldn't have root access without multi-factor verification.
             </p>
           </div>
         </div>
@@ -140,19 +140,40 @@ export default function SecurityPage() {
           </h2>
           
           <div className="grid gap-6">
-            <div className="card p-6">
+            <div className="card p-6 border-2 border-amber-200 dark:border-amber-800">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
                 <div>
                   <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-                    Authenticator-based verification
+                    Tiered 2FA policy
+                  </h3>
+                  <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-2">
+                    <strong className="text-neutral-900 dark:text-neutral-100">Self-hosted users (required):</strong> 2FA is mandatory before connecting to your Gateway. Protects against prompt injection reaching your local system.
+                  </p>
+                  <p className="text-neutral-600 dark:text-neutral-400 text-sm">
+                    <strong className="text-neutral-900 dark:text-neutral-100">Cloud users (optional):</strong> OAuth provides strong authentication, sandboxed workers limit blast radius. 2FA available in settings for extra security.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="card p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
+                    Authenticator app support
                   </h3>
                   <p className="text-neutral-600 dark:text-neutral-400 text-sm">
-                    Every write action (creating tasks, editing agents, changing settings) requires TOTP verification. We support any authenticator app: Google Authenticator, Authy, 1Password, and more.
+                    Works with any TOTP authenticator: Google Authenticator, Authy, 1Password, Bitwarden, and more. Standard time-based codes, no proprietary formats.
                   </p>
                 </div>
               </div>
