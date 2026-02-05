@@ -28,12 +28,12 @@ ALTER TABLE accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
 
 -- Add indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_accounts_plan_tier ON accounts(plan_tier);
-CREATE INDEX IF NOT EXISTS idx_accounts_product_mode ON accounts(product_mode);
+CREATE INDEX IF NOT EXISTS idx_accounts_execution_mode ON accounts(execution_mode);
 CREATE INDEX IF NOT EXISTS idx_accounts_stripe_customer ON accounts(stripe_customer_id);
 
 -- Add comments for documentation
 COMMENT ON COLUMN accounts.plan_tier IS 'Subscription tier: free, pro, team, team_plus';
-COMMENT ON COLUMN accounts.product_mode IS 'Deployment mode: oss, cloud';
+COMMENT ON COLUMN accounts.execution_mode IS 'Execution mode: openclaw, cloud-user-keys, cloud-our-keys';
 COMMENT ON COLUMN accounts.gateway_url IS 'User OpenClaw gateway URL (for cloud-connected mode)';
 COMMENT ON COLUMN accounts.gateway_token IS 'Encrypted API token for gateway';
 COMMENT ON COLUMN accounts.gateway_connected IS 'Whether gateway is currently reachable';
