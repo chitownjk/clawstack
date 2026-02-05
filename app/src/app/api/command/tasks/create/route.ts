@@ -161,7 +161,6 @@ export async function POST(request: Request) {
       ...task,
       title: title,
       description: description || null,
-      status: executionMode.startsWith('cloud') ? 'executing' : task.status,
     })
   } catch (error) {
     console.error('Error creating task:', error)
