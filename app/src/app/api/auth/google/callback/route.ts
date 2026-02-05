@@ -4,10 +4,10 @@ import { cookies } from 'next/headers'
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!
-const GOOGLE_REDIRECT_URI = process.env.NEXT_PUBLIC_APP_URL + '/api/auth/google/callback'
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
+  const { searchParams, origin } = new URL(request.url)
+  const redirectUri = origin + '/api/auth/google/callback'
   const code = searchParams.get('code')
   const error = searchParams.get('error')
   const state = searchParams.get('state')
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   // Check for OAuth errors
   if (error) {
     console.error('[Google OAuth] Error:', error)
-    return NextResponse.redirect(new URL('/settings?google_error=' + error, request.url))
+    return NextResponse.redirect(new URL('/settings/connections?google_error=' + error, request.url))
   }
 
   if (!code) {
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
   
   if (!savedState || savedState !== state) {
     console.error('[Google OAuth] State mismatch:', { savedState, receivedState: state })
-    return NextResponse.redirect(new URL('/settings?google_error=state_mismatch', request.url))
+    return NextResponse.redirect(new URL('/settings/connections?google_error=state_mismatch', request.url))
   }
 
   try {
@@ -40,7 +40,7 @@ export async function GET(request: Request) {
         code,
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: GOOGLE_REDIRECT_URI,
+        redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),
     })
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text()
       console.error('[Google OAuth] Token exchange failed:', errorText)
-      return NextResponse.redirect(new URL('/settings?google_error=token_exchange_failed', request.url))
+      return NextResponse.redirect(new URL('/settings/connections?google_error=token_exchange_failed', request.url))
     }
 
     const tokens = await tokenResponse.json()
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session?.user) {
-      return NextResponse.redirect(new URL('/login?next=/settings', request.url))
+      return NextResponse.redirect(new URL('/login?next=/settings/connections', request.url))
     }
 
     // Update account with Google tokens
@@ -80,16 +80,16 @@ export async function GET(request: Request) {
 
     if (updateError) {
       console.error('[Google OAuth] Failed to save tokens:', updateError)
-      return NextResponse.redirect(new URL('/settings?google_error=save_failed', request.url))
+      return NextResponse.redirect(new URL('/settings/connections?google_error=save_failed', request.url))
     }
 
     // Clear state cookie
     cookieStore.delete('google_oauth_state')
 
     // Redirect back to settings with success
-    return NextResponse.redirect(new URL('/settings?google_connected=true', request.url))
+    return NextResponse.redirect(new URL('/settings/connections?google_connected=true', request.url))
   } catch (error) {
     console.error('[Google OAuth] Unexpected error:', error)
-    return NextResponse.redirect(new URL('/settings?google_error=unexpected', request.url))
+    return NextResponse.redirect(new URL('/settings/connections?google_error=unexpected', request.url))
   }
 }
