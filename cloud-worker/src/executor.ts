@@ -157,15 +157,23 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     throw new Error(`Agent not found: ${agentId}. Please reassign this task to a valid agent.`);
   }
 
-  // 6. Get Google OAuth token for tools (refresh if needed)
+  // 6. Get Google OAuth token and AgentMail credentials for tools
   let googleAccessToken: string | undefined;
+  let agentmailApiKey: string | undefined;
+  
   try {
-    // Check if account has google_tokens
+    // Check if account has google_tokens and agentmail_credentials
     const { data: refreshedAccount } = await supabase
       .from('accounts')
-      .select('google_tokens')
+      .select('google_tokens, agentmail_credentials')
       .eq('id', task.account_id)
       .single();
+
+    // Get AgentMail API key if available
+    if (refreshedAccount?.agentmail_credentials) {
+      agentmailApiKey = refreshedAccount.agentmail_credentials.api_key;
+      console.log('[Executor] AgentMail credentials found');
+    }
 
     if (refreshedAccount?.google_tokens) {
       const tokens = refreshedAccount.google_tokens as any;
@@ -526,7 +534,8 @@ async function callModel(options: {
             googleAccessToken!,
             supabase,
             taskId,
-            account.id
+            account.id,
+            agentmailApiKey
           );
           console.log(`[Executor] Tool result: ${toolResult.substring(0, 200)}`);
         } catch (error) {

@@ -26,6 +26,14 @@ const CONNECTIONS: Connection[] = [
     connectUrl: '/api/auth/google/initiate',
   },
   {
+    id: 'agentmail',
+    name: 'AgentMail',
+    description: 'Give each agent their own email inbox for async coordination',
+    icon: '📧',
+    scopes: ['send', 'read', 'inbox.manage'],
+    comingSoon: false,
+  },
+  {
     id: 'microsoft-outlook',
     name: 'Microsoft Outlook',
     description: 'Send emails and manage your Outlook calendar',
@@ -94,10 +102,15 @@ const CONNECTIONS: Connection[] = [
 export default function ConnectionsPage() {
   const [connecting, setConnecting] = useState<string | null>(null);
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  const [agentmailConnected, setAgentmailConnected] = useState<boolean | null>(null);
+  const [showAgentmailModal, setShowAgentmailModal] = useState(false);
+  const [agentmailApiKey, setAgentmailApiKey] = useState('');
+  const [testingConnection, setTestingConnection] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     checkGoogleConnection();
+    checkAgentmailConnection();
     
     // Check if redirected back from OAuth
     const params = new URLSearchParams(window.location.search);
@@ -134,6 +147,17 @@ export default function ConnectionsPage() {
     }
   };
 
+  const checkAgentmailConnection = async () => {
+    try {
+      const response = await fetch('/api/auth/agentmail/status');
+      const data = await response.json();
+      setAgentmailConnected(data.connected);
+    } catch (error) {
+      console.error('Error checking AgentMail:', error);
+      setAgentmailConnected(false);
+    }
+  };
+
   const handleConnect = async (connection: Connection) => {
     if (connection.comingSoon) {
       alert('Coming soon!');
@@ -146,10 +170,49 @@ export default function ConnectionsPage() {
       return;
     }
 
+    if (connection.id === 'agentmail') {
+      // Show AgentMail modal
+      setShowAgentmailModal(true);
+      return;
+    }
+
     setConnecting(connection.id);
     setTimeout(() => {
       setConnecting(null);
     }, 500);
+  };
+
+  const handleAgentmailConnect = async () => {
+    if (!agentmailApiKey.trim()) {
+      alert('Please enter an API key');
+      return;
+    }
+
+    setTestingConnection(true);
+
+    try {
+      const response = await fetch('/api/auth/agentmail/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: agentmailApiKey }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setAgentmailConnected(true);
+        setShowAgentmailModal(false);
+        setAgentmailApiKey('');
+        alert(`✅ Connected! Found ${data.inboxes?.length || 0} inbox(es)`);
+      } else {
+        alert(`❌ ${data.error || 'Connection failed'}`);
+      }
+    } catch (error) {
+      console.error('AgentMail connect error:', error);
+      alert('❌ Connection error');
+    } finally {
+      setTestingConnection(false);
+    }
   };
 
   const handleDisconnect = async (connectionId: string) => {
@@ -166,6 +229,28 @@ export default function ConnectionsPage() {
         if (response.ok) {
           setGoogleConnected(false);
           alert('Google disconnected');
+        } else {
+          alert('Failed to disconnect');
+        }
+      } catch (error) {
+        console.error('Disconnect error:', error);
+        alert('Error disconnecting');
+      }
+    }
+
+    if (connectionId === 'agentmail') {
+      if (!confirm('Disconnect AgentMail? Agents will lose email access.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/agentmail/disconnect', {
+          method: 'POST',
+        });
+
+        if (response.ok) {
+          setAgentmailConnected(false);
+          alert('AgentMail disconnected');
         } else {
           alert('Failed to disconnect');
         }
@@ -196,7 +281,9 @@ export default function ConnectionsPage() {
 
       <div className="space-y-4">
         {CONNECTIONS.map((connection) => {
-          const isConnected = connection.id === 'google' ? googleConnected : connection.connected;
+          const isConnected = connection.id === 'google' ? googleConnected : 
+                             connection.id === 'agentmail' ? agentmailConnected :
+                             connection.connected;
           
           return (
             <div
@@ -287,6 +374,72 @@ export default function ConnectionsPage() {
           Contact Sales →
         </a>
       </div>
+
+      {/* AgentMail Modal */}
+      {showAgentmailModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl max-w-md w-full p-6 border-2 border-neutral-200 dark:border-neutral-800">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
+              Connect AgentMail
+            </h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+              Get your API key from AgentMail to enable email for your agents.
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                1. Get your API key
+              </label>
+              <a
+                href="https://agentmail.to"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors text-sm font-medium"
+              >
+                Open AgentMail Portal →
+              </a>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                2. Paste your API key
+              </label>
+              <input
+                type="password"
+                value={agentmailApiKey}
+                onChange={(e) => setAgentmailApiKey(e.target.value)}
+                placeholder="am_..."
+                className="w-full px-3 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600 font-mono text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !testingConnection) {
+                    handleAgentmailConnect();
+                  }
+                }}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowAgentmailModal(false);
+                  setAgentmailApiKey('');
+                }}
+                disabled={testingConnection}
+                className="flex-1 px-4 py-2 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAgentmailConnect}
+                disabled={testingConnection || !agentmailApiKey.trim()}
+                className="flex-1 px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {testingConnection ? 'Testing...' : 'Connect'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </main>
   );

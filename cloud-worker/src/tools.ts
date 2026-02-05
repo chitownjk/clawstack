@@ -109,6 +109,60 @@ export const TOOLS = [
     },
   },
   {
+    name: 'agentmail_send',
+    description: 'Send an email via AgentMail. Each agent can have their own inbox for async coordination.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        to: {
+          type: 'string',
+          description: 'Recipient email address',
+        },
+        subject: {
+          type: 'string',
+          description: 'Email subject line',
+        },
+        text: {
+          type: 'string',
+          description: 'Email body (plain text)',
+        },
+      },
+      required: ['to', 'subject', 'text'],
+    },
+  },
+  {
+    name: 'agentmail_list',
+    description: 'List recent emails from your AgentMail inbox',
+    input_schema: {
+      type: 'object',
+      properties: {
+        inbox: {
+          type: 'string',
+          description: 'Inbox ID to list messages from (if you have multiple)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of messages to return (default: 20)',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'agentmail_read',
+    description: 'Read a specific email message from AgentMail by ID',
+    input_schema: {
+      type: 'object',
+      properties: {
+        message_id: {
+          type: 'string',
+          description: 'ID of the message to read',
+        },
+      },
+      required: ['message_id'],
+    },
+  },
+  {
     name: 'save_file',
     description: 'Save content to a file attached to the current task. Use for outputs that are too large for comments (reports, code, data, images). File will be accessible to the user in their Files section.',
     input_schema: {
@@ -173,7 +227,7 @@ export const TOOLS = [
 ];
 
 /**
- * Execute a tool call with user's Google OAuth token and Supabase client
+ * Execute a tool call with user's credentials and Supabase client
  */
 export async function executeTool(
   toolName: string,
@@ -181,7 +235,8 @@ export async function executeTool(
   googleAccessToken: string,
   supabase?: any,
   taskId?: string,
-  accountId?: string
+  accountId?: string,
+  agentmailApiKey?: string
 ): Promise<string> {
   const auth = new google.auth.OAuth2();
   auth.setCredentials({ access_token: googleAccessToken });
@@ -198,6 +253,18 @@ export async function executeTool(
     
     case 'calendar_list_events':
       return await listCalendarEvents(params, auth);
+
+    case 'agentmail_send':
+      if (!agentmailApiKey) throw new Error('AgentMail not connected');
+      return await sendAgentmail(params, agentmailApiKey);
+    
+    case 'agentmail_list':
+      if (!agentmailApiKey) throw new Error('AgentMail not connected');
+      return await listAgentmail(params, agentmailApiKey);
+    
+    case 'agentmail_read':
+      if (!agentmailApiKey) throw new Error('AgentMail not connected');
+      return await readAgentmail(params, agentmailApiKey);
     
     case 'save_file':
       if (!supabase || !taskId || !accountId) {
@@ -594,4 +661,136 @@ function formatBytes(bytes: number): string {
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${Math.round(bytes / Math.pow(k, i) * 100) / 100} ${sizes[i]}`;
+}
+
+/**
+ * AgentMail: Send email
+ */
+async function sendAgentmail(params: { to: string; subject: string; text: string }, apiKey: string): Promise<string> {
+  try {
+    // Get inboxes first to find the default one
+    const inboxResponse = await fetch('https://api.agentmail.to/v0/inboxes', {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    });
+
+    if (!inboxResponse.ok) {
+      throw new Error(`Failed to get inboxes: ${inboxResponse.statusText}`);
+    }
+
+    const inboxes = await inboxResponse.json();
+    if (!inboxes || inboxes.length === 0) {
+      throw new Error('No AgentMail inboxes found');
+    }
+
+    const defaultInbox = inboxes[0].id;
+
+    // Send the message
+    const response = await fetch(`https://api.agentmail.to/v0/inboxes/${defaultInbox}/messages/send`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: params.to,
+        subject: params.subject,
+        text: params.text,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`AgentMail send failed: ${errorText}`);
+    }
+
+    const result = await response.json();
+    return `✅ Email sent to ${params.to} from ${defaultInbox}@agentmail.to`;
+  } catch (error: any) {
+    return `❌ Failed to send email: ${error.message}`;
+  }
+}
+
+/**
+ * AgentMail: List messages
+ */
+async function listAgentmail(params: { inbox?: string; limit?: number }, apiKey: string): Promise<string> {
+  try {
+    // Get inboxes first
+    const inboxResponse = await fetch('https://api.agentmail.to/v0/inboxes', {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    });
+
+    if (!inboxResponse.ok) {
+      throw new Error(`Failed to get inboxes: ${inboxResponse.statusText}`);
+    }
+
+    const inboxes = await inboxResponse.json();
+    if (!inboxes || inboxes.length === 0) {
+      return 'No AgentMail inboxes found';
+    }
+
+    const inboxId = params.inbox || inboxes[0].id;
+    const limit = params.limit || 20;
+
+    // List messages
+    const response = await fetch(`https://api.agentmail.to/v0/inboxes/${inboxId}/messages?limit=${limit}`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to list messages: ${response.statusText}`);
+    }
+
+    const messages = await response.json();
+    
+    if (!messages || messages.length === 0) {
+      return 'No messages found';
+    }
+
+    const formatted = messages.map((msg: any) => 
+      `ID: ${msg.id}\nFrom: ${msg.from}\nSubject: ${msg.subject}\nReceived: ${new Date(msg.created_at).toLocaleString()}`
+    ).join('\n\n---\n\n');
+
+    return `Found ${messages.length} message(s):\n\n${formatted}`;
+  } catch (error: any) {
+    return `❌ Failed to list messages: ${error.message}`;
+  }
+}
+
+/**
+ * AgentMail: Read message
+ */
+async function readAgentmail(params: { message_id: string }, apiKey: string): Promise<string> {
+  try {
+    // Get inboxes to construct proper URL
+    const inboxResponse = await fetch('https://api.agentmail.to/v0/inboxes', {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    });
+
+    if (!inboxResponse.ok) {
+      throw new Error(`Failed to get inboxes: ${inboxResponse.statusText}`);
+    }
+
+    const inboxes = await inboxResponse.json();
+    if (!inboxes || inboxes.length === 0) {
+      return 'No AgentMail inboxes found';
+    }
+
+    const inboxId = inboxes[0].id;
+
+    // Get message
+    const response = await fetch(`https://api.agentmail.to/v0/inboxes/${inboxId}/messages/${params.message_id}`, {
+      headers: { 'Authorization': `Bearer ${apiKey}` },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to read message: ${response.statusText}`);
+    }
+
+    const message = await response.json();
+    
+    return `From: ${message.from}\nTo: ${message.to}\nSubject: ${message.subject}\nDate: ${new Date(message.created_at).toLocaleString()}\n\n${message.text || message.html || '(no body)'}`;
+  } catch (error: any) {
+    return `❌ Failed to read message: ${error.message}`;
+  }
 }
