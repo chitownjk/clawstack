@@ -86,6 +86,14 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     throw new Error(`Task not found: ${taskId}`);
   }
 
+  // Decrypt sensitive fields
+  if (task.title) {
+    task.title = decrypt(task.title);
+  }
+  if (task.description) {
+    task.description = decrypt(task.description);
+  }
+
   // 2. Load account (need to check limits BEFORE executing)
   const { data: account, error: accountError } = await supabase
     .from('accounts')
@@ -213,11 +221,11 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     created_at: new Date().toISOString(),
   });
 
-  // 9. Update task status
+  // 9. Update task status to review (so user can see the response)
   await supabase
     .from('mc_tasks')
     .update({
-      status: 'done',
+      status: 'review',
       updated_at: new Date().toISOString(),
     })
     .eq('id', taskId);
