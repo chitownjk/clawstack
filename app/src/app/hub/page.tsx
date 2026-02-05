@@ -22,29 +22,27 @@ export default async function HubPage({
   const selectedType = searchParams.type || 'all'
   const selectedCategory = searchParams.category || 'all'
   
-  // Get current user's plan and execution mode
+  // Check if user should be redirected to /agents (cloud users)
+  const authSupabase = await createRealSupabaseClient()
+  const { data: { session } } = await authSupabase.auth.getSession()
+  
   let isTeamPlan = false
-  try {
-    const authSupabase = await createRealSupabaseClient()
-    const { data: { session } } = await authSupabase.auth.getSession()
+  
+  if (session?.user) {
+    const { data: account } = await supabase
+      .from('accounts')
+      .select('plan_tier, execution_mode')
+      .eq('auth_uid', session.user.id)
+      .single()
     
-    if (session?.user) {
-      const { data: account } = await supabase
-        .from('accounts')
-        .select('plan_tier, execution_mode')
-        .eq('auth_uid', session.user.id)
-        .single()
-      
-      // Cloud users should use /agents page instead of Hub
-      if (account?.execution_mode && account.execution_mode !== 'openclaw') {
-        redirect('/agents')
-      }
-      
-      isTeamPlan = account?.plan_tier === 'team'
+    // Cloud users should use /agents page instead of Hub
+    if (account?.execution_mode && account.execution_mode !== 'openclaw') {
+      console.log('[Hub] Redirecting cloud user to /agents, execution_mode:', account.execution_mode)
+      redirect('/agents')
     }
-  } catch {
-    // Not logged in or error - default to free
-    isTeamPlan = false
+    
+    // Set team plan flag for pattern filtering
+    isTeamPlan = account?.plan_tier === 'team'
   }
   
   // Fetch validated patterns (public, shared economy)
