@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import SettingsNav from '@/components/SettingsNav';
+import { decrypt } from '@/lib/crypto';
 
 export default function UsagePage() {
   const [loading, setLoading] = useState(true);
@@ -73,7 +74,13 @@ export default function UsagePage() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      setRecentTasks(tasks || []);
+      // Decrypt task titles
+      const decryptedTasks = (tasks || []).map(task => ({
+        ...task,
+        title: task.title ? decrypt(task.title) : 'Untitled'
+      }));
+
+      setRecentTasks(decryptedTasks);
     } catch (error) {
       console.error('Error loading usage:', error);
     } finally {

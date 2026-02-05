@@ -158,7 +158,7 @@ export async function GET(request: Request) {
             verification_tier: 'silver',
             verified_at: new Date().toISOString(),
             google_id: data.user.user_metadata?.provider_id || null,
-            tier: 'team', // Premium for early adopters
+            tier: 'developer', // Free trial tier (400 tasks/month)
           })
           .select('id, name')
           .single()
