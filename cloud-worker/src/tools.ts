@@ -351,9 +351,10 @@ async function createCalendarEvent(
   const res = await calendar.events.insert({
     calendarId: 'primary',
     requestBody: event,
+    sendUpdates: 'all', // Send email invites to attendees
   });
 
-  return `Calendar event created: "${params.title}" (ID: ${res.data.id})`;
+  return `Calendar event created: "${params.title}" (ID: ${res.data.id})\nInvitations sent to: ${params.attendees?.join(', ') || 'none'}`;
 }
 
 /**
