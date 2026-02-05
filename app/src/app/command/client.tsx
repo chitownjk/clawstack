@@ -530,7 +530,17 @@ export default function MissionControlClient() {
             collisionDetection={closestCenter}
           >
             <div className="flex gap-4 pb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent snap-x">
-              {COLUMNS.filter(col => !hideDone || col.status !== 'done').map(column => (
+              {COLUMNS.filter(col => {
+                // Hide "done" if toggle is on
+                if (hideDone && col.status === 'done') return false;
+                
+                // Hide "blocked" and "error" columns if no tasks have those statuses
+                if (col.status === 'blocked' || col.status === 'error') {
+                  return filteredTasks.some(t => t.status === col.status);
+                }
+                
+                return true;
+              }).map(column => (
                 <div key={column.status} className="snap-start">
                   <KanbanColumn
                     status={column.status}
