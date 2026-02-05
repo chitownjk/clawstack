@@ -20,6 +20,7 @@ const COLUMNS: { status: TaskStatus; title: string }[] = [
   { status: 'assigned', title: 'Assigned' },
   { status: 'in_progress', title: 'In Progress' },
   { status: 'review', title: 'Review' },
+  { status: 'error', title: 'Error' },
   { status: 'done', title: 'Done' }
 ]
 

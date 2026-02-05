@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase'
 
 export type AgentStatus = 'idle' | 'active' | 'blocked'
-export type TaskStatus = 'inbox' | 'assigned' | 'in_progress' | 'review' | 'done' | 'blocked'
+export type TaskStatus = 'inbox' | 'assigned' | 'in_progress' | 'review' | 'done' | 'blocked' | 'error'
 export type ActivityType = 'heartbeat' | 'task_created' | 'task_updated' | 'task_assigned' | 'comment' | 'status_change' | 'blocked' | 'unblocked'
 
 export interface Agent {
