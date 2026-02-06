@@ -2,6 +2,9 @@ import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-serv
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
+// Force dynamic rendering (don't pre-render at build time)
+export const dynamic = 'force-dynamic'
+
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET
 

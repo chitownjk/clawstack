@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { simpleParser } from 'mailparser';
 
+// Force dynamic rendering (don't pre-render at build time)
+export const dynamic = 'force-dynamic'
+
 /**
  * Inbound Email Webhook
  * 
