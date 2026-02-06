@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { simpleParser } from 'mailparser';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 /**
  * Inbound Email Webhook
  * 
@@ -16,6 +11,12 @@ const supabase = createClient(
  */
 export async function POST(req: NextRequest) {
   try {
+    // Create Supabase client (must be inside function, not at module level)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
     // Parse webhook payload from Cloudflare
     const body = await req.json();
     const { taskId, from, subject, rawEmail } = body;
