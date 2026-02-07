@@ -13,11 +13,14 @@ interface TaskCardProps {
   showActions?: boolean
 }
 
-const priorityColors = {
+const priorityColors: Record<string, string> = {
   low: 'border-l-gray-300',
   normal: 'border-l-blue-400',
   high: 'border-l-orange-400',
-  urgent: 'border-l-red-500'
+  urgent: 'border-l-red-500',
+  now: 'border-l-red-500',
+  soon: 'border-l-yellow-400',
+  later: 'border-l-gray-300'
 }
 
 export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, showActions = true }: TaskCardProps) {
