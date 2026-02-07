@@ -38,15 +38,17 @@ export const AVAILABLE_VIEWS: ViewConfig[] = [
   }
 ];
 
+import { TaskStatus } from '@/lib/mission-control';
+
 export interface Task {
   id: string;
-  account_id?: string;  // Make optional to match mission-control
+  account_id?: string;
   title: string;
   description?: string;
-  status: string;
+  status: TaskStatus | string;  // Allow both specific and general
   assigned_agent_ids?: string[];
   tags?: string[];
-  priority: 'now' | 'soon' | 'later' | string;  // Allow old values too
+  priority: 'now' | 'soon' | 'later' | string;
   due_date?: string;
   assigned_human?: string;
   position?: number;
