@@ -1,145 +1,232 @@
 'use client';
 
 import { useState } from 'react';
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  created_at: string;
-}
+import { Task, TaskFilter } from '@/types/views';
 
 interface ListViewProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
-  onStatusChange: (taskId: string, newStatus: string) => void;
+  onTaskComplete: (taskId: string) => void;
 }
 
-export function ListView({ tasks, onTaskClick, onStatusChange }: ListViewProps) {
-  const [showCompleted, setShowCompleted] = useState(false);
-
-  const incompleteTasks = tasks.filter(t => t.status !== 'done');
-  const completedTasks = tasks.filter(t => t.status === 'done');
-
-  const TaskItem = ({ task }: { task: Task }) => {
-    const isDone = task.status === 'done';
-
-    return (
-      <div
-        className="group flex items-start gap-3 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded-lg transition cursor-pointer border border-transparent hover:border-neutral-200 dark:hover:border-neutral-700"
-        onClick={() => onTaskClick(task)}
-      >
-        {/* Checkbox */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onStatusChange(task.id, isDone ? 'inbox' : 'done');
-          }}
-          className={`mt-0.5 flex-shrink-0 w-5 h-5 border-2 rounded transition ${
-            isDone
-              ? 'bg-green-600 border-green-600'
-              : 'border-neutral-300 dark:border-neutral-600 hover:border-green-600'
-          }`}
-        >
-          {isDone && (
-            <svg className="w-full h-full text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </button>
-
-        {/* Task content */}
-        <div className="flex-1 min-w-0">
-          <h3 className={`font-medium ${
-            isDone 
-              ? 'line-through text-neutral-400 dark:text-neutral-600' 
-              : 'text-neutral-900 dark:text-neutral-100'
-          }`}>
-            {task.title}
-          </h3>
-          {task.description && task.description !== task.title && (
-            <p className={`text-sm mt-1 ${
-              isDone
-                ? 'text-neutral-400 dark:text-neutral-600'
-                : 'text-neutral-600 dark:text-neutral-400'
-            }`}>
-              {task.description}
-            </p>
-          )}
-        </div>
-
-        {/* Status badge */}
-        {!isDone && task.status !== 'inbox' && (
-          <span className="flex-shrink-0 text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-            {task.status === 'assigned' && 'Assigned'}
-            {task.status === 'executing' && 'Running...'}
-          </span>
-        )}
-      </div>
-    );
+export default function ListView({ tasks, onTaskClick, onTaskComplete }: ListViewProps) {
+  const [filters, setFilters] = useState<TaskFilter>({});
+  
+  // Apply filters
+  const filteredTasks = tasks.filter(task => {
+    if (filters.status && !filters.status.includes(task.status)) return false;
+    if (filters.priority && !filters.priority.includes(task.priority)) return false;
+    if (filters.assigned_to_ai && (!task.assigned_agent_ids || task.assigned_agent_ids.length === 0)) return false;
+    if (filters.waiting_for_me && task.status !== 'review') return false;
+    if (filters.completed && task.status !== 'done') return false;
+    if (filters.overdue) {
+      if (!task.due_date) return false;
+      const dueDate = new Date(task.due_date);
+      const now = new Date();
+      if (dueDate >= now || task.status === 'done') return false;
+    }
+    return true;
+  });
+  
+  // Sort by position, then created_at
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (a.position !== b.position) return a.position - b.position;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+  
+  const toggleFilter = (key: keyof TaskFilter, value?: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: prev[key] === value ? undefined : value
+    }));
   };
-
+  
+  // Count badges
+  const counts = {
+    all: tasks.length,
+    waitingOnAI: tasks.filter(t => t.assigned_agent_ids && t.assigned_agent_ids.length > 0 && t.status !== 'done').length,
+    waitingForMe: tasks.filter(t => t.status === 'review').length,
+    completed: tasks.filter(t => t.status === 'done').length,
+    overdue: tasks.filter(t => {
+      if (!t.due_date || t.status === 'done') return false;
+      return new Date(t.due_date) < new Date();
+    }).length
+  };
+  
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-          My Tasks
-        </h1>
-        <div className="text-sm text-neutral-600 dark:text-neutral-400">
-          {incompleteTasks.length} active
-          {completedTasks.length > 0 && ` • ${completedTasks.length} done`}
+    <div className="flex flex-col h-full">
+      {/* Filters */}
+      <div className="p-4 bg-white border-b border-gray-200">
+        <div className="flex flex-wrap gap-2">
+          <FilterChip
+            label="All"
+            count={counts.all}
+            active={Object.keys(filters).length === 0}
+            onClick={() => setFilters({})}
+          />
+          <FilterChip
+            label="🤖 Waiting on AI"
+            count={counts.waitingOnAI}
+            active={filters.assigned_to_ai === true}
+            onClick={() => toggleFilter('assigned_to_ai', true)}
+          />
+          <FilterChip
+            label="👤 AI waiting for me"
+            count={counts.waitingForMe}
+            active={filters.waiting_for_me === true}
+            onClick={() => toggleFilter('waiting_for_me', true)}
+          />
+          <FilterChip
+            label="✅ Completed"
+            count={counts.completed}
+            active={filters.completed === true}
+            onClick={() => toggleFilter('completed', true)}
+          />
+          <FilterChip
+            label="🔴 Overdue"
+            count={counts.overdue}
+            active={filters.overdue === true}
+            onClick={() => toggleFilter('overdue', true)}
+          />
         </div>
       </div>
-
-      {/* Active Tasks */}
-      <div className="space-y-1">
-        {incompleteTasks.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-neutral-400 dark:text-neutral-600 mb-4">
-              No active tasks
-            </p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-              Create your first task
-            </button>
+      
+      {/* Task List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        {sortedTasks.length === 0 ? (
+          <div className="text-center py-12 text-gray-400">
+            <p className="text-lg">No tasks found</p>
+            <p className="text-sm mt-2">Try adjusting your filters or create a new task</p>
           </div>
         ) : (
-          incompleteTasks.map(task => (
-            <TaskItem key={task.id} task={task} />
+          sortedTasks.map(task => (
+            <TaskItem
+              key={task.id}
+              task={task}
+              onClick={() => onTaskClick(task)}
+              onComplete={() => onTaskComplete(task.id)}
+            />
           ))
         )}
       </div>
+    </div>
+  );
+}
 
-      {/* Completed Tasks */}
-      {completedTasks.length > 0 && (
-        <div className="pt-6 border-t border-neutral-200 dark:border-neutral-800">
-          <button
-            onClick={() => setShowCompleted(!showCompleted)}
-            className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition mb-4"
-          >
-            <svg
-              className={`w-4 h-4 transition-transform ${showCompleted ? 'rotate-90' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <span className="text-sm font-medium">
-              Completed ({completedTasks.length})
+// Filter chip component
+function FilterChip({ 
+  label, 
+  count, 
+  active, 
+  onClick 
+}: { 
+  label: string; 
+  count: number; 
+  active: boolean; 
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`
+        flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
+        transition-all duration-200
+        ${active 
+          ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-400' 
+          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        }
+      `}
+    >
+      <span>{label}</span>
+      <span className={`text-xs ${active ? 'text-blue-600' : 'text-gray-500'}`}>
+        {count}
+      </span>
+    </button>
+  );
+}
+
+// Task item component
+function TaskItem({ 
+  task, 
+  onClick, 
+  onComplete 
+}: { 
+  task: Task; 
+  onClick: () => void; 
+  onComplete: () => void;
+}) {
+  const isComplete = task.status === 'done';
+  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isComplete;
+  
+  const priorityColor = {
+    now: 'text-red-600',
+    soon: 'text-yellow-600',
+    later: 'text-gray-400'
+  }[task.priority] || 'text-gray-400';
+  
+  return (
+    <div
+      className={`
+        group flex items-start gap-3 p-3 rounded-lg border
+        transition-all duration-200
+        ${isComplete 
+          ? 'bg-gray-50 border-gray-200 opacity-60' 
+          : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+        }
+        cursor-pointer
+      `}
+      onClick={onClick}
+    >
+      {/* Checkbox */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onComplete();
+        }}
+        className={`
+          mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center
+          transition-all duration-200
+          ${isComplete 
+            ? 'bg-blue-500 border-blue-500' 
+            : 'border-gray-300 hover:border-blue-400 group-hover:border-blue-400'
+          }
+        `}
+      >
+        {isComplete && (
+          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+      </button>
+      
+      {/* Task content */}
+      <div className="flex-1 min-w-0">
+        <h3 className={`font-medium ${isComplete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+          {task.title}
+        </h3>
+        
+        {/* Metadata */}
+        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+          {task.due_date && (
+            <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+              {isOverdue && '🔴 '}
+              {new Date(task.due_date).toLocaleDateString()}
             </span>
-          </button>
-
-          {showCompleted && (
-            <div className="space-y-1 opacity-60">
-              {completedTasks.map(task => (
-                <TaskItem key={task.id} task={task} />
-              ))}
-            </div>
           )}
+          
+          {task.assigned_human && (
+            <span>👤 {task.assigned_human}</span>
+          )}
+          
+          {task.assigned_agent_ids && task.assigned_agent_ids.length > 0 && (
+            <span>🤖 AI assigned</span>
+          )}
+          
+          <span className={`${priorityColor} font-medium uppercase`}>
+            {task.priority}
+          </span>
         </div>
-      )}
+      </div>
     </div>
   );
 }
