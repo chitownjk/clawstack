@@ -40,13 +40,13 @@ export const AVAILABLE_VIEWS: ViewConfig[] = [
 
 export interface Task {
   id: string;
-  account_id: string;
+  account_id?: string;  // Make optional to match mission-control
   title: string;
   description?: string;
   status: string;
   assigned_agent_ids?: string[];
   tags?: string[];
-  priority: 'now' | 'soon' | 'later';
+  priority: 'now' | 'soon' | 'later' | string;  // Allow old values too
   due_date?: string;
   assigned_human?: string;
   position: number;
