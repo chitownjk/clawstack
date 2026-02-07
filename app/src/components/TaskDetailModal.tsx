@@ -214,7 +214,7 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
             </div>
           </div>
 
-          {task.tags.length > 0 && (
+          {task.tags?.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3">
               {task.tags.map(tag => (
                 <span key={tag} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
