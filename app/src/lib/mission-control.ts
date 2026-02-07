@@ -30,11 +30,16 @@ export interface Task {
   assigned_agent_ids: string[]
   created_by_agent_id?: string
   tags: string[]
-  priority: 'low' | 'normal' | 'high' | 'urgent'
+  priority: 'low' | 'normal' | 'high' | 'urgent' | 'now' | 'soon' | 'later'
   created_at: string
   updated_at: string
   completed_at?: string
   account_id?: string
+  // New fields for consumer views (optional for backward compatibility)
+  due_date?: string
+  assigned_human?: string
+  position?: number
+  time_block?: boolean
 }
 
 export interface Comment {
