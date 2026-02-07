@@ -2,6 +2,10 @@
 // Note: Encryption/decryption happens server-side in API routes
 import { createClient } from '@/lib/supabase'
 
+// Re-export Task from views for consistency
+import type { Task as ViewTask } from '@/types/views'
+export type Task = ViewTask
+
 export type AgentStatus = 'idle' | 'active' | 'blocked'
 export type TaskStatus = 'inbox' | 'assigned' | 'in_progress' | 'review' | 'done' | 'blocked' | 'error'
 export type ActivityType = 'heartbeat' | 'task_created' | 'task_updated' | 'task_assigned' | 'comment' | 'status_change' | 'blocked' | 'unblocked'
@@ -22,25 +26,7 @@ export interface Agent {
   account_id?: string
 }
 
-export interface Task {
-  id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  assigned_agent_ids: string[]
-  created_by_agent_id?: string
-  tags: string[]
-  priority: 'low' | 'normal' | 'high' | 'urgent' | 'now' | 'soon' | 'later'
-  created_at: string
-  updated_at: string
-  completed_at?: string
-  account_id?: string
-  // New fields for consumer views (optional for backward compatibility)
-  due_date?: string
-  assigned_human?: string
-  position?: number
-  time_block?: boolean
-}
+// Task is now imported from @/types/views
 
 export interface Comment {
   id: string
