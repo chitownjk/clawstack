@@ -77,7 +77,7 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
   }
 
   function copyForChat() {
-    const assignedAgents = agents.filter(a => task.assigned_agent_ids.includes(a.id))
+    const assignedAgents = agents.filter(a => task.assigned_agent_ids?.includes(a.id))
     const agentNames = assignedAgents.map(a => a.name).join(', ') || 'Unassigned'
     const text = `Task: ${task.title}\nID: ${task.id}\nStatus: ${task.status}\nAssigned to: ${agentNames}\n\nLet's discuss this task.`
     
@@ -87,7 +87,7 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
     })
   }
 
-  const assignedAgents = agents.filter(a => task.assigned_agent_ids.includes(a.id))
+  const assignedAgents = agents.filter(a => task.assigned_agent_ids?.includes(a.id))
 
   return (
     <div 

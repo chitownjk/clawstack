@@ -35,7 +35,7 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined
 
-  const assignedAgents = agents.filter(a => task.assigned_agent_ids.includes(a.id))
+  const assignedAgents = agents.filter(a => task.assigned_agent_ids?.includes(a.id))
   const timeAgo = getTimeAgo(new Date(task.created_at))
   const isDone = task.status === 'done'
 
