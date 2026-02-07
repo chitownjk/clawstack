@@ -6,7 +6,7 @@ import AgentCard from '@/components/AgentCard'
 import KanbanColumn from '@/components/KanbanColumn'
 import ActivityFeed from '@/components/ActivityFeed'
 import TaskDetailModal from '@/components/TaskDetailModal'
-import CreateTaskModal from '@/components/CreateTaskModal'
+import SimpleCreateTaskModal from '@/components/SimpleCreateTaskModal'
 import TwoFactorVerifyModal from '@/components/TwoFactorVerifyModal'
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
@@ -629,12 +629,12 @@ export default function MissionControlClient() {
         />
       )}
 
-      {/* Create Task Modal */}
+      {/* Simple Create Task Modal */}
       {showCreateTask && (
-        <CreateTaskModal
-          agents={agents}
+        <SimpleCreateTaskModal
+          isOpen={showCreateTask}
           onClose={() => setShowCreateTask(false)}
-          onSuccess={() => loadData()}
+          onTaskCreated={loadData}
         />
       )}
 
