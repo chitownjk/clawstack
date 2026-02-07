@@ -11,6 +11,10 @@ import TwoFactorVerifyModal from '@/components/TwoFactorVerifyModal'
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
 import FilesView from '@/components/FilesView'
+import ViewSwitcher from '@/components/ViewSwitcher'
+import ListView from '@/components/ListView'
+import TimeView from '@/components/TimeView'
+import { ViewType } from '@/types/views'
 import { use2FA } from '@/hooks/use2FA'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase'
@@ -38,6 +42,7 @@ export default function MissionControlClient() {
   const [hideDone, setHideDone] = useState(true) // Hide completed by default
   const [deleteModal, setDeleteModal] = useState<{ task: Task; commentCount: number } | null>(null)
   const [executionMode, setExecutionMode] = useState<string | null>(null)
+  const [currentView, setCurrentView] = useState<ViewType>('kanban') // New: task view type
   const [view, setView] = useState<'board' | 'files'>('board')
   
   // 2FA for write access
@@ -517,6 +522,12 @@ export default function MissionControlClient() {
         {/* Board View */}
         {view === 'board' && (
           <>
+        {/* View Switcher */}
+        <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} />
+        
+        {/* Kanban/List/Time Views - Conditional Rendering */}
+        {currentView === 'kanban' && (
+          <>
         {/* Kanban Board - Horizontal Scroll */}
         <div className="relative">
           {/* Scroll indicator */}
@@ -565,8 +576,25 @@ export default function MissionControlClient() {
             </DragOverlay>
           </DndContext>
         </div>
+          </>
+        )}
+        
+        {currentView === 'list' && (
+          <ListView 
+            tasks={filteredTasks} 
+            onTaskClick={setSelectedTask}
+            onTaskComplete={handleMarkDone}
+          />
+        )}
+        
+        {currentView === 'time' && (
+          <TimeView 
+            tasks={filteredTasks} 
+            onTaskClick={setSelectedTask}
+          />
+        )}
 
-        {/* Activity Feed - Below Kanban */}
+        {/* Activity Feed - Below Board */}
         <div className="mt-6">
           <div className="bg-white rounded-lg p-6">
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center justify-between">
