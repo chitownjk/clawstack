@@ -49,8 +49,8 @@ export interface Task {
   priority: 'now' | 'soon' | 'later' | string;  // Allow old values too
   due_date?: string;
   assigned_human?: string;
-  position: number;
-  time_block: boolean;
+  position?: number;
+  time_block?: boolean;
   created_at: string;
   updated_at: string;
   completed_at?: string;
