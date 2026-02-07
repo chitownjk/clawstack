@@ -294,10 +294,10 @@ export default function MissionControlClient() {
         if (selectedAgent === 'Jay') {
           // Jay's tasks are ones not assigned to agents, or assigned to Jay
           const jayAgent = agents.find(a => a.name === 'Jay')
-          return t.assigned_agent_ids.length === 0 || (jayAgent && t.assigned_agent_ids.includes(jayAgent.id))
+          return t.assigned_agent_ids?.length === 0 || (jayAgent && t.assigned_agent_ids?.includes(jayAgent.id))
         }
         const bot = agents.find(a => a.name === selectedAgent)
-        return bot && t.assigned_agent_ids.includes(bot.id)
+        return bot && t.assigned_agent_ids?.includes(bot.id)
       })
     : tasks
 
