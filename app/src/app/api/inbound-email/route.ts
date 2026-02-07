@@ -15,9 +15,16 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: NextRequest) {
   try {
     // Create Supabase client (must be inside function, not at module level)
+    // Support both env var names for compatibility
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+    
+    if (!serviceRoleKey) {
+      throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY');
+    }
+    
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      serviceRoleKey
     );
 
     // Parse webhook payload from Cloudflare
