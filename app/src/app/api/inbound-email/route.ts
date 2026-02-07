@@ -1,21 +1,134 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { simpleParser } from 'mailparser';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 // Force dynamic rendering (don't pre-render at build time)
 export const dynamic = 'force-dynamic'
+
+// Rate limiter: 10 requests per minute per IP
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, '1 m'),
+});
+
+/**
+ * Verify Cloudflare webhook signature
+ */
+function verifyWebhookSignature(
+  body: string,
+  signature: string | null,
+  secret: string
+): boolean {
+  if (!signature) return false;
+  
+  // Cloudflare uses HMAC-SHA256
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('hex');
+  
+  // Constant-time comparison to prevent timing attacks
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
 
 /**
  * Inbound Email Webhook
  * 
  * Receives emails from Cloudflare Email Worker
- * Parses email content and creates comment on task
- * Tracks external participants
+ * Authenticated via webhook signature
+ * Rate limited per IP
  */
 export async function POST(req: NextRequest) {
   try {
-    // Create Supabase client (must be inside function, not at module level)
-    // Support both env var names for compatibility
+    // 1. Rate limiting
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    const { success: rateLimitSuccess } = await ratelimit.limit(ip);
+    
+    if (!rateLimitSuccess) {
+      console.warn('[inbound-email] Rate limit exceeded:', ip);
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        { status: 429 }
+      );
+    }
+
+    // 2. Webhook signature verification
+    const signature = req.headers.get('X-Webhook-Signature');
+    const body = await req.text();
+    const webhookSecret = process.env.CLOUDFLARE_WEBHOOK_SECRET;
+    
+    if (!webhookSecret) {
+      console.error('[inbound-email] CLOUDFLARE_WEBHOOK_SECRET not configured');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
+    if (!verifyWebhookSignature(body, signature, webhookSecret)) {
+      console.warn('[inbound-email] Invalid webhook signature:', ip);
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // 3. Parse and validate body
+    let payload;
+    try {
+      payload = JSON.parse(body);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON body' },
+        { status: 400 }
+      );
+    }
+
+    const { taskId, from, subject, rawEmail } = payload;
+
+    // 4. Input validation
+    if (!taskId || !from || !rawEmail) {
+      console.error('[inbound-email] Missing required fields:', { taskId, from, subject });
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(taskId)) {
+      return NextResponse.json(
+        { error: 'Invalid task ID format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(from)) {
+      return NextResponse.json(
+        { error: 'Invalid sender email format' },
+        { status: 400 }
+      );
+    }
+
+    // 5. Size limits
+    if (rawEmail.length > 500000) { // 500KB max
+      return NextResponse.json(
+        { error: 'Email too large (max 500KB)' },
+        { status: 413 }
+      );
+    }
+
+    console.log('[inbound-email] Processing email:', { taskId, from, subject });
+
+    // 6. Create Supabase client
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
     
     if (!serviceRoleKey) {
@@ -27,21 +140,7 @@ export async function POST(req: NextRequest) {
       serviceRoleKey
     );
 
-    // Parse webhook payload from Cloudflare
-    const body = await req.json();
-    const { taskId, from, subject, rawEmail } = body;
-
-    if (!taskId || !from || !rawEmail) {
-      console.error('[inbound-email] Missing required fields:', { taskId, from, subject });
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    console.log('[inbound-email] Processing email:', { taskId, from, subject });
-
-    // Look up task
+    // 7. Look up task (verifies it exists and gets account_id for RLS)
     const { data: task, error: taskError } = await supabase
       .from('mc_tasks')
       .select('id, account_id, title')
@@ -56,10 +155,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse email to extract body text
+    // 8. Parse email
     const parsed = await simpleParser(rawEmail);
     
-    // Extract plain text or HTML (prefer plain text)
+    // 9. Extract and clean body
     let emailBody = '';
     if (parsed.text) {
       emailBody = parsed.text.trim();
@@ -68,8 +167,6 @@ export async function POST(req: NextRequest) {
       emailBody = parsed.html.replace(/<[^>]*>/g, '').trim();
     }
 
-    // Clean up email body
-    // Remove common email signatures and quoted text
     emailBody = cleanEmailBody(emailBody);
 
     if (!emailBody) {
@@ -77,7 +174,7 @@ export async function POST(req: NextRequest) {
       emailBody = '(No content)';
     }
 
-    // Extract sender name from email address
+    // 10. Extract sender info
     const senderName = parsed.from?.text || from;
     const senderEmail = extractEmail(from);
 
@@ -87,13 +184,13 @@ export async function POST(req: NextRequest) {
       bodyLength: emailBody.length,
     });
 
-    // Create comment on task
+    // 11. Create comment
     const { data: comment, error: commentError } = await supabase
       .from('mc_comments')
       .insert({
         account_id: task.account_id,
         task_id: taskId,
-        agent_id: null, // External user, not an agent
+        agent_id: null,
         content: emailBody,
         external_author_email: senderEmail,
         external_author_name: senderName,
@@ -111,7 +208,6 @@ export async function POST(req: NextRequest) {
 
     console.log('[inbound-email] Comment created:', comment.id);
 
-    // Return success
     return NextResponse.json({
       success: true,
       commentId: comment.id,
@@ -129,8 +225,6 @@ export async function POST(req: NextRequest) {
 
 /**
  * Extract email address from various formats
- * "John Doe <john@example.com>" -> "john@example.com"
- * "john@example.com" -> "john@example.com"
  */
 function extractEmail(fromField: string): string {
   const match = fromField.match(/<(.+?)>/);
@@ -141,7 +235,6 @@ function extractEmail(fromField: string): string {
  * Clean email body by removing signatures and quoted text
  */
 function cleanEmailBody(body: string): string {
-  // Split into lines
   const lines = body.split('\n');
   const cleanLines: string[] = [];
   let inQuotedSection = false;
@@ -149,36 +242,34 @@ function cleanEmailBody(body: string): string {
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Detect quoted sections (common patterns)
     if (
       trimmed.startsWith('>') ||
-      trimmed.startsWith('On ') && trimmed.includes(' wrote:') ||
-      trimmed.match(/^-{3,}/) || // Horizontal rules
+      (trimmed.startsWith('On ') && trimmed.includes(' wrote:')) ||
+      trimmed.match(/^-{3,}/) ||
       trimmed.match(/^_{3,}/)
     ) {
       inQuotedSection = true;
       continue;
     }
 
-    // Detect signature markers
     if (
       trimmed === '--' ||
       trimmed.startsWith('Sent from') ||
       trimmed.startsWith('Get Outlook') ||
       trimmed.match(/^-{2,}\s*$/)
     ) {
-      // Stop here, rest is signature
       break;
     }
 
-    // If we're in quoted section, skip
     if (inQuotedSection) {
       continue;
     }
 
-    // Keep this line
     cleanLines.push(line);
   }
 
   return cleanLines.join('\n').trim();
 }
+
+// Import crypto for HMAC
+import crypto from 'crypto';
