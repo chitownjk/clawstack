@@ -30,7 +30,9 @@ export default function ListView({ tasks, onTaskClick, onTaskComplete }: ListVie
   
   // Sort by position, then created_at
   const sortedTasks = [...filteredTasks].sort((a, b) => {
-    if (a.position !== b.position) return a.position - b.position;
+    const posA = a.position ?? 0;
+    const posB = b.position ?? 0;
+    if (posA !== posB) return posA - posB;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
   
