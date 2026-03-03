@@ -490,14 +490,14 @@ export default async function LandingPage() {
           <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800" id="pricing">
             <div className="max-w-6xl mx-auto px-6">
               <div className="text-center mb-16">
-                <div className="inline-block mb-6 px-6 py-3 bg-green-100 dark:bg-green-900/30 border-2 border-green-500 dark:border-green-600 rounded-full">
-                  <span className="text-green-700 dark:text-green-300 font-semibold text-lg">🎉 Product Hunt Launch: 3 Months Free on All Plans!</span>
-                </div>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mb-4">
                   Simple, Honest Pricing
                 </h2>
                 <p className="text-xl text-neutral-600 dark:text-neutral-400">
                   Start free. Upgrade anytime. Keep your data forever.
+                </p>
+                <p className="text-lg text-neutral-500 dark:text-neutral-400 mt-4">
+                  Want to self-host? <a href="https://github.com/chitownjk/tiker" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Check out the open source version →</a>
                 </p>
               </div>
               

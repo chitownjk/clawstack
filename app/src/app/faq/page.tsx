@@ -58,8 +58,8 @@ const faqs = [
         a: 'Team ($7/month or $70/year) adds: multiple specialist agents, team member invites, priority support, and advanced features. Scale your AI workforce as you grow.'
       },
       {
-        q: 'What about the early adopter bonus?',
-        a: 'Sign up during beta and get 3 months of Team features free. No credit card required. We want early users to experience the full platform before deciding.'
+        q: 'Can I self-host Tiker?',
+        a: 'Yes! Tiker is open source. You can find the code and self-hosting instructions at github.com/chitownjk/tiker. The cloud version is for those who want us to handle the infrastructure.'
       },
       {
         q: 'Can I switch plans anytime?',

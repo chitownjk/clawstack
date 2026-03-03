@@ -26,9 +26,6 @@ export default async function PricingPage() {
         </div>
 
         <div className="text-center mb-16">
-          <div className="inline-block mb-4 px-4 py-2 bg-green-100 dark:bg-green-900/30 border-2 border-green-500 dark:border-green-600 rounded-full">
-            <span className="text-green-700 dark:text-green-300 font-semibold">🎉 Product Hunt Launch: 3 Months Free on All Plans!</span>
-          </div>
           <h1 className="text-4xl md:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
             Choose Your Plan
           </h1>
