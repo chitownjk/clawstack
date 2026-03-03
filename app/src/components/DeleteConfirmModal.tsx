@@ -38,7 +38,7 @@ export default function DeleteConfirmModal({
       onClick={onCancel}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+        className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl max-w-md w-full p-6"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -77,15 +77,15 @@ export default function DeleteConfirmModal({
 
         {requiresTyping && (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Type <span className="font-mono bg-gray-100 px-1 rounded">delete</span> to confirm
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
+              Type <span className="font-mono bg-gray-100 dark:bg-neutral-700 px-1 rounded">delete</span> to confirm
             </label>
             <input
               type="text"
               value={confirmText}
               onChange={e => setConfirmText(e.target.value)}
               placeholder="delete"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
               autoFocus
             />
           </div>

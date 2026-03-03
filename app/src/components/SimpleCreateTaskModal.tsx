@@ -132,7 +132,7 @@ export default function SimpleCreateTaskModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl">
+      <div className="bg-white dark:bg-neutral-900 rounded-xl max-w-lg w-full p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">What do you need? 👋</h2>
           <button 
@@ -152,21 +152,21 @@ export default function SimpleCreateTaskModal({
         <div className="space-y-6">
           {/* What do you need? */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
               Just describe it naturally
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g., 'Plan Jake's birthday party for March 22' or 'I need to find a plumber for the kitchen leak'"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px] resize-none"
+              className="w-full p-3 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[100px] resize-none bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
               autoFocus
             />
           </div>
 
           {/* When? */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
               When do you need this?
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -207,7 +207,7 @@ export default function SimpleCreateTaskModal({
                 type="date"
                 value={customDate}
                 onChange={(e) => setCustomDate(e.target.value)}
-                className="mt-2 w-full p-2 border border-gray-300 rounded-lg"
+                className="mt-2 w-full p-2 border border-gray-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
                 min={new Date().toISOString().split('T')[0]}
               />
             )}
@@ -215,7 +215,7 @@ export default function SimpleCreateTaskModal({
 
           {/* Need help? */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
               Need help with this?
             </label>
             <div className="flex gap-3">

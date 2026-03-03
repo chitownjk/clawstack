@@ -56,7 +56,7 @@ export default function CreateTaskModal({ agents, onClose, onSuccess }: CreateTa
       onPointerDown={e => e.target === e.currentTarget && e.stopPropagation()}
     >
       <div 
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full"
+        className="bg-white dark:bg-neutral-900 rounded-lg shadow-xl max-w-2xl w-full"
         onClick={e => e.stopPropagation()}
         onPointerDown={e => e.stopPropagation()}
         onMouseDown={e => e.stopPropagation()}
@@ -79,14 +79,14 @@ export default function CreateTaskModal({ agents, onClose, onSuccess }: CreateTa
           {/* Body */}
           <div className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
                 Title *
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
                 placeholder="What needs to be done?"
                 required
                 autoFocus
@@ -94,20 +94,20 @@ export default function CreateTaskModal({ agents, onClose, onSuccess }: CreateTa
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
                 Description
               </label>
               <textarea
                 value={description}
                 onChange={e => setDescription(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
                 placeholder="Additional details..."
                 rows={3}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
                 Assign to
               </label>
               <div className="flex gap-2">
@@ -129,13 +129,13 @@ export default function CreateTaskModal({ agents, onClose, onSuccess }: CreateTa
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
                 Priority
               </label>
               <select
                 value={priority}
                 onChange={e => setPriority(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
               >
                 <option value="low">Low</option>
                 <option value="normal">Normal</option>
@@ -145,21 +145,21 @@ export default function CreateTaskModal({ agents, onClose, onSuccess }: CreateTa
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-neutral-300 mb-2">
                 Tags (comma-separated)
               </label>
               <input
                 type="text"
                 value={tags}
                 onChange={e => setTags(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
                 placeholder="bug, feature, urgent"
               />
             </div>
           </div>
 
           {/* Footer */}
-          <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+          <div className="p-6 border-t bg-gray-50 dark:bg-neutral-800 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
