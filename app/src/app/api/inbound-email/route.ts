@@ -45,16 +45,20 @@ function verifyWebhookSignature(
  */
 export async function POST(req: NextRequest) {
   try {
-    // 1. Rate limiting
+    // 1. Rate limiting (skip for localhost)
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
-    const { success: rateLimitSuccess } = await ratelimit.limit(ip);
+    const isLocalhost = ip === '127.0.0.1' || ip === 'localhost' || ip.startsWith('127.');
     
-    if (!rateLimitSuccess) {
-      console.warn('[inbound-email] Rate limit exceeded:', ip);
-      return NextResponse.json(
-        { error: 'Rate limit exceeded' },
-        { status: 429 }
-      );
+    if (!isLocalhost) {
+      const { success: rateLimitSuccess } = await ratelimit.limit(ip);
+      
+      if (!rateLimitSuccess) {
+        console.warn('[inbound-email] Rate limit exceeded:', ip);
+        return NextResponse.json(
+          { error: 'Rate limit exceeded' },
+          { status: 429 }
+        );
+      }
     }
 
     // 2. Webhook signature verification
