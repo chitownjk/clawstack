@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import TwoFactorSetup from '@/components/TwoFactorSetup'
+import SettingsNav from '@/components/SettingsNav'
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
@@ -14,6 +15,7 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [redirectToMC, setRedirectToMC] = useState(false)
   const [contributionEnabled, setContributionEnabled] = useState(true)
+  const [emailSignature, setEmailSignature] = useState('\n\n---\nSent by my Tiker assistant')
   const [exporting, setExporting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -41,6 +43,10 @@ export default function SettingsPage() {
       
       if (accountData) {
         setAccount(accountData)
+        // Load email signature if it exists
+        if (accountData.email_signature) {
+          setEmailSignature(accountData.email_signature)
+        }
       }
       
       // Load redirect preference from localStorage
@@ -61,10 +67,26 @@ export default function SettingsPage() {
     setSaving(true)
     setMessage(null)
     
-    // Save to localStorage (no DB column yet)
-    localStorage.setItem('tiker_redirect_to_mc', redirectToMC.toString())
-    localStorage.setItem('tiker_contribution_enabled', contributionEnabled.toString())
-    setMessage({ type: 'success', text: 'Preferences saved' })
+    try {
+      // Save to localStorage (no DB column yet for these)
+      localStorage.setItem('tiker_redirect_to_mc', redirectToMC.toString())
+      localStorage.setItem('tiker_contribution_enabled', contributionEnabled.toString())
+      
+      // Save email signature to database
+      const { error } = await supabase
+        .from('accounts')
+        .update({ email_signature: emailSignature })
+        .eq('auth_uid', user?.id)
+      
+      if (error) {
+        throw error
+      }
+      
+      setMessage({ type: 'success', text: 'Preferences saved' })
+    } catch (error) {
+      console.error('Save error:', error)
+      setMessage({ type: 'error', text: 'Failed to save preferences' })
+    }
     
     setSaving(false)
   }
@@ -135,9 +157,11 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen">
       <div className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-8">
+        <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
           Settings
         </h1>
+        
+        <SettingsNav />
 
         {/* Account Info */}
         <section className="card p-6 mb-8">
@@ -213,6 +237,24 @@ export default function SettingsPage() {
                 </p>
               </div>
             </label>
+            
+            <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
+              <label className="block">
+                <p className="font-medium text-neutral-900 dark:text-neutral-100 mb-2">
+                  Email Signature
+                </p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                  This signature will be appended to all emails sent by your agents via Gmail. Recipients will know it was sent by your AI assistant.
+                </p>
+                <textarea
+                  value={emailSignature}
+                  onChange={(e) => setEmailSignature(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  placeholder="---&#10;Sent by my Tiker assistant"
+                />
+              </label>
+            </div>
           </div>
           
           {message && (

@@ -142,17 +142,36 @@ export async function GET(request: Request) {
       return NextResponse.json({ hasWriteAccess: false, requires2FA: false })
     }
 
-    // Check if user has 2FA enabled
+    // Check execution mode and 2FA status
     const adminClient = createAdminClient()
     const { data: account } = await adminClient
       .from('accounts')
-      .select('two_factor_enabled')
+      .select('two_factor_enabled, execution_mode')
       .eq('auth_uid', session.user.id)
       .single()
 
+    // Cloud users (cloud-user-keys, cloud-our-keys) - 2FA is optional
+    // Self-hosted users (openclaw) - 2FA is required
+    const isSelfHosted = account?.execution_mode === 'openclaw'
+
+    if (!isSelfHosted) {
+      // Cloud user - 2FA is optional, always has write access
+      return NextResponse.json({ 
+        hasWriteAccess: true, 
+        requires2FA: false,
+        isSelfHosted: false
+      })
+    }
+
+    // Self-hosted user - 2FA is mandatory
     if (!account?.two_factor_enabled) {
       // 2FA not set up yet - read-only until they enable it
-      return NextResponse.json({ hasWriteAccess: false, requires2FA: true, needs2FASetup: true })
+      return NextResponse.json({ 
+        hasWriteAccess: false, 
+        requires2FA: true, 
+        needs2FASetup: true,
+        isSelfHosted: true
+      })
     }
 
     // Check for valid write token
@@ -160,14 +179,22 @@ export async function GET(request: Request) {
     const writeAccessCookie = cookieStore.get('tiker_write_access')
     
     if (!writeAccessCookie?.value) {
-      return NextResponse.json({ hasWriteAccess: false, requires2FA: true })
+      return NextResponse.json({ 
+        hasWriteAccess: false, 
+        requires2FA: true,
+        isSelfHosted: true
+      })
     }
 
     const [token, expiresAtStr] = writeAccessCookie.value.split(':')
     const expiresAt = parseInt(expiresAtStr)
 
     if (Date.now() > expiresAt) {
-      return NextResponse.json({ hasWriteAccess: false, requires2FA: true })
+      return NextResponse.json({ 
+        hasWriteAccess: false, 
+        requires2FA: true,
+        isSelfHosted: true
+      })
     }
 
     // Verify token
@@ -177,13 +204,18 @@ export async function GET(request: Request) {
       .digest('hex')
 
     if (token !== expectedToken) {
-      return NextResponse.json({ hasWriteAccess: false, requires2FA: true })
+      return NextResponse.json({ 
+        hasWriteAccess: false, 
+        requires2FA: true,
+        isSelfHosted: true
+      })
     }
 
     return NextResponse.json({ 
       hasWriteAccess: true, 
       requires2FA: true,
-      expiresAt: new Date(expiresAt).toISOString()
+      expiresAt: new Date(expiresAt).toISOString(),
+      isSelfHosted: true
     })
     
   } catch (error) {

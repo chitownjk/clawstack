@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HomeLearn Platform // Product Scope</title>
+<meta name="description" content="Full product scope for an open-source, AI-adaptive homeschool learning platform. Market research, competitive analysis, user empathy, features, architecture, security, and pricing." />
+<meta property="og:title" content="HomeLearn Platform // Product Scope" />
+<meta property="og:description" content="Open-source AI-adaptive homeschool platform. Full product scope: market intel, competitor analysis, user empathy maps, feature matrix, architecture, security & pricing." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="HomeLearn Platform // Product Scope" />
+<meta name="twitter:description" content="Open-source AI-adaptive homeschool platform. Full product scope built with Claude Opus." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: #0F1419; color: #E8ECF1; min-height: 100vh; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #1A2332; }
+  ::-webkit-scrollbar-thumb { background: #2A3A4E; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3B82F6; }
+  button { font-family: inherit; }
+  table { border-spacing: 0; }
+  @media (max-width: 700px) {
+    .grid-2 { grid-template-columns: 1fr !important; }
+    .grid-3 { grid-template-columns: 1fr !important; }
+    .grid-4 { grid-template-columns: 1fr 1fr !important; }
+    .grid-6 { grid-template-columns: repeat(3, 1fr) !important; }
+    .empathy-grid { grid-template-columns: 1fr !important; }
+    .comp-grid { grid-template-columns: 1fr !important; }
+    .stat-row { flex-direction: column; }
+    .tab-nav { padding-left: 0 !important; }
+    .tab-nav button { padding: 10px 10px !important; font-size: 11px !important; }
+    .content-area { padding: 16px 14px !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState } = React;
+
+const TABS = ["Market Intel","Competitors","User Empathy","Product Vision","Features","Architecture","Security","Pricing","Discussion"];
+
+const C = {
+  bg:"#0F1419", surface:"#1A2332", surfaceAlt:"#1E2A3A", border:"#2A3A4E",
+  accent:"#3B82F6", accentGlow:"#60A5FA", warm:"#F59E0B", green:"#10B981",
+  red:"#EF4444", purple:"#8B5CF6", text:"#E8ECF1", textMuted:"#94A3B8", textDim:"#64748B",
+};
+
+const Tag = ({children, color=C.accent}) => (
+  <span style={{display:"inline-block",padding:"2px 10px",borderRadius:4,fontSize:11,fontWeight:600,
+    letterSpacing:"0.05em",background:color+"18",color,border:`1px solid ${color}33`,textTransform:"uppercase"}}>
+    {children}
+  </span>
+);
+
+const StatCard = ({label, value, sub, color=C.accent}) => (
+  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"16px 20px",flex:"1 1 160px",minWidth:140}}>
+    <div style={{fontSize:11,color:C.textDim,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>{label}</div>
+    <div style={{fontSize:28,fontWeight:700,color,lineHeight:1.1}}>{value}</div>
+    {sub && <div style={{fontSize:12,color:C.textMuted,marginTop:4}}>{sub}</div>}
+  </div>
+);
+
+const Section = ({title, children, tag, tagColor}) => (
+  <div style={{marginBottom:32}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+      <h3 style={{fontSize:16,fontWeight:700,color:C.text,margin:0,fontFamily:"'JetBrains Mono', monospace"}}>{title}</h3>
+      {tag && <Tag color={tagColor}>{tag}</Tag>}
+    </div>
+    {children}
+  </div>
+);
+
+const P = ({children}) => (
+  <p style={{fontSize:14,lineHeight:1.7,color:C.textMuted,margin:"0 0 12px 0"}}>{children}</p>
+);
+
+const CompetitorRow = ({name, price, pros, cons, gap}) => (
+  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:16,marginBottom:10}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:6}}>
+      <span style={{fontWeight:700,color:C.text,fontSize:15}}>{name}</span>
+      <span style={{fontSize:13,color:C.warm,fontWeight:600}}>{price}</span>
+    </div>
+    <div className="comp-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,fontSize:12}}>
+      <div>
+        <div style={{color:C.green,fontWeight:600,marginBottom:4}}>Strengths</div>
+        <div style={{color:C.textMuted,lineHeight:1.5}}>{pros}</div>
+      </div>
+      <div>
+        <div style={{color:C.red,fontWeight:600,marginBottom:4}}>Weaknesses</div>
+        <div style={{color:C.textMuted,lineHeight:1.5}}>{cons}</div>
+      </div>
+      <div>
+        <div style={{color:C.purple,fontWeight:600,marginBottom:4}}>Our Opportunity</div>
+        <div style={{color:C.textMuted,lineHeight:1.5}}>{gap}</div>
+      </div>
+    </div>
+  </div>
+);
+
+const FeatureRow = ({feature, student, parent, expert, priority, phase}) => {
+  const pc = {Critical:C.red,High:C.warm,Medium:C.accent,Low:C.textDim};
+  const phc = {MVP:C.green,"V1.5":C.warm,V2:C.purple};
+  const ck = v => v ? "\u2713" : "\u2014";
+  return (
+    <tr style={{borderBottom:`1px solid ${C.border}`}}>
+      <td style={{padding:"10px 12px",fontSize:13,color:C.text,fontWeight:500}}>{feature}</td>
+      <td style={{padding:"10px 8px",fontSize:12,color:student?C.green:C.textDim,textAlign:"center"}}>{ck(student)}</td>
+      <td style={{padding:"10px 8px",fontSize:12,color:parent?C.green:C.textDim,textAlign:"center"}}>{ck(parent)}</td>
+      <td style={{padding:"10px 8px",fontSize:12,color:expert?C.green:C.textDim,textAlign:"center"}}>{ck(expert)}</td>
+      <td style={{padding:"10px 8px",textAlign:"center"}}><Tag color={pc[priority]}>{priority}</Tag></td>
+      <td style={{padding:"10px 8px",textAlign:"center"}}><Tag color={phc[phase]}>{phase}</Tag></td>
+    </tr>
+  );
+};
+
+const DiscussionItem = ({q, options, selected, onSelect}) => (
+  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:16,marginBottom:12}}>
+    <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:10}}>{q}</div>
+    <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+      {options.map((opt,i) => (
+        <button key={i} onClick={() => onSelect(opt)} style={{
+          padding:"6px 14px",borderRadius:6,fontSize:12,fontWeight:500,cursor:"pointer",
+          border:`1px solid ${selected===opt?C.accent:C.border}`,
+          background:selected===opt?C.accent+"22":"transparent",
+          color:selected===opt?C.accentGlow:C.textMuted,transition:"all 0.15s ease",
+        }}>{opt}</button>
+      ))}
+    </div>
+  </div>
+);
+
+const EmpathyCard = ({role, icon, goals, pains, needs, context}) => (
+  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:20,marginBottom:16}}>
+    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+      <span style={{fontSize:28}}>{icon}</span>
+      <div>
+        <div style={{fontWeight:700,color:C.text,fontSize:16}}>{role}</div>
+        <div style={{fontSize:12,color:C.textDim}}>{context}</div>
+      </div>
+    </div>
+    <div className="empathy-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16}}>
+      {[{title:"Goals",items:goals,color:C.green},{title:"Pain Points",items:pains,color:C.red},{title:"Needs from Platform",items:needs,color:C.accent}].map((col,ci) => (
+        <div key={ci}>
+          <div style={{fontSize:11,fontWeight:600,color:col.color,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>{col.title}</div>
+          {col.items.map((item,j) => (
+            <div key={j} style={{fontSize:12,color:C.textMuted,lineHeight:1.6,paddingLeft:8,borderLeft:`2px solid ${col.color}33`,marginBottom:4}}>{item}</div>
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+function App() {
+  const [tab, setTab] = useState(0);
+  const [disc, setDisc] = useState({});
+  const setD = (k,v) => setDisc(p => ({...p,[k]:v}));
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"20px 24px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:C.green,boxShadow:`0 0 8px ${C.green}66`,flexShrink:0}} />
+          <h1 style={{fontSize:18,fontWeight:700,margin:0,fontFamily:"'JetBrains Mono', monospace",letterSpacing:"-0.02em"}}>
+            HomeLearn Platform // Product Scope
+          </h1>
+        </div>
+        <div style={{fontSize:12,color:C.textDim,marginLeft:20}}>
+          Full-Team Planning Document / Adaptive AI Homeschool Platform / Pre-Build Phase
+        </div>
+      </div>
+
+      {/* Tab Nav */}
+      <div className="tab-nav" style={{display:"flex",gap:0,borderBottom:`1px solid ${C.border}`,background:C.surfaceAlt,overflowX:"auto",paddingLeft:8}}>
+        {TABS.map((t,i) => (
+          <button key={t} onClick={() => setTab(i)} style={{
+            padding:"10px 16px",fontSize:12,fontWeight:tab===i?700:500,
+            color:tab===i?C.accentGlow:C.textDim,background:"transparent",border:"none",
+            borderBottom:tab===i?`2px solid ${C.accent}`:"2px solid transparent",
+            cursor:"pointer",whiteSpace:"nowrap",transition:"all 0.15s ease",
+          }}>{t}</button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="content-area" style={{padding:"24px 28px",maxWidth:960,margin:"0 auto"}}>
+
+        {/* MARKET INTEL */}
+        {tab===0 && <>
+          <Section title="Market Overview" tag="Research" tagColor={C.green}>
+            <div className="stat-row" style={{display:"flex",flexWrap:"wrap",gap:12,marginBottom:20}}>
+              <StatCard label="Market Size (2024)" value="$3.5B" sub="Global homeschool market" />
+              <StatCard label="CAGR 2026-2033" value="8.5%" sub="Consistent double-digit projection" color={C.green} />
+              <StatCard label="Projected 2033" value="$7.2B" sub="~2x from current valuation" color={C.warm} />
+              <StatCard label="US Students" value="~4M" sub="6-7% of all K-12 students" color={C.purple} />
+            </div>
+            <P>The homeschooling market is experiencing sustained, post-pandemic growth. Unlike the 2020-2021 surge (which some predicted was temporary), Johns Hopkins data confirms that 2024-2025 growth is nearly triple the pre-pandemic rate. 80% of reporting states show enrollment increases, with 36% recording their highest numbers ever. This is no longer a pandemic artifact; it represents a fundamental shift in how American families approach education.</P>
+            <P>Key growth drivers: dissatisfaction with traditional school environments (cited by 83% of parents), desire for personalized learning pace, safety concerns, religious/values-based instruction, and the explosion of accessible digital tools. The demographic profile has broadened significantly: 41% of homeschool families identify as non-white, income levels mirror public school families, and only 27% of homeschooling parents hold a bachelor's degree.</P>
+          </Section>
+          <Section title="Growth Trajectory" tag="Accelerating" tagColor={C.warm}>
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:16}}>
+              <div className="grid-6" style={{display:"grid",gridTemplateColumns:"repeat(6, 1fr)",gap:8,textAlign:"center"}}>
+                {[{y:"2019",v:"2.5M",pct:25},{y:"2020",v:"3.3M",pct:55},{y:"2021",v:"3.7M",pct:65},{y:"2022",v:"3.1M",pct:48},{y:"2023",v:"3.4M",pct:52},{y:"2024",v:"4.2M",pct:78}].map(d => (
+                  <div key={d.y}>
+                    <div style={{height:120,display:"flex",alignItems:"flex-end",justifyContent:"center",marginBottom:6}}>
+                      <div style={{width:"60%",height:`${d.pct}%`,background:`linear-gradient(to top, ${C.accent}, ${C.accentGlow})`,borderRadius:"4px 4px 0 0",position:"relative"}}>
+                        <span style={{position:"absolute",top:-18,left:"50%",transform:"translateX(-50%)",fontSize:11,fontWeight:700,color:C.text,whiteSpace:"nowrap"}}>{d.v}</span>
+                      </div>
+                    </div>
+                    <div style={{fontSize:11,color:C.textDim}}>{d.y}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{fontSize:11,color:C.textDim,textAlign:"center",marginTop:10}}>US Homeschool Students (estimated) / Source: NCES, Census Bureau, Johns Hopkins</div>
+            </div>
+          </Section>
+          <Section title="Why This Matters for Our Platform">
+            <P>The "curriculum piecing" problem is real and widespread. Parents routinely combine 4-6 different tools (Time4Learning for core, Khan Academy for math, Duolingo for languages, IXL for practice, Outschool for electives, plus random worksheets and documentaries). Every parent who does this is a potential user of a unified, adaptive platform. The average homeschool family spends $700-$1,800/year on curriculum. A platform that consolidates this into a single adaptive experience with transparent, affordable pricing has massive product-market fit potential.</P>
+          </Section>
+        </>}
+
+        {/* COMPETITORS */}
+        {tab===1 && <>
+          <Section title="Competitive Landscape" tag="Analysis" tagColor={C.warm}>
+            <P>The current market is fragmented between full-curriculum platforms, supplemental tools, and AI-assisted tutoring services. No single platform successfully combines adaptive AI-driven learning, comprehensive curriculum, parental control, and transparent pricing. Here is a breakdown of the key players:</P>
+            <CompetitorRow name="Time4Learning" price="$25-40/mo per student" pros="Complete K-12 curriculum, automated grading, widely recognized, 500K+ families served" cons="Glitchy UI (3/10 UX rating), non-adaptive content, predatory billing practices, lessons become repetitive, AI grading rollout in 2025 was buggy and broke parent dashboards" gap="Their biggest weakness is our biggest strength: adaptivity. Their content is static and one-size-fits-all. We build for the individual learner." />
+            <CompetitorRow name="Khan Academy + Khanmigo" price="Free / $9/mo for Khanmigo" pros="Free, massive content library, Khanmigo AI tutoring rated highly, trusted nonprofit brand" cons="Not a full curriculum, no parent scheduling/management tools, not designed for homeschool workflow, limited progress reporting for parents" gap="Khan is a supplement, not a system. We build the system that wraps around content (potentially including Khan) with full parental management." />
+            <CompetitorRow name="Power Homeschool (Acellus)" price="$25/mo per student" pros="Prism Diagnostics for gap detection, Vectored Instruction for remediation, complete curriculum" cons="Controversial content decisions, limited customization, rigid course structure" gap="Their adaptive features (Prism, Vectored) validate the market demand. We can do this better with modern ML and more transparency." />
+            <CompetitorRow name="IXL" price="$10-20/mo" pros="Excellent adaptive practice engine, immediate feedback, comprehensive skill tracking, covers K-12" cons="Practice only (no instruction), can feel like drilling, no curriculum structure, no parent scheduling" gap="IXL proves that adaptive practice works. We integrate instruction + adaptive practice + parent management in one platform." />
+            <CompetitorRow name="LittleLit AI" price="Not yet public" pros="AI tutoring + full curriculum + scheduling + enrichment in one platform, grade-by-subject flexibility" cons="New/unproven, likely limited content library, unclear pricing" gap="Closest direct competitor to our vision. Speed to market and OSS community advantage are our differentiators." />
+            <CompetitorRow name="Bridgeway Academy" price="$2,000-4,000/year" pros="Fully accredited, personalized learning plans, live classes, diploma-granting" cons="Expensive, traditional school structure mapped to home, less parent control" gap="The premium end validates willingness to pay for personalization. We democratize this with AI at 1/10th the price." />
+          </Section>
+          <Section title="Key Market Gap" tag="Opportunity" tagColor={C.green}>
+            <div style={{background:C.green+"10",border:`1px solid ${C.green}33`,borderRadius:8,padding:16}}>
+              <P>No existing platform successfully combines all four of these qualities: (1) truly adaptive, AI-driven learning that adjusts in real-time to student capability, (2) comprehensive parent management with scheduling, progress tracking, and test prep tools, (3) open-source transparency and community-driven content, and (4) affordable, family-friendly pricing. Parents are cobbling together 4-6 tools because no single solution serves their needs. This fragmentation is the opportunity.</P>
+            </div>
+          </Section>
+        </>}
+
+        {/* USER EMPATHY */}
+        {tab===2 && <>
+          <Section title="User Empathy Maps" tag="Design Thinking" tagColor={C.purple}>
+            <P>Derived from analysis of parent reviews across Trustpilot, TheHomeSchoolMom, Reddit (r/homeschool), homeschool blogs, and forum discussions. These maps capture what real users are saying, feeling, and struggling with.</P>
+          </Section>
+          <EmpathyCard role="The Parent (Primary Buyer & Administrator)" icon={"\ud83d\udc69\u200d\ud83d\udc67\u200d\ud83d\udc66"} context="Often managing 2-3 kids at different levels, working part-time, first-time homeschooler"
+            goals={["Give my child a personalized education better than what school offered","Not spend 6+ hours/day planning and researching curriculum","Track progress clearly to meet state reporting requirements","Feel confident I'm not leaving learning gaps","Have my child become self-directed so I can work myself out of the job"]}
+            pains={["Spending hundreds of hours researching curriculum across dozens of blogs and Facebook groups","Cobbling together 4-6 different tools and losing track of what's where","Platforms that delete records, change grading overnight, or have billing traps","Can't tell if my child truly learned something or just clicked through answers","Existing platforms aren't adaptive; kid bored by easy stuff, frustrated by hard stuff","Customer support that blames parents when the platform is broken"]}
+            needs={["One platform with a clear daily plan I can customize","Real-time alerts when my child is struggling or flying through material","Easy scheduling: drag-and-drop lessons across days/weeks","Printable progress reports for state compliance","Transparent pricing with no hidden fees or auto-renewal traps","Ability to add offline activities (field trips, co-op classes) to the record"]}
+          />
+          <EmpathyCard role="The Student (K-12 Learner)" icon={"\ud83e\uddd2"} context="Ages 5-18, diverse learning styles, some with learning disabilities, some gifted"
+            goals={["Learn things that are interesting to me, at my pace","Not feel bored by stuff I already know","Not feel stupid when something is hard","See that I'm making progress and feel proud of it","Have some fun while learning (games, projects, exploration)"]}
+            pains={["Animated lessons that feel babyish by 5th grade","Being forced through content I already understand","Getting stuck with no help when parent is busy with siblings","Staring at a screen all day with no hands-on activities","Quizzes that just test memorization, not real understanding"]}
+            needs={["Content that meets me where I am, not where my grade says I should be","A friendly AI tutor that helps me understand, not just gives answers","Visual progress (levels, streaks, badges) that feel earned","Mix of video, interactive, reading, and hands-on projects","Ability to explore topics I'm curious about beyond the curriculum"]}
+          />
+          <EmpathyCard role="The Subject Expert (Optional Tutor/Contributor)" icon={"\ud83d\udc69\u200d\ud83c\udfeb"} context="Retired teachers, specialists, community volunteers, content creators"
+            goals={["Share my expertise with students who need it","Supplement my income or contribute to my community","Create content that actually helps kids learn","Reach students beyond my geographic area"]}
+            pains={["Existing platforms don't let me contribute meaningfully","No feedback loop on whether my content helps students","Hard to find homeschool families who need my specific expertise","Platforms take huge cuts of tutoring fees"]}
+            needs={["Easy tools to create, upload, or curate lesson content","Analytics on how students perform with my content","Ability to offer live tutoring sessions at my own rate","Reputation/rating system that builds trust with families","Fair revenue share or volunteer recognition model"]}
+          />
+        </>}
+
+        {/* PRODUCT VISION */}
+        {tab===3 && <>
+          <Section title="Product Vision Statement">
+            <div style={{background:`linear-gradient(135deg, ${C.accent}15, ${C.purple}15)`,border:`1px solid ${C.accent}33`,borderRadius:10,padding:24,marginBottom:20}}>
+              <div style={{fontSize:18,fontWeight:700,color:C.text,lineHeight:1.5,marginBottom:12}}>An open-source, AI-adaptive learning platform that treats every child as an individual learner, gives parents superpowers for managing education, and improves continuously as families use it.</div>
+              <div style={{fontSize:13,color:C.textMuted,lineHeight:1.7}}>Not another static curriculum. Not another quiz engine. A living system that observes how each student learns, adjusts difficulty and style in real time, and gives parents the tools to guide the journey with confidence.</div>
+            </div>
+          </Section>
+          <Section title="Product/Market Fit Thesis" tag="Core Thesis" tagColor={C.green}>
+            <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+              {[{t:"Who We Serve",c:C.green,d:"The 3.7-4.3 million homeschooled K-12 students in the US (growing 5%+/year), plus afterschool and supplemental learners. Primary buyer is the parent. Primary user is the student. Initial target: families currently cobbling together multiple tools."},
+                {t:"Why They'll Switch",c:C.accent,d:"One platform replaces 4-6 tools. AI-adaptive learning (like IXL) combined with full curriculum (like Time4Learning) combined with parent management (like Homeschool Planet), at a transparent price point. No billing traps. No deleted records. Open source = trust."},
+                {t:"Defensible Moat",c:C.warm,d:"The platform gets smarter with every student interaction. Learning pathway data, content effectiveness metrics, and community-contributed content create a compounding data advantage. OSS model builds trust and community contribution that proprietary competitors cannot match."},
+                {t:"Revenue Path",c:C.purple,d:"OSS core + affordable family subscription ($8-15/mo for full platform). Premium features: AI tutoring, advanced analytics, test prep modules, expert tutoring marketplace. Goal: sustainable, not extractive. Cover operational costs plus modest margin."}
+              ].map((s,i) => (
+                <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:16}}>
+                  <div style={{fontSize:13,fontWeight:700,color:s.c,marginBottom:8}}>{s.t}</div>
+                  <P>{s.d}</P>
+                </div>
+              ))}
+            </div>
+          </Section>
+          <Section title="Core Differentiators">
+            <div className="grid-3" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+              {[{title:"Truly Adaptive",desc:"ML-driven difficulty adjustment, learning style detection, knowledge gap identification. Not just 'skip ahead' but genuine pedagogical branching.",icon:"\ud83e\udde0"},
+                {title:"Parent Command Center",desc:"Drag-and-drop scheduling, real-time alerts, compliance-ready reports, multi-child management with cross-subject views.",icon:"\ud83d\udcca"},
+                {title:"Open Source Trust",desc:"Transparent algorithms, community-auditable content, no lock-in. Parents can see exactly how the platform works and why it recommends what it does.",icon:"\ud83d\udd13"},
+                {title:"Improves Over Time",desc:"Every interaction feeds the system. Content that doesn't work gets flagged. Paths that produce mastery get reinforced. The platform learns.",icon:"\ud83d\udcc8"},
+                {title:"Offline-Aware",desc:"Not just screen time. Parents can log field trips, co-op classes, reading, and hands-on projects. The platform tracks all learning, not just digital.",icon:"\ud83c\udf3f"},
+                {title:"Fair Pricing",desc:"No billing traps, no auto-renewal surprises, no price hikes without value. Annual average well below $200 per student.",icon:"\ud83d\udc9a"}
+              ].map((d,i) => (
+                <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:16}}>
+                  <div style={{fontSize:24,marginBottom:8}}>{d.icon}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>{d.title}</div>
+                  <div style={{fontSize:12,color:C.textMuted,lineHeight:1.6}}>{d.desc}</div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        </>}
+
+        {/* FEATURES */}
+        {tab===4 && <>
+          <Section title="Feature Matrix by User Role & Phase" tag="Scope" tagColor={C.accent}>
+            <P>Features are prioritized across three phases: MVP (minimum viable product, ~6 months), V1.5 (enhancement release, ~3 months after MVP), and V2 (full platform, ~6 months after V1.5). Each feature is mapped to the user roles it serves.</P>
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:700}}>
+                <thead>
+                  <tr style={{borderBottom:`2px solid ${C.border}`}}>
+                    {["FEATURE","STUDENT","PARENT","EXPERT","PRIORITY","PHASE"].map((h,i) => (
+                      <th key={h} style={{padding:"10px "+(i===0?"12px":"8px"),textAlign:i===0?"left":"center",color:C.textDim,fontSize:11,fontWeight:600,letterSpacing:"0.06em"}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colSpan={6} style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:C.accent,background:C.accent+"08"}}>CORE LEARNING ENGINE</td></tr>
+                  <FeatureRow feature="Adaptive lesson delivery (difficulty adjusts in real-time)" student parent={false} expert={false} priority="Critical" phase="MVP" />
+                  <FeatureRow feature="Knowledge graph per student (tracks mastery per concept)" student parent expert={false} priority="Critical" phase="MVP" />
+                  <FeatureRow feature="Multi-modal content (video, text, interactive, projects)" student parent={false} expert priority="Critical" phase="MVP" />
+                  <FeatureRow feature="AI tutor (explains, guides, does not give answers)" student parent={false} expert={false} priority="High" phase="MVP" />
+                  <FeatureRow feature="Learning style detection & pathway optimization" student parent expert={false} priority="High" phase="V1.5" />
+                  <FeatureRow feature="Spaced repetition for retention" student parent={false} expert={false} priority="Medium" phase="V1.5" />
+                  <FeatureRow feature="Cross-subject concept linking" student parent={false} expert priority="Medium" phase="V2" />
+                  <tr><td colSpan={6} style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:C.warm,background:C.warm+"08"}}>PARENT MANAGEMENT</td></tr>
+                  <FeatureRow feature="Multi-child dashboard with per-child views" student={false} parent expert={false} priority="Critical" phase="MVP" />
+                  <FeatureRow feature="Drag-and-drop lesson scheduler (daily/weekly/term)" student={false} parent expert={false} priority="Critical" phase="MVP" />
+                  <FeatureRow feature="Real-time progress tracking & grade-level mapping" student={false} parent expert={false} priority="Critical" phase="MVP" />
+                  <FeatureRow feature="Alert system (struggling, idle, milestone reached)" student={false} parent expert={false} priority="High" phase="MVP" />
+                  <FeatureRow feature="State compliance report generator" student={false} parent expert={false} priority="High" phase="V1.5" />
+                  <FeatureRow feature="Test prep module (SAT, ACT, state assessments)" student parent expert={false} priority="High" phase="V1.5" />
+                  <FeatureRow feature="Offline activity logger (field trips, co-op, reading)" student={false} parent expert={false} priority="Medium" phase="V1.5" />
+                  <FeatureRow feature="Curriculum marketplace (browse & add community content)" student={false} parent expert priority="Medium" phase="V2" />
+                  <FeatureRow feature="Transcript & portfolio builder for college apps" student parent expert={false} priority="Medium" phase="V2" />
+                  <tr><td colSpan={6} style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:C.green,background:C.green+"08"}}>STUDENT EXPERIENCE</td></tr>
+                  <FeatureRow feature="Personal dashboard with daily tasks & progress" student parent={false} expert={false} priority="Critical" phase="MVP" />
+                  <FeatureRow feature="Achievement system (badges, streaks, levels)" student parent={false} expert={false} priority="High" phase="MVP" />
+                  <FeatureRow feature="Interest-based exploration mode" student parent={false} expert={false} priority="Medium" phase="V1.5" />
+                  <FeatureRow feature="Study buddy / peer collaboration (opt-in)" student parent expert={false} priority="Low" phase="V2" />
+                  <FeatureRow feature="Creative project showcase" student parent expert priority="Low" phase="V2" />
+                  <tr><td colSpan={6} style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:C.purple,background:C.purple+"08"}}>EXPERT / CONTENT TOOLS</td></tr>
+                  <FeatureRow feature="Content authoring tools (lessons, quizzes, activities)" student={false} parent={false} expert priority="High" phase="V1.5" />
+                  <FeatureRow feature="Content effectiveness analytics" student={false} parent={false} expert priority="Medium" phase="V1.5" />
+                  <FeatureRow feature="Live tutoring session scheduling" student parent expert priority="Medium" phase="V2" />
+                  <FeatureRow feature="Expert reputation & review system" student={false} parent expert priority="Medium" phase="V2" />
+                  <tr><td colSpan={6} style={{padding:"8px 12px",fontSize:11,fontWeight:700,color:C.textDim,background:C.textDim+"08"}}>PLATFORM & DATA</td></tr>
+                  <FeatureRow feature="Platform-wide learning analytics (anonymized)" student={false} parent={false} expert priority="High" phase="V1.5" />
+                  <FeatureRow feature="A/B testing framework for content effectiveness" student={false} parent={false} expert priority="Medium" phase="V2" />
+                  <FeatureRow feature="Community forums for parents" student={false} parent expert priority="Low" phase="V2" />
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        </>}
+
+        {/* ARCHITECTURE */}
+        {tab===5 && <>
+          <Section title="Recommended Technical Architecture" tag="Engineering" tagColor={C.accent}>
+            <P>The architecture must support adaptive learning at scale, real-time progress tracking, COPPA/FERPA compliance, and extensibility through open-source contributions. Below is the recommended stack, with rationale for each choice.</P>
+          </Section>
+          <Section title="Stack Recommendation">
+            <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              {[{layer:"Frontend",tech:"Next.js 14+ (React) / React Native (mobile)",why:"SSR for SEO, app router for modern patterns, shared component library across web and mobile. Massive OSS ecosystem."},
+                {layer:"Backend API",tech:"Node.js (NestJS) or Python (FastAPI)",why:"NestJS for structured TypeScript backend with excellent DI and modular architecture. FastAPI if ML team prefers Python-native. Both support async and scale well."},
+                {layer:"Database",tech:"PostgreSQL + Redis + Neo4j",why:"Postgres for relational data (users, courses, grades). Redis for caching and real-time session data. Neo4j for the knowledge graph (concept relationships, prerequisite chains, learning paths)."},
+                {layer:"ML / Adaptive Engine",tech:"Python (scikit-learn, PyTorch) + custom models",why:"Item Response Theory (IRT) for initial difficulty calibration. Bayesian Knowledge Tracing (BKT) for mastery estimation. Reinforcement learning for path optimization. All trainable on anonymized student interaction data."},
+                {layer:"AI Tutor",tech:"LLM API (Claude/GPT) with guardrails",why:"Retrieval-augmented generation (RAG) grounded in curriculum content. Strict guardrails: never gives direct answers, always scaffolds. Age-appropriate response filtering. Logs all interactions for parent review."},
+                {layer:"Content / CMS",tech:"Headless CMS (Strapi OSS) or custom",why:"Structured content with versioning, review workflows, and multi-format support (markdown, video embeds, interactive widgets). Community contribution pipeline with moderation."},
+                {layer:"Infrastructure",tech:"Docker / Kubernetes on AWS or self-hosted",why:"Containerized for portability and OSS self-hosting. Managed K8s for the SaaS offering. S3-compatible storage for media. CloudFront/CDN for content delivery."},
+                {layer:"Auth & Identity",tech:"Keycloak (OSS) or Auth0",why:"COPPA-compliant child accounts created through verified parental consent flow. Role-based access: parent, child, expert, admin. OAuth2/OIDC for SSO."}
+              ].map((s,i) => (
+                <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:16}}>
+                  <div style={{fontSize:11,fontWeight:600,color:C.accent,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>{s.layer}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:6}}>{s.tech}</div>
+                  <div style={{fontSize:12,color:C.textMuted,lineHeight:1.6}}>{s.why}</div>
+                </div>
+              ))}
+            </div>
+          </Section>
+          <Section title="Adaptive Learning Architecture Detail">
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:20,overflowX:"auto"}}>
+              <pre style={{fontFamily:"'JetBrains Mono', monospace",fontSize:12,color:C.textMuted,lineHeight:2,margin:0,whiteSpace:"pre"}}>{`Student Interaction
+        |
+   [Event Stream] -- responses, time-on-task, hints used, skip patterns
+        |
+   +----------+
+   | Mastery  | -- Bayesian Knowledge Tracing per concept node
+   | Estimator|    Updates P(mastery) after each interaction
+   +----+-----+
+        |
+   +----+---------+
+   | Knowledge    | -- Neo4j graph of concepts + prerequisites
+   | Graph Engine |    Identifies gaps, suggests next-best-concept
+   +----+---------+
+        |
+   +----+----------+
+   | Path Optimizer | -- RL agent picks optimal next lesson/activity
+   | (RL Agent)     |    Reward = mastery gain per time invested
+   +----+----------+
+        |
+   +----+-----------+
+   | Content Selector| -- Picks content format (video/text/interactive)
+   |                 |    based on learner profile + content effectiveness
+   +----+-----------+
+        |
+   [Personalized Lesson] -- delivered to student
+        |
+   [Parent Dashboard] -- real-time visibility into all of the above`}</pre>
+            </div>
+          </Section>
+        </>}
+
+        {/* SECURITY */}
+        {tab===6 && <>
+          <Section title="Security & Compliance Requirements" tag="Non-Negotiable" tagColor={C.red}>
+            <P>Because the platform serves children under 13, COPPA compliance is federally mandated. FERPA considerations apply if the platform is used by institutions. Beyond legal compliance, parental trust is the product's foundation. Any data breach or privacy concern would be existentially damaging.</P>
+          </Section>
+          <Section title="Compliance Framework">
+            <div className="grid-2" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              {[{title:"COPPA (Children's Online Privacy Protection Act)",items:["Verified parental consent before creating any child account","No data collection from children under 13 without consent","No behavioral advertising or third-party data sharing","Parents can review, delete, and control all child data","Clear, plain-language privacy policy"],color:C.red},
+                {title:"FERPA (Family Educational Rights and Privacy Act)",items:["Student education records are owned by the family","No disclosure of student data to third parties without consent","Parents have right to inspect and amend records","Data retention and deletion policies clearly documented"],color:C.warm},
+                {title:"Data Security Architecture",items:["Encryption at rest (AES-256) and in transit (TLS 1.3)","Student data stored in isolated, encrypted databases","AI tutor conversations logged but parent-accessible and deletable","No student data used for model training without explicit opt-in","Regular penetration testing and security audits","SOC 2 Type II compliance target for V2"],color:C.accent},
+                {title:"AI Safety (Child-Specific)",items:["AI tutor responses filtered for age-appropriateness","No AI-generated content shown to students without review pipeline","AI never collects personal information through conversation","Parent can review full AI interaction transcripts","Kill switch: parent can disable AI tutor per-child instantly"],color:C.purple}
+              ].map((s,i) => (
+                <div key={i} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:16}}>
+                  <div style={{fontSize:13,fontWeight:700,color:s.color,marginBottom:10}}>{s.title}</div>
+                  {s.items.map((item,j) => (
+                    <div key={j} style={{fontSize:12,color:C.textMuted,lineHeight:1.6,paddingLeft:10,borderLeft:`2px solid ${s.color}33`,marginBottom:4}}>{item}</div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Section>
+          <Section title="Open Source Security Considerations">
+            <P>OSS transparency actually strengthens security posture: community can audit the code, report vulnerabilities through a responsible disclosure program, and verify that student data is handled as documented. The key risk is unauthorized self-hosted instances not following data protection standards. Mitigation: the OSS license should require data protection compliance, and the SaaS version should be the recommended deployment for families who want managed security.</P>
+          </Section>
+        </>}
+
+        {/* PRICING */}
+        {tab===7 && <>
+          <Section title="Pricing Strategy" tag="OSS + Subscription" tagColor={C.green}>
+            <P>The pricing model is designed to be sustainable but not extractive. The core platform is open source. Revenue comes from the managed SaaS offering that removes the complexity of self-hosting, plus premium features that require server-side compute (AI tutoring, advanced analytics).</P>
+          </Section>
+          <Section title="Proposed Tier Structure">
+            <div className="grid-3" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+              {[{tier:"Community (OSS)",price:"Free",desc:"Self-hosted",features:["Full adaptive learning engine","All core subjects K-12","Parent dashboard & scheduling","Progress tracking & reports","Community content library","Unlimited students"],color:C.textMuted,note:"Requires technical setup. No AI tutor (bring your own API key)."},
+                {tier:"Family Plan",price:"$12/mo",desc:"Up to 5 students",features:["Everything in Community","Managed hosting (no setup)","AI tutor included (usage-capped)","Automatic backups","Priority content updates","Email support"],color:C.accent,note:"~$144/year. Well below industry average of $300-480/year for comparable platforms.",rec:true},
+                {tier:"Family Plus",price:"$20/mo",desc:"Up to 5 students",features:["Everything in Family","Unlimited AI tutor usage","Test prep modules (SAT/ACT)","Advanced analytics & insights","Expert tutoring marketplace access","Transcript & portfolio builder","Phone support"],color:C.warm,note:"~$240/year. Still below Bridgeway ($2K+) and comparable to 2 months of private tutoring."}
+              ].map((t,i) => (
+                <div key={i} style={{background:C.surface,border:`1px solid ${t.rec?C.accent:C.border}`,borderRadius:8,padding:20,position:"relative"}}>
+                  {t.rec && <div style={{position:"absolute",top:-10,left:"50%",transform:"translateX(-50%)",background:C.accent,color:"#fff",fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:10,letterSpacing:"0.06em"}}>RECOMMENDED</div>}
+                  <div style={{fontSize:14,fontWeight:700,color:t.color,marginBottom:4}}>{t.tier}</div>
+                  <div style={{fontSize:28,fontWeight:700,color:C.text,marginBottom:2}}>{t.price}</div>
+                  <div style={{fontSize:11,color:C.textDim,marginBottom:14}}>{t.desc}</div>
+                  {t.features.map((f,j) => (
+                    <div key={j} style={{fontSize:12,color:C.textMuted,lineHeight:1.8,paddingLeft:12,position:"relative"}}>
+                      <span style={{position:"absolute",left:0,color:C.green}}>+</span>{f}
+                    </div>
+                  ))}
+                  <div style={{fontSize:11,color:C.textDim,marginTop:12,fontStyle:"italic",lineHeight:1.5}}>{t.note}</div>
+                </div>
+              ))}
+            </div>
+          </Section>
+          <Section title="Revenue Sustainability Analysis">
+            <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:16}}>
+              <div className="grid-4" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:12,marginBottom:12}}>
+                <StatCard label="Break-even Target" value="2,500" sub="paying families" color={C.green} />
+                <StatCard label="At $12/mo avg" value="$30K" sub="monthly recurring revenue" color={C.accent} />
+                <StatCard label="Year 1 Target" value="5,000" sub="families (0.13% of US market)" color={C.warm} />
+                <StatCard label="Year 1 ARR" value="$720K" sub="sustains 5-8 person team" color={C.purple} />
+              </div>
+              <P>With 3.7-4.3 million homeschool students in 2-3 million households, capturing even 0.1% of the market (2,500 families) at $12/mo average revenue achieves operational sustainability. The OSS model also enables grant funding from education-focused foundations, reducing pressure on subscription revenue alone.</P>
+            </div>
+          </Section>
+        </>}
+
+        {/* DISCUSSION */}
+        {tab===8 && <>
+          <Section title="Interactive Planning Discussion" tag="Your Input" tagColor={C.purple}>
+            <P>These are the key strategic decisions that need to be made before building begins. Select your preferences below to shape the product direction.</P>
+          </Section>
+          <DiscussionItem q="1. Frontend Framework: Which approach for the student-facing experience?" options={["Next.js (React) -- SSR, massive ecosystem","SvelteKit -- faster, lighter, newer","Remix -- data-first, resilient","Astro + React Islands -- content-first, partial hydration"]} selected={disc.frontend} onSelect={v => setD("frontend",v)} />
+          <DiscussionItem q="2. Backend Language: The adaptive engine and API layer?" options={["Python (FastAPI) -- ML-native, data science ecosystem","TypeScript (NestJS) -- full-stack consistency, type safety","Hybrid -- Python for ML, TypeScript for API"]} selected={disc.backend} onSelect={v => setD("backend",v)} />
+          <DiscussionItem q="3. AI Tutor Strategy: How to power the conversational AI tutor?" options={["Claude API (Anthropic) -- safety-focused, ideal for kids","OpenAI GPT -- largest ecosystem","Open-source LLM (Llama/Mistral) -- self-hosted, no API costs","Pluggable -- let families choose their LLM provider"]} selected={disc.ai} onSelect={v => setD("ai",v)} />
+          <DiscussionItem q="4. Content Strategy: Where does the initial curriculum content come from?" options={["OER (Open Educational Resources) -- free, CC-licensed","Licensed from publishers -- quality but cost","AI-generated + human reviewed -- fast but needs QA","Community-contributed from day 1 -- slow start, high engagement"]} selected={disc.content} onSelect={v => setD("content",v)} />
+          <DiscussionItem q="5. MVP Scope: What's the first subject area to nail before expanding?" options={["Math K-8 (most measurable, most adaptive)","Full K-5 (all subjects, younger kids)","Math + ELA K-12 (two core subjects)","All core subjects K-12 (ambitious but competitive)"]} selected={disc.mvp} onSelect={v => setD("mvp",v)} />
+          <DiscussionItem q="6. Deployment Model: How do families access the platform?" options={["SaaS-only (managed cloud, easiest)","SaaS + Docker self-host option","SaaS + full OSS with Helm charts for K8s","Local-first (Electron/Tauri app with optional sync)"]} selected={disc.deploy} onSelect={v => setD("deploy",v)} />
+          <DiscussionItem q="7. Licensing Model: What open-source license?" options={["AGPL-3.0 -- strong copyleft, prevents proprietary forks","Apache 2.0 -- permissive, max adoption","BSL (Business Source License) -- OSS after delay, protects business","Dual license -- AGPL for community, commercial for enterprise"]} selected={disc.license} onSelect={v => setD("license",v)} />
+          <DiscussionItem q="8. Mobile Strategy: How important is mobile on day one?" options={["Web-first, responsive (PWA)","Web + native mobile apps (React Native)","Web only for MVP, mobile in V1.5","Mobile-first (many parents use tablets for kids)"]} selected={disc.mobile} onSelect={v => setD("mobile",v)} />
+          {Object.keys(disc).length > 0 && (
+            <div style={{background:C.green+"10",border:`1px solid ${C.green}33`,borderRadius:8,padding:16,marginTop:20}}>
+              <div style={{fontSize:13,fontWeight:700,color:C.green,marginBottom:10}}>Your Selections So Far</div>
+              {Object.entries(disc).map(([k,v]) => (
+                <div key={k} style={{fontSize:12,color:C.textMuted,marginBottom:4}}>
+                  <span style={{color:C.textDim,textTransform:"capitalize"}}>{k}:</span> {v}
+                </div>
+              ))}
+            </div>
+          )}
+        </>}
+      </div>
+
+      {/* Footer */}
+      <div style={{borderTop:`1px solid ${C.border}`,padding:"16px 28px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+        <div style={{fontSize:11,color:C.textDim}}>HomeLearn Platform // Pre-Build Scope // Built with Claude Opus</div>
+        <div style={{display:"flex",gap:8}}>
+          {tab > 0 && <button onClick={() => {setTab(tab-1);window.scrollTo(0,0)}} style={{padding:"6px 14px",borderRadius:6,fontSize:12,border:`1px solid ${C.border}`,background:"transparent",color:C.textMuted,cursor:"pointer"}}>Previous</button>}
+          {tab < TABS.length-1 && <button onClick={() => {setTab(tab+1);window.scrollTo(0,0)}} style={{padding:"6px 14px",borderRadius:6,fontSize:12,border:`1px solid ${C.accent}`,background:C.accent+"22",color:C.accentGlow,cursor:"pointer"}}>Next: {TABS[tab+1]}</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

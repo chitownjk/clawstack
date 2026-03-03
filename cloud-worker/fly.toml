@@ -1,0 +1,23 @@
+# fly.toml app configuration file generated for tiker-cloud-worker on 2026-02-04T23:38:02Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'tiker-cloud-worker'
+primary_region = 'sjc'
+
+[build]
+
+[env]
+  NODE_ENV = 'production'
+  WORKER_CONCURRENCY = '5'
+
+[processes]
+  app = 'npm start'
+
+# No HTTP service needed - this is a background worker that polls Supabase for tasks
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256

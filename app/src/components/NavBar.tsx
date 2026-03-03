@@ -6,6 +6,7 @@ import { useEffect, useState, useRef } from 'react'
 
 export function NavBar() {
   const [user, setUser] = useState<any>(null)
+  const [account, setAccount] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [darkMode, setDarkMode] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -17,12 +18,25 @@ export function NavBar() {
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
+      
+      if (user) {
+        const { data: accountData } = await supabase
+          .from('accounts')
+          .select('execution_mode, plan_tier')
+          .eq('auth_uid', user.id)
+          .single()
+        setAccount(accountData)
+      }
+      
       setLoading(false)
     }
     getUser()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      if (!session?.user) {
+        setAccount(null)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -109,9 +123,16 @@ export function NavBar() {
                   >
                     Command
                   </Link>
-                  <Link href="/hub" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
-                    Agents
-                  </Link>
+                  {/* Agents link - different for cloud vs self-hosted */}
+                  {account?.execution_mode === 'openclaw' ? (
+                    <Link href="/hub" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
+                      Hub
+                    </Link>
+                  ) : account ? (
+                    <Link href="/agents" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
+                      Agents
+                    </Link>
+                  ) : null}
                   <div ref={servicesRef} className="relative">
                     <button
                       onClick={() => setServicesOpen(!servicesOpen)}

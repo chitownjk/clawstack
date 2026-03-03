@@ -19,6 +19,7 @@ const columnColors: Record<TaskStatus, string> = {
   assigned: 'border-orange-400',
   in_progress: 'border-blue-500',
   review: 'border-purple-500',
+  error: 'border-red-600',
   done: 'border-green-500',
   blocked: 'border-red-500'
 }

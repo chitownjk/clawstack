@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription
         const accountId = subscription.metadata.account_id
+        const plan = subscription.metadata.plan || 'solo' // Default to solo if not specified
 
         if (!accountId) {
           console.error('No account_id in subscription metadata')
@@ -81,30 +82,35 @@ export async function POST(request: NextRequest) {
                           subscription.items?.data?.[0]?.current_period_end
         const currentPeriodEnd = periodEnd ? new Date(periodEnd * 1000) : new Date()
 
-        // Determine tier based on subscription status
-        let tier = 'free'
+        // Determine plan_tier based on subscription status
+        let planTier = 'free'
         if (status === 'active' || status === 'trialing') {
-          tier = 'pro'
+          planTier = plan // solo, developer, or team
         }
 
-        const tierLimits = TIERS[tier as keyof typeof TIERS]
+        const tierConfig = TIERS[planTier as keyof typeof TIERS]
+
+        // Update account with plan tier and subscription details
+        const updateData: any = {
+          stripe_subscription_id: subscription.id,
+          subscription_status: status,
+          subscription_current_period_end: currentPeriodEnd.toISOString(),
+          plan_tier: planTier,
+          updated_at: new Date().toISOString(),
+        }
+        
+        // Set trial dates if in trial
+        if (status === 'trialing' && subscription.trial_end) {
+          updateData.trial_starts_at = new Date(subscription.trial_start! * 1000).toISOString()
+          updateData.trial_ends_at = new Date(subscription.trial_end * 1000).toISOString()
+        }
 
         await adminClient
           .from('accounts')
-          .update({
-            stripe_subscription_id: subscription.id,
-            subscription_status: status,
-            subscription_current_period_end: currentPeriodEnd.toISOString(),
-            tier,
-            tier_updated_at: new Date().toISOString(),
-            max_bots: tierLimits.maxBots,
-            max_tasks: tierLimits.maxTasks,
-            can_invite_guests: tierLimits.canInviteGuests,
-            updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('id', accountId)
 
-        console.log(`Subscription ${subscription.id} updated for account ${accountId}: ${tier}`)
+        console.log(`Subscription ${subscription.id} updated for account ${accountId}: ${planTier} (${status})`)
         break
       }
 
@@ -118,17 +124,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Downgrade to free tier
-        const freeLimits = TIERS.free
-
         await adminClient
           .from('accounts')
           .update({
             subscription_status: 'canceled',
-            tier: 'free',
-            tier_updated_at: new Date().toISOString(),
-            max_bots: freeLimits.maxBots,
-            max_tasks: freeLimits.maxTasks,
-            can_invite_guests: freeLimits.canInviteGuests,
+            plan_tier: 'free',
             updated_at: new Date().toISOString(),
           })
           .eq('id', accountId)

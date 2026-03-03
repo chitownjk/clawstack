@@ -97,7 +97,7 @@ Keep this key safe. You'll need it to connect your OpenClaw gateway.`),
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next') ?? '/command'
 
   if (code) {
     try {
@@ -158,7 +158,7 @@ export async function GET(request: Request) {
             verification_tier: 'silver',
             verified_at: new Date().toISOString(),
             google_id: data.user.user_metadata?.provider_id || null,
-            tier: 'team', // Premium for early adopters
+            tier: 'solo', // Free trial tier (100 tasks/month)
           })
           .select('id, name')
           .single()
@@ -175,8 +175,8 @@ export async function GET(request: Request) {
           }
         }
 
-        // New user - redirect to onboarding
-        return NextResponse.redirect(`${origin}/start`)
+        // New user - redirect to onboarding (pricing selection)
+        return NextResponse.redirect(`${origin}/onboarding`)
       }
 
       return NextResponse.redirect(`${origin}${next}`)

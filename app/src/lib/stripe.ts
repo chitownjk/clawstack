@@ -27,6 +27,7 @@ export const stripe = process.env.STRIPE_SECRET_KEY
 
 // Pricing tiers
 export const TIERS = {
+  // OSS tiers (legacy - keep for backwards compatibility)
   free: {
     name: 'Free',
     price: 0,
@@ -34,6 +35,7 @@ export const TIERS = {
     maxBots: 1,
     maxTasks: 50,
     canInviteGuests: false,
+    trialDays: 0,
   },
   pro: {
     name: 'Pro',
@@ -43,6 +45,34 @@ export const TIERS = {
     maxTasks: -1, // unlimited
     canInviteGuests: true,
     maxGuests: 5,
+    trialDays: 0,
+  },
+  
+  // Cloud product tiers
+  solo: {
+    name: 'Solo',
+    price: 19,
+    priceId: process.env.STRIPE_SOLO_PRICE_ID,
+    maxTasks: 100,
+    canInviteGuests: false,
+    trialDays: 7,
+  },
+  developer: {
+    name: 'Developer',
+    price: 49,
+    priceId: process.env.STRIPE_DEVELOPER_PRICE_ID,
+    maxTasks: 400,
+    canInviteGuests: false,
+    trialDays: 7,
+  },
+  team: {
+    name: 'Team',
+    price: 99,
+    priceId: process.env.STRIPE_TEAM_PRICE_ID,
+    maxTasks: 1000,
+    canInviteGuests: true,
+    maxGuests: 10,
+    trialDays: 0, // Contact sales
   },
 } as const
 

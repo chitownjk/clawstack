@@ -73,3 +73,4 @@ local-backup/
 # - TROUBLESHOOTING.md (public troubleshooting)
 # - LICENSE (public license)
 # - app/public/WHITEPAPER.md (public-facing whitepaper)
+.env.cloud-dev

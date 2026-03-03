@@ -6,10 +6,15 @@ import AgentCard from '@/components/AgentCard'
 import KanbanColumn from '@/components/KanbanColumn'
 import ActivityFeed from '@/components/ActivityFeed'
 import TaskDetailModal from '@/components/TaskDetailModal'
-import CreateTaskModal from '@/components/CreateTaskModal'
+import SimpleCreateTaskModal from '@/components/SimpleCreateTaskModal'
 import TwoFactorVerifyModal from '@/components/TwoFactorVerifyModal'
 import TwoFactorSetupModal from '@/components/TwoFactorSetupModal'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
+import FilesView from '@/components/FilesView'
+import ViewSwitcher from '@/components/ViewSwitcher'
+import ListView from '@/components/ListView'
+import TimeView from '@/components/TimeView'
+import { ViewType } from '@/types/views'
 import { use2FA } from '@/hooks/use2FA'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase'
@@ -19,8 +24,10 @@ const COLUMNS: { status: TaskStatus; title: string }[] = [
   { status: 'inbox', title: 'Inbox' },
   { status: 'assigned', title: 'Assigned' },
   { status: 'in_progress', title: 'In Progress' },
+  { status: 'blocked', title: 'Blocked' },
   { status: 'review', title: 'Review' },
-  { status: 'done', title: 'Done' }
+  { status: 'done', title: 'Done' },
+  { status: 'error', title: 'Error' }
 ]
 
 export default function MissionControlClient() {
@@ -34,6 +41,9 @@ export default function MissionControlClient() {
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
   const [hideDone, setHideDone] = useState(true) // Hide completed by default
   const [deleteModal, setDeleteModal] = useState<{ task: Task; commentCount: number } | null>(null)
+  const [executionMode, setExecutionMode] = useState<string | null>(null)
+  const [currentView, setCurrentView] = useState<ViewType>('kanban') // New: task view type
+  const [view, setView] = useState<'board' | 'files'>('board')
   
   // 2FA for write access
   const { 
@@ -96,6 +106,20 @@ export default function MissionControlClient() {
       setAgents(botsData)
       setTasks(tasksData)
       setActivities(activitiesData)
+      
+      // Get execution mode to determine if user is cloud or self-hosted
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: account } = await supabase
+          .from('accounts')
+          .select('execution_mode')
+          .eq('auth_uid', user.id)
+          .single()
+        if (account) {
+          setExecutionMode(account.execution_mode)
+        }
+      }
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -152,7 +176,7 @@ export default function MissionControlClient() {
     }
     
     // Check if over.id is a valid TaskStatus
-    const validStatuses: TaskStatus[] = ['inbox', 'assigned', 'in_progress', 'review', 'done', 'blocked']
+    const validStatuses: TaskStatus[] = ['inbox', 'assigned', 'in_progress', 'review', 'error', 'done', 'blocked']
     if (!validStatuses.includes(over.id as TaskStatus)) {
       console.log('Invalid drop target:', over.id)
       return
@@ -260,7 +284,7 @@ export default function MissionControlClient() {
     setActiveId(null)
   }
 
-  const activeAgents = agents.filter(a => a.status === 'active').length
+  const totalAgents = agents.length
   const tasksInQueue = tasks.filter(t => t.status !== 'done').length
   const reviewCount = tasks.filter(t => t.status === 'review').length
   
@@ -270,10 +294,10 @@ export default function MissionControlClient() {
         if (selectedAgent === 'Jay') {
           // Jay's tasks are ones not assigned to agents, or assigned to Jay
           const jayAgent = agents.find(a => a.name === 'Jay')
-          return t.assigned_agent_ids.length === 0 || (jayAgent && t.assigned_agent_ids.includes(jayAgent.id))
+          return t.assigned_agent_ids?.length === 0 || (jayAgent && t.assigned_agent_ids?.includes(jayAgent.id))
         }
         const bot = agents.find(a => a.name === selectedAgent)
-        return bot && t.assigned_agent_ids.includes(bot.id)
+        return bot && t.assigned_agent_ids?.includes(bot.id)
       })
     : tasks
 
@@ -300,8 +324,8 @@ export default function MissionControlClient() {
 
             <div className="flex items-center gap-8 text-sm">
               <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">{activeAgents}</div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide">Agents Active</div>
+                <div className="text-3xl font-bold text-gray-900">{totalAgents}</div>
+                <div className="text-xs text-gray-500 uppercase tracking-wide">Agents</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-gray-900">{tasksInQueue}</div>
@@ -449,8 +473,32 @@ export default function MissionControlClient() {
               {!hideDone && ` (${tasks.filter(t => t.status === 'done').length})`}
             </button>
             
+            {/* View Toggle */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setView('board')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  view === 'board'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Board
+              </button>
+              <button
+                onClick={() => setView('files')}
+                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                  view === 'files'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Files
+              </button>
+            </div>
+
             <Link
-              href="/hub?type=agents"
+              href={executionMode === 'openclaw' ? '/hub?type=agents' : '/agents'}
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
             >
               + Add Agent
@@ -471,6 +519,15 @@ export default function MissionControlClient() {
           </div>
         </div>
 
+        {/* Board View */}
+        {view === 'board' && (
+          <>
+        {/* View Switcher */}
+        <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} />
+        
+        {/* Kanban/List/Time Views - Conditional Rendering */}
+        {currentView === 'kanban' && (
+          <>
         {/* Kanban Board - Horizontal Scroll */}
         <div className="relative">
           {/* Scroll indicator */}
@@ -484,7 +541,17 @@ export default function MissionControlClient() {
             collisionDetection={closestCenter}
           >
             <div className="flex gap-4 pb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent snap-x">
-              {COLUMNS.filter(col => !hideDone || col.status !== 'done').map(column => (
+              {COLUMNS.filter(col => {
+                // Hide "done" if toggle is on
+                if (hideDone && col.status === 'done') return false;
+                
+                // Hide "blocked" and "error" columns if no tasks have those statuses
+                if (col.status === 'blocked' || col.status === 'error') {
+                  return filteredTasks.some(t => t.status === col.status);
+                }
+                
+                return true;
+              }).map(column => (
                 <div key={column.status} className="snap-start">
                   <KanbanColumn
                     status={column.status}
@@ -509,8 +576,25 @@ export default function MissionControlClient() {
             </DragOverlay>
           </DndContext>
         </div>
+          </>
+        )}
+        
+        {currentView === 'list' && (
+          <ListView 
+            tasks={filteredTasks} 
+            onTaskClick={setSelectedTask}
+            onTaskComplete={handleMarkDone}
+          />
+        )}
+        
+        {currentView === 'time' && (
+          <TimeView 
+            tasks={filteredTasks} 
+            onTaskClick={setSelectedTask}
+          />
+        )}
 
-        {/* Activity Feed - Below Kanban */}
+        {/* Activity Feed - Below Board */}
         <div className="mt-6">
           <div className="bg-white rounded-lg p-6">
             <h2 className="font-semibold text-gray-900 mb-4 flex items-center justify-between">
@@ -523,6 +607,15 @@ export default function MissionControlClient() {
             <ActivityFeed activities={activities} />
           </div>
         </div>
+          </>
+        )}
+
+        {/* Files View */}
+        {view === 'files' && (
+          <div className="bg-white rounded-lg min-h-[600px]">
+            <FilesView />
+          </div>
+        )}
       </div>
 
       {/* Task Detail Modal */}
@@ -536,12 +629,12 @@ export default function MissionControlClient() {
         />
       )}
 
-      {/* Create Task Modal */}
+      {/* Simple Create Task Modal */}
       {showCreateTask && (
-        <CreateTaskModal
-          agents={agents}
+        <SimpleCreateTaskModal
+          isOpen={showCreateTask}
           onClose={() => setShowCreateTask(false)}
-          onSuccess={() => loadData()}
+          onTaskCreated={loadData}
         />
       )}
 

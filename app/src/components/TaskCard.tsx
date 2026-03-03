@@ -13,11 +13,14 @@ interface TaskCardProps {
   showActions?: boolean
 }
 
-const priorityColors = {
+const priorityColors: Record<string, string> = {
   low: 'border-l-gray-300',
   normal: 'border-l-blue-400',
   high: 'border-l-orange-400',
-  urgent: 'border-l-red-500'
+  urgent: 'border-l-red-500',
+  now: 'border-l-red-500',
+  soon: 'border-l-yellow-400',
+  later: 'border-l-gray-300'
 }
 
 export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, showActions = true }: TaskCardProps) {
@@ -35,7 +38,7 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined
 
-  const assignedAgents = agents.filter(a => task.assigned_agent_ids.includes(a.id))
+  const assignedAgents = agents.filter(a => task.assigned_agent_ids?.includes(a.id))
   const timeAgo = getTimeAgo(new Date(task.created_at))
   const isDone = task.status === 'done'
 
@@ -110,7 +113,7 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
           <span className="text-xs text-gray-500">{timeAgo}</span>
         </div>
 
-        {task.tags.length > 0 && (
+        {task.tags && task.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {task.tags.map(tag => (
               <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">

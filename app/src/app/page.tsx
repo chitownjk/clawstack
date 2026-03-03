@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createRealSupabaseClient } from '@/lib/supabase-server'
 import { SplitScreenHero } from '@/components/SplitScreenHero'
+import CommandRedirect from '@/components/CommandRedirect'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,9 @@ export default async function LandingPage() {
       
       {/* Hero - Logged in */}
       {user ? (
-        <section className="relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+        <>
+          <CommandRedirect />
+          <section className="relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
           <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
             <div className="max-w-4xl">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-900 text-sm text-green-700 dark:text-green-300 mb-6">
@@ -92,23 +95,42 @@ export default async function LandingPage() {
             </div>
           </div>
         </section>
+        </>
       ) : (
         <>
           {/* Split Screen Hero */}
           <SplitScreenHero />
 
-          {/* The Problem - One punchy statement */}
-          <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800">
-            <div className="max-w-6xl mx-auto px-6">
-              <div className="max-w-3xl">
-                <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-4 uppercase tracking-wider">The problem</p>
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mb-8">
-                  Your AI tools don't talk to each other. They only work when YOU work. Context dies between sessions.
-                </h2>
-                <p className="text-xl text-neutral-500 dark:text-neutral-400">
-                  You're not scaling AI. You're babysitting it.
-                </p>
+          {/* Hero Section */}
+          <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-b from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900">
+            <div className="max-w-6xl mx-auto px-6 text-center">
+              <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold text-neutral-900 dark:text-neutral-100 leading-tight mb-6">
+                Your To-Do List.
+                <br />
+                <span className="text-blue-600 dark:text-blue-400">On Autopilot.</span>
+              </h1>
+              <p className="text-xl md:text-2xl text-neutral-600 dark:text-neutral-400 max-w-3xl mx-auto mb-12">
+                AI agents handle email, calendar, research, and more.
+                <br />
+                You handle the strategy.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Link
+                  href="/auth/login"
+                  className="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition text-lg"
+                >
+                  Start Free
+                </Link>
+                <Link
+                  href="/#pricing"
+                  className="px-8 py-4 bg-white dark:bg-neutral-800 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-900 dark:text-neutral-100 rounded-lg font-semibold hover:border-neutral-400 dark:hover:border-neutral-600 transition text-lg"
+                >
+                  View Pricing
+                </Link>
               </div>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-6">
+                Free forever (with your API keys) • No credit card required
+              </p>
             </div>
           </section>
 
@@ -223,6 +245,12 @@ export default async function LandingPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       Full comment thread with markdown
+                    </li>
+                    <li className="flex items-center gap-3">
+                      <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Agents save large outputs as files (reports, code, data)
                     </li>
                     <li className="flex items-center gap-3">
                       <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -421,99 +449,376 @@ export default async function LandingPage() {
             </div>
           </section>
 
+          {/* Home Lab Setup Offer */}
+          <section className="py-16 border-b border-neutral-200 dark:border-neutral-800 bg-blue-50 dark:bg-blue-950/20">
+            <div className="max-w-4xl mx-auto px-6">
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/50 border border-blue-300 dark:border-blue-700 rounded-full text-sm text-blue-700 dark:text-blue-300 mb-4">
+                  <span>🏠</span>
+                  <span className="font-semibold">Self-Hosted Setup Service</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+                  We'll Set Up Your Home Lab
+                </h2>
+                <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-6 max-w-2xl mx-auto">
+                  Want Tiker running on your own hardware (Raspberry Pi, NUC, home server)? We'll install and configure OpenClaw for you—completely free.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <a
+                    href="/services#contact"
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    Request Free Setup
+                  </a>
+                  <a
+                    href="https://docs.openclaw.ai"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition font-medium"
+                  >
+                    View Self-Host Docs
+                  </a>
+                </div>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-4">
+                  Perfect for power users who want full control and unlimited usage with their own API keys
+                </p>
+              </div>
+            </div>
+          </section>
+
           {/* Pricing - Editorial style */}
           <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800" id="pricing">
             <div className="max-w-6xl mx-auto px-6">
-              <p className="text-sm text-neutral-400 dark:text-neutral-500 mb-4 uppercase tracking-wider">Pricing</p>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mb-16">
-                Simple pricing.
-              </h2>
+              <div className="text-center mb-16">
+                <div className="inline-block mb-6 px-6 py-3 bg-green-100 dark:bg-green-900/30 border-2 border-green-500 dark:border-green-600 rounded-full">
+                  <span className="text-green-700 dark:text-green-300 font-semibold text-lg">🎉 Product Hunt Launch: 3 Months Free on All Plans!</span>
+                </div>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold text-neutral-900 dark:text-neutral-100 leading-tight mb-4">
+                  Simple, Honest Pricing
+                </h2>
+                <p className="text-xl text-neutral-600 dark:text-neutral-400">
+                  Start free. Upgrade anytime. Keep your data forever.
+                </p>
+              </div>
               
-              <div className="grid md:grid-cols-3 gap-8">
-                {/* Solo */}
-                <div className="py-8 border-t-2 border-neutral-200 dark:border-neutral-800">
-                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
-                  <p className="text-neutral-500 dark:text-neutral-400 mb-6">Just getting started</p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Free - No AI */}
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Free</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Simple to-do list</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-semibold text-neutral-900 dark:text-neutral-100">$0</span>
-                    <span className="text-neutral-500 dark:text-neutral-400">/month</span>
+                    <span className="text-3xl font-bold">$0</span>
                   </div>
-                  <ul className="space-y-3 text-neutral-600 dark:text-neutral-400">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      1 general-purpose agent
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Unlimited manual tasks
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Command dashboard
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Kanban, list & calendar views
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Community support
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Comments & attachments
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      100MB file storage
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-neutral-400 mt-0.5">—</span>
+                      <span className="text-neutral-400">No AI agents</span>
                     </li>
                   </ul>
+                  <a
+                    href="/auth/login"
+                    className="block w-full text-center px-4 py-2 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium"
+                  >
+                    Get Started
+                  </a>
+                </div>
+
+                {/* Free - BYOK */}
+                <div className="p-6 border-2 border-blue-500 dark:border-blue-600 rounded-xl bg-blue-50 dark:bg-blue-950/20 flex flex-col">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Free</h3>
+                    <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Popular</span>
+                  </div>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Bring your API keys</p>
+                  <div className="mb-6">
+                    <span className="text-3xl font-bold">$0</span>
+                    <p className="text-xs text-neutral-500 mt-1">Forever</p>
+                  </div>
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Unlimited AI tasks (fair use)
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Gmail & Calendar tools
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      100MB file storage
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      All views & features
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-600 mt-0.5">💳</span>
+                      You handle AI billing directly
+                    </li>
+                  </ul>
+                  <a
+                    href="/auth/login"
+                    className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Get Started Free
+                  </a>
                 </div>
                 
-                {/* Team */}
-                <div className="py-8 border-t-2 border-neutral-900 dark:border-neutral-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">Team</h3>
-                    <span className="text-xs bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-2 py-0.5 rounded">Popular</span>
-                  </div>
-                  <p className="text-neutral-500 dark:text-neutral-400 mb-6">Build your AI team</p>
+                {/* Solo */}
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">For individuals</p>
                   <div className="mb-6">
-                    <span className="text-4xl font-semibold text-neutral-900 dark:text-neutral-100">$7</span>
-                    <span className="text-neutral-500 dark:text-neutral-400">/month</span>
+                    <span className="text-3xl font-bold">$19</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
+                    <p className="text-xs text-neutral-500 mt-1">100 AI tasks/month</p>
                   </div>
-                  <ul className="space-y-3 text-neutral-600 dark:text-neutral-400">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      All specialist agents
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      No key management
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Invite collaborators
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Haiku, Sonnet & Kimi models
                     </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      1GB file storage
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Gmail & Calendar tools
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Email support
+                    </li>
+                  </ul>
+                  <a
+                    href="/api/stripe/checkout?plan=solo"
+                    className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium"
+                  >
+                    Start 3-Month Trial
+                  </a>
+                </div>
+
+                {/* Developer */}
+                <div className="p-6 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
+                  <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Developer</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Power features</p>
+                  <div className="mb-6">
+                    <span className="text-3xl font-bold">$49</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
+                    <p className="text-xs text-neutral-500 mt-1">400 AI tasks/month</p>
+                  </div>
+                  <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      All models (Opus, GPT-4, Gemini)
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      10GB file storage
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      API access & webhooks
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
+                      Custom agents
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-green-600 mt-0.5">✓</span>
                       Priority support
                     </li>
                   </ul>
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-6">
-                    First 3 months FREE this week
-                  </p>
-                </div>
-                
-                {/* Self-hosted */}
-                <div className="py-8 border-t-2 border-neutral-200 dark:border-neutral-800">
-                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Self-hosted</h3>
-                  <p className="text-neutral-500 dark:text-neutral-400 mb-6">Full control</p>
-                  <div className="mb-6">
-                    <span className="text-4xl font-semibold text-neutral-900 dark:text-neutral-100">Free</span>
-                  </div>
-                  <ul className="space-y-3 text-neutral-600 dark:text-neutral-400">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Run on your infrastructure
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      Full data control
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-                      OSS on GitHub
-                    </li>
-                  </ul>
-                  <a 
-                    href="https://github.com/chitownjk/tiker" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-sm text-neutral-900 dark:text-neutral-100 underline underline-offset-4 mt-6 inline-block"
+                  <a
+                    href="/api/stripe/checkout?plan=developer"
+                    className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium"
                   >
-                    View on GitHub
+                    Start 3-Month Trial
                   </a>
                 </div>
+              </div>
+
+              {/* Team tier - full width below */}
+              <div className="mt-6 p-8 border-2 border-neutral-900 dark:border-neutral-100 rounded-xl">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Team</h3>
+                    <p className="text-neutral-600 dark:text-neutral-400 mb-4">Collaboration features for teams</p>
+                    <ul className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-neutral-600 dark:text-neutral-400">
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        1,000 AI tasks/month
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Up to 10 members
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        10GB file storage
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Shared boards
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        All models & API access
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Role permissions
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="text-green-600">✓</span>
+                        Priority support + chat
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="text-right flex flex-col items-end gap-4">
+                    <div>
+                      <div className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-1">$99</div>
+                      <div className="text-sm text-neutral-500">per month</div>
+                    </div>
+                    <a
+                      href="/services#contact"
+                      className="px-6 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium whitespace-nowrap"
+                    >
+                      Contact Sales
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature Comparison */}
+              <div className="mt-16">
+                <h3 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100 mb-8 text-center">
+                  Feature Comparison
+                </h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-neutral-200 dark:border-neutral-800">
+                        <th className="text-left p-4 font-semibold">Feature</th>
+                        <th className="text-center p-4 font-semibold">Free<br />(No AI)</th>
+                        <th className="text-center p-4 font-semibold bg-blue-50 dark:bg-blue-950/20">Free<br />(BYOK)</th>
+                        <th className="text-center p-4 font-semibold">Solo</th>
+                        <th className="text-center p-4 font-semibold">Developer</th>
+                        <th className="text-center p-4 font-semibold">Team</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-neutral-600 dark:text-neutral-400">
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Manual tasks</td>
+                        <td className="text-center p-4">∞</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">∞</td>
+                        <td className="text-center p-4">∞</td>
+                        <td className="text-center p-4">∞</td>
+                        <td className="text-center p-4">∞</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4 font-medium">AI tasks per month</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 font-semibold">∞</td>
+                        <td className="text-center p-4 font-semibold">100</td>
+                        <td className="text-center p-4 font-semibold">400</td>
+                        <td className="text-center p-4 font-semibold">1,000</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Gmail & Calendar tools</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">✓</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Available models</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 text-xs">Your keys</td>
+                        <td className="text-center p-4 text-xs">Haiku<br/>Sonnet<br/>Kimi</td>
+                        <td className="text-center p-4 text-xs">All models<br/>+ Opus<br/>+ GPT-4</td>
+                        <td className="text-center p-4 text-xs">All models</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">API access</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Webhooks</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Custom agents</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">✓</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Team members</td>
+                        <td className="text-center p-4">1</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">1</td>
+                        <td className="text-center p-4">1</td>
+                        <td className="text-center p-4">1</td>
+                        <td className="text-center p-4 font-semibold">10</td>
+                      </tr>
+                      <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                        <td className="p-4">Shared boards</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4 bg-blue-50 dark:bg-blue-950/20">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">—</td>
+                        <td className="text-center p-4">✓</td>
+                      </tr>
+                      <tr>
+                        <td className="p-4">Support</td>
+                        <td className="text-center p-4 text-xs">Community</td>
+                        <td className="text-center p-4 text-xs bg-blue-50 dark:bg-blue-950/20">Community</td>
+                        <td className="text-center p-4 text-xs">Email</td>
+                        <td className="text-center p-4 text-xs">Priority</td>
+                        <td className="text-center p-4 text-xs">Priority<br/>+ Chat</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Switch anytime callout */}
+              <div className="mt-12 p-6 bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-center">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <strong className="text-neutral-900 dark:text-neutral-100">Switch anytime.</strong> Change tiers without losing data. Cancel with one click.
+                </p>
               </div>
             </div>
           </section>
