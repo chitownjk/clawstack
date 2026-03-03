@@ -144,25 +144,7 @@ export default function UsagePage() {
             </div>
           )}
 
-          {/* Trial Status Banner */}
-          {usage.plan_tier && usage.plan_tier !== 'free' && (
-            <div className="bg-green-50 dark:bg-green-950/30 border-2 border-green-500 dark:border-green-600 rounded-lg p-6">
-              <div className="flex items-start gap-4">
-                <div className="text-4xl">🎉</div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-100 mb-1">
-                    Product Hunt Launch Special: 3 Months Free!
-                  </h3>
-                  <p className="text-green-800 dark:text-green-200 mb-2">
-                    You're on the <span className="font-semibold capitalize">{usage.plan_tier}</span> plan with <strong>3 months completely free</strong>. No credit card charged until May 5, 2026.
-                  </p>
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    Enjoying Tiker? We'd love if you could <a href="https://www.producthunt.com/posts/tiker" target="_blank" rel="noopener noreferrer" className="underline font-medium">upvote us on Product Hunt</a> to help spread the word! 🚀
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+
 
           {/* Current Plan */}
           {usage.plan_tier && (
