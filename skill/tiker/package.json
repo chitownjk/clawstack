@@ -10,9 +10,16 @@
     "test": "node tiker.js status"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.36.3"
   },
-  "keywords": ["openclaw", "tiker", "mission-control", "agents"],
+  "keywords": [
+    "openclaw",
+    "tiker",
+    "mission-control",
+    "agents"
+  ],
   "author": "Tiker",
   "license": "MIT"
 }
