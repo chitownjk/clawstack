@@ -16,23 +16,6 @@ export default async function LandingPage() {
 
   return (
     <main className="min-h-screen">
-      {/* Cloud Beta Announcement */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 text-center">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-2 text-sm">
-          <span className="font-semibold">🎉 Cloud Beta is Live!</span>
-          <span className="hidden sm:inline">•</span>
-          <span>No more gateway wrestling. Use our AI keys or bring your own.</span>
-          <a 
-            href="https://testcloud.tiker.com" 
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold underline hover:text-blue-100 transition"
-          >
-            Try it now →
-          </a>
-        </div>
-      </div>
-      
       {/* Hero - Logged in */}
       {user ? (
         <>
