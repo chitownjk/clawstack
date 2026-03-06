@@ -2,7 +2,7 @@
  * View types for task display
  */
 
-export type ViewType = 'list' | 'kanban' | 'time' | 'calendar';
+export type ViewType = 'briefing' | 'list' | 'kanban' | 'time' | 'calendar';
 
 export interface ViewConfig {
   id: ViewType;
@@ -12,6 +12,12 @@ export interface ViewConfig {
 }
 
 export const AVAILABLE_VIEWS: ViewConfig[] = [
+  {
+    id: 'briefing',
+    name: 'Briefing',
+    icon: '◉',
+    description: "What's on deck today"
+  },
   {
     id: 'list',
     name: 'List',
@@ -34,7 +40,7 @@ export const AVAILABLE_VIEWS: ViewConfig[] = [
     id: 'calendar',
     name: 'Calendar',
     icon: '▦',
-    description: 'Calendar grid (coming soon)'
+    description: 'Weekly calendar grid'
   }
 ];
 

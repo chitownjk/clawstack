@@ -14,6 +14,7 @@ import ListView from '@/components/ListView'
 import TimeView from '@/components/TimeView'
 import CalendarView from '@/components/CalendarView'
 import ChatPanel from '@/components/ChatPanel'
+import DailyBriefing from '@/components/DailyBriefing'
 import { ViewType } from '@/types/views'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase'
@@ -41,7 +42,7 @@ export default function MissionControlClient() {
   const [hideDone, setHideDone] = useState(true) // Hide completed by default
   const [deleteModal, setDeleteModal] = useState<{ task: Task; commentCount: number } | null>(null)
   const [executionMode, setExecutionMode] = useState<string | null>(null)
-  const [currentView, setCurrentView] = useState<ViewType>('kanban') // New: task view type
+  const [currentView, setCurrentView] = useState<ViewType>('briefing') // Default to daily briefing
   const [view, setView] = useState<'board' | 'files'>('board')
   const [manualAgentSelection, setManualAgentSelection] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
@@ -514,6 +515,16 @@ export default function MissionControlClient() {
           <CalendarView
             tasks={filteredTasks}
             onTaskClick={setSelectedTask}
+          />
+        )}
+
+        {currentView === 'briefing' && (
+          <DailyBriefing
+            tasks={filteredTasks}
+            agents={agents}
+            activities={activities}
+            onTaskClick={setSelectedTask}
+            onOpenChat={() => { setChatTask(null); setChatOpen(true); }}
           />
         )}
 
