@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import SettingsNav from '@/components/SettingsNav';
-import { createClient } from '@/lib/supabase';
 
 interface Connection {
   id: string;
@@ -13,21 +12,39 @@ interface Connection {
   comingSoon: boolean;
   connected?: boolean;
   connectUrl?: string;
-  composio?: boolean; // Uses Composio OAuth flow
+  composio?: boolean;
 }
 
-// Composio-powered integrations
-const COMPOSIO_INTEGRATIONS = ['slack', 'notion', 'linear'];
+// All Composio-powered integrations (matched to keys in composio.ts COMPOSIO_TOOLKITS)
+const COMPOSIO_INTEGRATIONS = ['gmail', 'google-calendar', 'google-drive', 'slack', 'notion', 'linear'];
 
 const CONNECTIONS: Connection[] = [
   {
-    id: 'google',
-    name: 'Google (Gmail, Calendar & Drive)',
-    description: 'Send emails, manage calendar, access Google Drive files',
-    icon: '🔐',
-    scopes: ['gmail.send', 'gmail.readonly', 'calendar', 'calendar.events', 'drive.file', 'drive.readonly'],
+    id: 'gmail',
+    name: 'Gmail',
+    description: 'Send and read emails, manage drafts and labels',
+    icon: '✉️',
+    scopes: ['gmail.send', 'gmail.readonly', 'gmail.compose', 'gmail.modify'],
     comingSoon: false,
-    connectUrl: '/api/auth/google/initiate',
+    composio: true,
+  },
+  {
+    id: 'google-calendar',
+    name: 'Google Calendar',
+    description: 'Create events, manage calendars, check availability',
+    icon: '📅',
+    scopes: ['calendar', 'calendar.events'],
+    comingSoon: false,
+    composio: true,
+  },
+  {
+    id: 'google-drive',
+    name: 'Google Drive',
+    description: 'Upload files, manage folders, share documents',
+    icon: '📁',
+    scopes: ['drive.file', 'drive.readonly'],
+    comingSoon: false,
+    composio: true,
   },
   {
     id: 'agentmail',
@@ -101,7 +118,6 @@ const CONNECTIONS: Connection[] = [
 
 export default function ConnectionsPage() {
   const [connecting, setConnecting] = useState<string | null>(null);
-  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
   const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
   const [agentmailConnected, setAgentmailConnected] = useState<boolean | null>(null);
   const [composioStatuses, setComposioStatuses] = useState<Record<string, { connected: boolean; connectionId?: string }>>({});
@@ -111,17 +127,12 @@ export default function ConnectionsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkGoogleConnection();
     checkGithubConnection();
     checkAgentmailConnection();
     checkComposioStatuses();
 
     // Check if redirected back from OAuth
     const params = new URLSearchParams(window.location.search);
-    if (params.get('google_connected') === 'true') {
-      window.history.replaceState({}, '', '/settings/connections');
-      setTimeout(() => checkGoogleConnection(), 500);
-    }
     if (params.get('github_connected') === 'true') {
       window.history.replaceState({}, '', '/settings/connections');
       setTimeout(() => checkGithubConnection(), 500);
@@ -133,32 +144,6 @@ export default function ConnectionsPage() {
       setTimeout(() => checkComposioStatuses(), 500);
     }
   }, []);
-
-  const checkGoogleConnection = async () => {
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setGoogleConnected(false);
-        setLoading(false);
-        return;
-      }
-
-      const { data: account } = await supabase
-        .from('accounts')
-        .select('google_tokens')
-        .eq('auth_uid', user.id)
-        .single();
-
-      setGoogleConnected(!!account?.google_tokens);
-    } catch (error) {
-      console.error('Error checking connection:', error);
-      setGoogleConnected(false);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const checkAgentmailConnection = async () => {
     try {
@@ -179,6 +164,8 @@ export default function ConnectionsPage() {
     } catch (error) {
       console.error('Error checking GitHub:', error);
       setGithubConnected(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -224,11 +211,6 @@ export default function ConnectionsPage() {
       return;
     }
 
-    if (connection.id === 'google' && connection.connectUrl) {
-      window.location.href = connection.connectUrl;
-      return;
-    }
-
     if (connection.id === 'github' && connection.connectUrl) {
       window.location.href = connection.connectUrl;
       return;
@@ -266,85 +248,19 @@ export default function ConnectionsPage() {
         setAgentmailConnected(true);
         setShowAgentmailModal(false);
         setAgentmailApiKey('');
-        alert(`✅ Connected! Found ${data.inboxes?.length || 0} inbox(es)`);
+        alert(`Connected! Found ${data.inboxes?.length || 0} inbox(es)`);
       } else {
-        alert(`❌ ${data.error || 'Connection failed'}`);
+        alert(data.error || 'Connection failed');
       }
     } catch (error) {
       console.error('AgentMail connect error:', error);
-      alert('❌ Connection error');
+      alert('Connection error');
     } finally {
       setTestingConnection(false);
     }
   };
 
   const handleDisconnect = async (connectionId: string) => {
-    if (connectionId === 'google') {
-      if (!confirm('Disconnect Google? Agents will lose access to Gmail, Calendar, and Drive.')) {
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/auth/google/disconnect', {
-          method: 'POST',
-        });
-
-        if (response.ok) {
-          setGoogleConnected(false);
-          alert('Google disconnected');
-        } else {
-          alert('Failed to disconnect');
-        }
-      } catch (error) {
-        console.error('Disconnect error:', error);
-        alert('Error disconnecting');
-      }
-    }
-
-    if (connectionId === 'github') {
-      if (!confirm('Disconnect GitHub? Agents will lose access to repositories.')) {
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/auth/github/disconnect', {
-          method: 'POST',
-        });
-
-        if (response.ok) {
-          setGithubConnected(false);
-          alert('GitHub disconnected');
-        } else {
-          alert('Failed to disconnect');
-        }
-      } catch (error) {
-        console.error('Disconnect error:', error);
-        alert('Error disconnecting');
-      }
-    }
-
-    if (connectionId === 'agentmail') {
-      if (!confirm('Disconnect AgentMail? Agents will lose email access.')) {
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/auth/agentmail/disconnect', {
-          method: 'POST',
-        });
-
-        if (response.ok) {
-          setAgentmailConnected(false);
-          alert('AgentMail disconnected');
-        } else {
-          alert('Failed to disconnect');
-        }
-      } catch (error) {
-        console.error('Disconnect error:', error);
-        alert('Error disconnecting');
-      }
-    }
-
     // Composio-powered disconnections
     if (COMPOSIO_INTEGRATIONS.includes(connectionId)) {
       const connName = CONNECTIONS.find(c => c.id === connectionId)?.name || connectionId;
@@ -372,6 +288,52 @@ export default function ConnectionsPage() {
         console.error('Disconnect error:', error);
         alert('Error disconnecting');
       }
+      return;
+    }
+
+    if (connectionId === 'github') {
+      if (!confirm('Disconnect GitHub? Agents will lose access to repositories.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/github/disconnect', {
+          method: 'POST',
+        });
+
+        if (response.ok) {
+          setGithubConnected(false);
+          alert('GitHub disconnected');
+        } else {
+          alert('Failed to disconnect');
+        }
+      } catch (error) {
+        console.error('Disconnect error:', error);
+        alert('Error disconnecting');
+      }
+      return;
+    }
+
+    if (connectionId === 'agentmail') {
+      if (!confirm('Disconnect AgentMail? Agents will lose email access.')) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/agentmail/disconnect', {
+          method: 'POST',
+        });
+
+        if (response.ok) {
+          setAgentmailConnected(false);
+          alert('AgentMail disconnected');
+        } else {
+          alert('Failed to disconnect');
+        }
+      } catch (error) {
+        console.error('Disconnect error:', error);
+        alert('Error disconnecting');
+      }
     }
   };
 
@@ -381,7 +343,7 @@ export default function ConnectionsPage() {
         <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
           Settings
         </h1>
-        
+
         <SettingsNav />
 
         <div className="mb-8">
@@ -395,12 +357,11 @@ export default function ConnectionsPage() {
 
       <div className="space-y-4">
         {CONNECTIONS.map((connection) => {
-          const isConnected = connection.id === 'google' ? googleConnected :
-                             connection.id === 'github' ? githubConnected :
+          const isConnected = connection.id === 'github' ? githubConnected :
                              connection.id === 'agentmail' ? agentmailConnected :
                              connection.composio ? composioStatuses[connection.id]?.connected :
                              connection.connected;
-          
+
           return (
             <div
               key={connection.id}
@@ -441,7 +402,7 @@ export default function ConnectionsPage() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  {loading && connection.id === 'google' ? (
+                  {loading && (connection.id === 'github') ? (
                     <div className="px-4 py-2 text-neutral-500 text-sm">Checking...</div>
                   ) : isConnected ? (
                     <button
@@ -468,10 +429,10 @@ export default function ConnectionsPage() {
 
       <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-900 rounded-xl">
         <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-          🔐 Your data is encrypted
+          Your data is encrypted
         </h3>
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          All OAuth tokens and API keys are encrypted at rest using AES-256-GCM. 
+          All OAuth tokens and API keys are encrypted at rest using AES-256-GCM.
           Only your AI agents can decrypt them when executing tasks. We never store tokens in plaintext.
         </p>
       </div>
@@ -487,7 +448,7 @@ export default function ConnectionsPage() {
           href="/services#contact"
           className="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium"
         >
-          Contact Sales →
+          Contact Sales
         </a>
       </div>
 
@@ -512,7 +473,7 @@ export default function ConnectionsPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors text-sm font-medium"
               >
-                Open AgentMail Portal →
+                Open AgentMail Portal
               </a>
             </div>
 

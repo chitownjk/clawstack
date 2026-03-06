@@ -23,12 +23,19 @@ export const COMPOSIO_TOOLKITS: Record<string, {
   icon: string;
   scopes: string[];
 }> = {
-  slack: {
-    toolkit: 'SLACK',
-    name: 'Slack',
-    description: 'Send messages, read channels, manage workspace',
-    icon: '\uD83D\uDCAC',
-    scopes: ['chat:write', 'channels:read', 'users:read'],
+  gmail: {
+    toolkit: 'GMAIL',
+    name: 'Gmail',
+    description: 'Send and read emails, manage drafts and labels',
+    icon: '\u2709\uFE0F',
+    scopes: ['gmail.send', 'gmail.readonly', 'gmail.compose', 'gmail.modify'],
+  },
+  'google-calendar': {
+    toolkit: 'GOOGLECALENDAR',
+    name: 'Google Calendar',
+    description: 'Create events, manage calendars, check availability',
+    icon: '\uD83D\uDCC5',
+    scopes: ['calendar', 'calendar.events'],
   },
   'google-drive': {
     toolkit: 'GOOGLEDRIVE',
@@ -36,6 +43,13 @@ export const COMPOSIO_TOOLKITS: Record<string, {
     description: 'Upload files, manage folders, share documents',
     icon: '\uD83D\uDCC1',
     scopes: ['drive.file', 'drive.readonly'],
+  },
+  slack: {
+    toolkit: 'SLACK',
+    name: 'Slack',
+    description: 'Send messages, read channels, manage workspace',
+    icon: '\uD83D\uDCAC',
+    scopes: ['chat:write', 'channels:read', 'users:read'],
   },
   notion: {
     toolkit: 'NOTION',
