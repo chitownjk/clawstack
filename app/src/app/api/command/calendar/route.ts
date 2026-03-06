@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     // Check if Google Calendar is connected
     try {
       const connectedAccounts = await composio.connectedAccounts.list({
-        user_id: userId,
+        userIds: [userId],
       })
 
       const calendarConnection = connectedAccounts.items?.find(

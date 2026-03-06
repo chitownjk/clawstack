@@ -74,13 +74,13 @@ async function checkAccountTasks(accountId: string) {
       for (const task of reviewTasks) {
         const { data: comments } = await supabase
           .from('mc_comments')
-          .select('agent_name, created_at')
+          .select('agent_id, agent_name, created_at')
           .eq('task_id', task.id)
           .order('created_at', { ascending: false })
           .limit(2);
-        
-        // If last comment is from agent, skip (agent already responded)
-        if (comments && comments.length > 0 && comments[0].agent_name) {
+
+        // If last comment is from an agent (has agent_id OR agent_name), skip
+        if (comments && comments.length > 0 && (comments[0].agent_id || comments[0].agent_name)) {
           cloudTasks = cloudTasks.filter((t: any) => t.id !== task.id);
         }
       }
