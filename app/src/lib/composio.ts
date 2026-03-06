@@ -15,7 +15,7 @@ export function getComposio(): Composio {
 }
 
 // Toolkit IDs used across Composio integrations
-// These map to the toolkit names in Composio's registry
+// These map to the toolkit slugs in Composio's registry
 export const COMPOSIO_TOOLKITS: Record<string, {
   toolkit: string;
   name: string;
@@ -63,9 +63,9 @@ export async function getComposioConnectionStatuses(
   for (const [key, config] of Object.entries(COMPOSIO_TOOLKITS)) {
     try {
       const connections = await composio.connectedAccounts.list({
-        userId,
-        toolkit: config.toolkit,
-        status: 'ACTIVE',
+        userIds: [userId],
+        toolkitSlugs: [config.toolkit],
+        statuses: ['ACTIVE'],
       });
 
       const activeConnection = connections?.items?.[0];
@@ -83,10 +83,11 @@ export async function getComposioConnectionStatuses(
 }
 
 // Initiate a Composio connection for a specific toolkit
+// Uses toolkits.authorize() which auto-creates auth config and returns OAuth redirect
 export async function initiateComposioConnection(
   userId: string,
   toolkitKey: string,
-  callbackUrl: string,
+  _callbackUrl: string,
   authConfigId?: string
 ): Promise<{ redirectUrl: string; connectionRequestId: string }> {
   const composio = getComposio();
@@ -96,18 +97,16 @@ export async function initiateComposioConnection(
     throw new Error(`Unknown toolkit: ${toolkitKey}`);
   }
 
-  // Use provided authConfigId or let Composio pick the default
-  const connectionRequest = authConfigId
-    ? await composio.connectedAccounts.initiate(userId, authConfigId, {
-        callbackUrl,
-      })
-    : await composio.connectedAccounts.initiate(userId, config.toolkit, {
-        callbackUrl,
-      });
+  // toolkits.authorize() creates an auth config if needed and initiates the connection
+  const connectionRequest = await composio.toolkits.authorize(
+    userId,
+    config.toolkit,
+    authConfigId
+  );
 
   return {
-    redirectUrl: connectionRequest.redirectUrl,
-    connectionRequestId: connectionRequest.id,
+    redirectUrl: connectionRequest.redirectUrl || '',
+    connectionRequestId: connectionRequest.toJSON().id || '',
   };
 }
 
