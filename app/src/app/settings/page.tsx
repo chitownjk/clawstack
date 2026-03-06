@@ -71,29 +71,33 @@ export default function SettingsPage() {
   const handleSavePreferences = async () => {
     setSaving(true)
     setMessage(null)
-    
+
     try {
       // Save to localStorage (no DB column yet for these)
       localStorage.setItem('tiker_redirect_to_mc', redirectToMC.toString())
       localStorage.setItem('tiker_contribution_enabled', contributionEnabled.toString())
       localStorage.setItem('tiker_manual_agent_selection', manualAgentSelection.toString())
-      
-      // Save email signature to database
-      const { error } = await supabase
-        .from('accounts')
-        .update({ email_signature: emailSignature })
-        .eq('auth_uid', user?.id)
-      
-      if (error) {
-        throw error
+
+      // Save email signature to database (best-effort, column may not exist yet)
+      try {
+        const { error } = await supabase
+          .from('accounts')
+          .update({ email_signature: emailSignature })
+          .eq('auth_uid', user?.id)
+
+        if (error) {
+          console.warn('Could not save email signature to DB:', error.message)
+        }
+      } catch (dbError) {
+        console.warn('Email signature DB save skipped:', dbError)
       }
-      
+
       setMessage({ type: 'success', text: 'Preferences saved' })
     } catch (error) {
       console.error('Save error:', error)
       setMessage({ type: 'error', text: 'Failed to save preferences' })
     }
-    
+
     setSaving(false)
   }
 
