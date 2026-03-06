@@ -4,6 +4,10 @@ import { useState, useRef, useEffect } from 'react'
 import { Task, Agent } from '@/lib/mission-control'
 import SimpleMarkdown from '@/components/SimpleMarkdown'
 
+const MAX_INPUT_LENGTH = 2000    // Match server-side limit
+const MIN_SEND_INTERVAL = 1500   // 1.5s cooldown between sends
+const MAX_MESSAGES_DISPLAY = 50  // Don't render more than this
+
 interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -23,9 +27,11 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [rateLimited, setRateLimited] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const lastSendRef = useRef<number>(0)
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -47,12 +53,24 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
 
   async function handleSubmit(e?: React.FormEvent) {
     e?.preventDefault()
-    if (!input.trim() || streaming) return
+    const trimmed = input.trim()
+    if (!trimmed || streaming || rateLimited) return
+
+    // Client-side cooldown
+    const now = Date.now()
+    if (now - lastSendRef.current < MIN_SEND_INTERVAL) {
+      setError('Slow down -- wait a moment before sending again.')
+      return
+    }
+    lastSendRef.current = now
+
+    // Enforce input length
+    const safeContent = trimmed.slice(0, MAX_INPUT_LENGTH)
 
     const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
+      id: `user-${now}`,
       role: 'user',
-      content: input.trim(),
+      content: safeContent,
       timestamp: new Date(),
     }
 
@@ -63,7 +81,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
     setStreaming(true)
 
     // Create placeholder for assistant response
-    const assistantId = `assistant-${Date.now()}`
+    const assistantId = `assistant-${now}`
     setMessages(prev => [...prev, {
       id: assistantId,
       role: 'assistant',
@@ -79,14 +97,17 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
         ? agents.filter(a => task.assigned_agent_ids?.includes(a.id)).map(a => a.name).join(', ')
         : undefined
 
+      // Only send last 20 messages to keep payload reasonable
+      const recentMessages = updatedMessages.slice(-20).map(m => ({
+        role: m.role,
+        content: m.content,
+      }))
+
       const response = await fetch('/api/command/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: updatedMessages.map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: recentMessages,
           taskId: task?.id,
           taskContext: task ? {
             title: task.title,
@@ -103,6 +124,10 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
         const data = await response.json()
         if (data.code === 'UPGRADE_REQUIRED') {
           setError('AI chat requires a Pro plan. Upgrade to start chatting with your tasks.')
+        } else if (data.code === 'RATE_LIMITED') {
+          setRateLimited(true)
+          setError('You\'ve hit the rate limit. Take a breather and try again in a minute.')
+          setTimeout(() => setRateLimited(false), 60_000)
         } else {
           setError(data.error || 'Failed to get response')
         }
@@ -265,17 +290,27 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
       {/* Input */}
       <div className="p-3 border-t bg-white flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex items-end gap-2">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={task ? `Chat about "${task.title}"...` : 'Ask me anything...'}
-            rows={1}
-            className="flex-1 resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
-            style={{ minHeight: '38px' }}
-            disabled={streaming}
-          />
+          <div className="flex-1 relative">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value.slice(0, MAX_INPUT_LENGTH))}
+              onKeyDown={handleKeyDown}
+              placeholder={task ? `Chat about "${task.title}"...` : 'Ask me anything...'}
+              rows={1}
+              maxLength={MAX_INPUT_LENGTH}
+              className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
+              style={{ minHeight: '38px' }}
+              disabled={streaming || rateLimited}
+            />
+            {input.length > MAX_INPUT_LENGTH * 0.8 && (
+              <span className={`absolute bottom-1 right-2 text-[10px] ${
+                input.length >= MAX_INPUT_LENGTH ? 'text-red-500' : 'text-gray-400'
+              }`}>
+                {input.length}/{MAX_INPUT_LENGTH}
+              </span>
+            )}
+          </div>
           {streaming ? (
             <button
               type="button"
@@ -287,7 +322,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
           ) : (
             <button
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() || rateLimited}
               className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm font-medium flex-shrink-0"
             >
               Send
