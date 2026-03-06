@@ -65,6 +65,13 @@ export const COMPOSIO_TOOLKITS: Record<string, {
     icon: '\uD83D\uDCD0',
     scopes: ['read', 'write', 'issues:create'],
   },
+  github: {
+    toolkit: 'GITHUB',
+    name: 'GitHub',
+    description: 'Manage repos, issues, PRs, and code reviews',
+    icon: '\uD83D\uDC19',
+    scopes: ['repo', 'user', 'read:org'],
+  },
 };
 
 // Check which Composio integrations are connected for a given user

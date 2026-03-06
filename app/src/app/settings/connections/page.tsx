@@ -11,12 +11,11 @@ interface Connection {
   scopes: string[];
   comingSoon: boolean;
   connected?: boolean;
-  connectUrl?: string;
   composio?: boolean;
 }
 
 // All Composio-powered integrations (matched to keys in composio.ts COMPOSIO_TOOLKITS)
-const COMPOSIO_INTEGRATIONS = ['gmail', 'google-calendar', 'google-drive', 'slack', 'notion', 'linear'];
+const COMPOSIO_INTEGRATIONS = ['gmail', 'google-calendar', 'google-drive', 'slack', 'notion', 'linear', 'github'];
 
 const CONNECTIONS: Connection[] = [
   {
@@ -70,7 +69,7 @@ const CONNECTIONS: Connection[] = [
     icon: '🐙',
     scopes: ['repo', 'user', 'read:org'],
     comingSoon: false,
-    connectUrl: '/api/auth/github/initiate',
+    composio: true,
   },
   {
     id: 'notion',
@@ -118,7 +117,6 @@ const CONNECTIONS: Connection[] = [
 
 export default function ConnectionsPage() {
   const [connecting, setConnecting] = useState<string | null>(null);
-  const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
   const [agentmailConnected, setAgentmailConnected] = useState<boolean | null>(null);
   const [composioStatuses, setComposioStatuses] = useState<Record<string, { connected: boolean; connectionId?: string }>>({});
   const [showAgentmailModal, setShowAgentmailModal] = useState(false);
@@ -127,17 +125,11 @@ export default function ConnectionsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkGithubConnection();
     checkAgentmailConnection();
     checkComposioStatuses();
 
-    // Check if redirected back from OAuth
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('github_connected') === 'true') {
-      window.history.replaceState({}, '', '/settings/connections');
-      setTimeout(() => checkGithubConnection(), 500);
-    }
     // Handle Composio OAuth callback
+    const params = new URLSearchParams(window.location.search);
     const composioConnected = params.get('composio_connected');
     if (composioConnected) {
       window.history.replaceState({}, '', '/settings/connections');
@@ -156,19 +148,6 @@ export default function ConnectionsPage() {
     }
   };
 
-  const checkGithubConnection = async () => {
-    try {
-      const response = await fetch('/api/auth/github/status');
-      const data = await response.json();
-      setGithubConnected(data.connected);
-    } catch (error) {
-      console.error('Error checking GitHub:', error);
-      setGithubConnected(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const checkComposioStatuses = async () => {
     try {
       const response = await fetch('/api/auth/composio/status');
@@ -178,6 +157,8 @@ export default function ConnectionsPage() {
       }
     } catch (error) {
       console.error('Error checking Composio statuses:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -208,11 +189,6 @@ export default function ConnectionsPage() {
         alert('Failed to connect. Please try again.');
         setConnecting(null);
       }
-      return;
-    }
-
-    if (connection.id === 'github' && connection.connectUrl) {
-      window.location.href = connection.connectUrl;
       return;
     }
 
@@ -291,29 +267,6 @@ export default function ConnectionsPage() {
       return;
     }
 
-    if (connectionId === 'github') {
-      if (!confirm('Disconnect GitHub? Agents will lose access to repositories.')) {
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/auth/github/disconnect', {
-          method: 'POST',
-        });
-
-        if (response.ok) {
-          setGithubConnected(false);
-          alert('GitHub disconnected');
-        } else {
-          alert('Failed to disconnect');
-        }
-      } catch (error) {
-        console.error('Disconnect error:', error);
-        alert('Error disconnecting');
-      }
-      return;
-    }
-
     if (connectionId === 'agentmail') {
       if (!confirm('Disconnect AgentMail? Agents will lose email access.')) {
         return;
@@ -357,8 +310,7 @@ export default function ConnectionsPage() {
 
       <div className="space-y-4">
         {CONNECTIONS.map((connection) => {
-          const isConnected = connection.id === 'github' ? githubConnected :
-                             connection.id === 'agentmail' ? agentmailConnected :
+          const isConnected = connection.id === 'agentmail' ? agentmailConnected :
                              connection.composio ? composioStatuses[connection.id]?.connected :
                              connection.connected;
 
@@ -402,7 +354,7 @@ export default function ConnectionsPage() {
                   </div>
                 </div>
                 <div className="ml-4">
-                  {loading && (connection.id === 'github') ? (
+                  {loading && connection.composio ? (
                     <div className="px-4 py-2 text-neutral-500 text-sm">Checking...</div>
                   ) : isConnected ? (
                     <button
