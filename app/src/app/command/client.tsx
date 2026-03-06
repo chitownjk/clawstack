@@ -14,6 +14,7 @@ import FilesView from '@/components/FilesView'
 import ViewSwitcher from '@/components/ViewSwitcher'
 import ListView from '@/components/ListView'
 import TimeView from '@/components/TimeView'
+import CalendarView from '@/components/CalendarView'
 import { ViewType } from '@/types/views'
 import { use2FA } from '@/hooks/use2FA'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
@@ -590,6 +591,13 @@ export default function MissionControlClient() {
         {currentView === 'time' && (
           <TimeView 
             tasks={filteredTasks} 
+            onTaskClick={setSelectedTask}
+          />
+        )}
+
+        {currentView === 'calendar' && (
+          <CalendarView
+            tasks={filteredTasks}
             onTaskClick={setSelectedTask}
           />
         )}
