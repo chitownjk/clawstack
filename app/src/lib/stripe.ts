@@ -25,43 +25,22 @@ export const stripe = process.env.STRIPE_SECRET_KEY
     })
   : null
 
-// Pricing tiers
+// Pricing tiers - simplified to Free / Pro / Team
 export const TIERS = {
-  // OSS tiers (legacy - keep for backwards compatibility)
   free: {
     name: 'Free',
     price: 0,
     priceId: null,
     maxBots: 1,
-    maxTasks: 50,
+    maxTasks: -1, // unlimited manual tasks
     canInviteGuests: false,
     trialDays: 0,
   },
   pro: {
     name: 'Pro',
-    price: 7,
-    priceId: process.env.STRIPE_PRO_PRICE_ID, // Set in env
-    maxBots: -1, // unlimited
-    maxTasks: -1, // unlimited
-    canInviteGuests: true,
-    maxGuests: 5,
-    trialDays: 0,
-  },
-  
-  // Cloud product tiers
-  solo: {
-    name: 'Solo',
-    price: 19,
-    priceId: process.env.STRIPE_SOLO_PRICE_ID,
-    maxTasks: 100,
-    canInviteGuests: false,
-    trialDays: 7,
-  },
-  developer: {
-    name: 'Developer',
-    price: 49,
-    priceId: process.env.STRIPE_DEVELOPER_PRICE_ID,
-    maxTasks: 400,
+    price: 29,
+    priceId: process.env.STRIPE_PRO_PRICE_ID,
+    maxTasks: 200,
     canInviteGuests: false,
     trialDays: 7,
   },
@@ -72,7 +51,25 @@ export const TIERS = {
     maxTasks: 1000,
     canInviteGuests: true,
     maxGuests: 10,
-    trialDays: 0, // Contact sales
+    trialDays: 0,
+  },
+
+  // Legacy tier aliases - kept for backward compatibility with existing subscriptions
+  solo: {
+    name: 'Pro',
+    price: 29,
+    priceId: process.env.STRIPE_PRO_PRICE_ID,
+    maxTasks: 200,
+    canInviteGuests: false,
+    trialDays: 7,
+  },
+  developer: {
+    name: 'Pro',
+    price: 29,
+    priceId: process.env.STRIPE_PRO_PRICE_ID,
+    maxTasks: 200,
+    canInviteGuests: false,
+    trialDays: 7,
   },
 } as const
 

@@ -35,7 +35,7 @@ export default function OnboardingPage() {
     setLoading(false);
   }
 
-  async function selectPlan(tier: 'free' | 'byok' | 'solo' | 'developer' | 'team') {
+  async function selectPlan(tier: 'free' | 'pro') {
     setSelecting(tier);
 
     try {
@@ -43,34 +43,22 @@ export default function OnboardingPage() {
       if (!user) return;
 
       if (tier === 'free') {
-        // Set plan to free (no AI)
+        // Free tier -- task board with no AI
         await supabase
           .from('accounts')
           .update({
             plan_tier: 'free',
-            execution_mode: 'openclaw',
+            execution_mode: 'cloud-our-keys',
             onboarding_completed: true,
           })
           .eq('auth_uid', user.id);
 
-        router.push('/dashboard');
-      } else if (tier === 'byok') {
-        // Set plan to free BYOK (cloud-user-keys)
-        await supabase
-          .from('accounts')
-          .update({
-            plan_tier: 'free',
-            execution_mode: 'cloud-user-keys',
-            onboarding_completed: true,
-          })
-          .eq('auth_uid', user.id);
-
-        router.push('/dashboard');
+        router.push('/command');
       } else {
-        // Redirect to Stripe checkout for paid tiers
-        const response = await fetch(`/api/stripe/checkout?plan=${tier}`);
+        // Pro -- redirect to Stripe checkout with 7-day trial
+        const response = await fetch('/api/stripe/checkout?plan=pro');
         const { url } = await response.json();
-        
+
         if (url) {
           window.location.href = url;
         } else {
@@ -95,153 +83,99 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center px-6 py-12">
-      <div className="max-w-5xl w-full">
+      <div className="max-w-3xl w-full">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-neutral-900 dark:text-neutral-100 mb-4">
-            Welcome to Tiker! 🎉
+            Welcome to Tiker!
           </h1>
           <p className="text-lg text-neutral-600 dark:text-neutral-400">
-            Choose the plan that's right for you. You can always upgrade later.
+            Your AI-powered task board. Start free or unlock AI agents with Pro.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {/* Free (No AI) */}
-          <div className="p-6 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Free</h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Simple to-do list</p>
+        <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto mb-8">
+          {/* Free */}
+          <div className="p-8 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Free</h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+              A simple, powerful task board
+            </p>
             <div className="mb-6">
-              <span className="text-3xl font-bold">$0</span>
+              <span className="text-4xl font-bold">$0</span>
+              <span className="text-neutral-500">/month</span>
             </div>
-            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+            <ul className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400 mb-8 flex-1">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                Unlimited manual tasks
+                <span className="text-green-600 mt-0.5">&check;</span>
+                Unlimited tasks
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                All views (Kanban, list, calendar)
+                <span className="text-green-600 mt-0.5">&check;</span>
+                Kanban, list, and calendar views
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-neutral-400 mt-0.5">—</span>
+                <span className="text-green-600 mt-0.5">&check;</span>
+                Organize and track your work
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-neutral-400 mt-0.5">&mdash;</span>
                 <span className="text-neutral-400">No AI agents</span>
               </li>
             </ul>
             <button
               onClick={() => selectPlan('free')}
               disabled={selecting !== null}
-              className="block w-full text-center px-4 py-2 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50"
+              className="block w-full text-center px-4 py-3 border-2 border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50"
             >
               {selecting === 'free' ? 'Setting up...' : 'Get Started'}
             </button>
           </div>
 
-          {/* Free - BYOK */}
-          <div className="p-6 bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-500 dark:border-blue-600 rounded-xl flex flex-col">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Free</h3>
-              <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">Popular</span>
+          {/* Pro */}
+          <div className="p-8 bg-white dark:bg-neutral-900 border-2 border-blue-500 dark:border-blue-400 rounded-xl flex flex-col relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-500 text-white text-xs font-medium rounded-full">
+              7-DAY FREE TRIAL
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Bring your API keys</p>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Pro</h3>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
+              AI agents that work for you
+            </p>
             <div className="mb-6">
-              <span className="text-3xl font-bold">$0</span>
-              <p className="text-xs text-neutral-500 mt-1">Forever</p>
+              <span className="text-4xl font-bold">$29</span>
+              <span className="text-neutral-500">/month</span>
             </div>
-            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
+            <ul className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400 mb-8 flex-1">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                Unlimited AI tasks (fair use)
+                <span className="text-green-600 mt-0.5">&check;</span>
+                200 AI tasks/month
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                All features & tools
+                <span className="text-green-600 mt-0.5">&check;</span>
+                All AI models and integrations
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 mt-0.5">💳</span>
-                You handle AI billing directly
+                <span className="text-green-600 mt-0.5">&check;</span>
+                API access and webhooks
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">&check;</span>
+                2 GB file storage
               </li>
             </ul>
             <button
-              onClick={() => selectPlan('byok')}
+              onClick={() => selectPlan('pro')}
               disabled={selecting !== null}
-              className="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+              className="block w-full text-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
             >
-              {selecting === 'byok' ? 'Setting up...' : 'Get Started Free'}
-            </button>
-          </div>
-
-          {/* Solo */}
-          <div className="p-6 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">For individuals</p>
-            <div className="mb-6">
-              <span className="text-3xl font-bold">$19</span>
-              <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
-              <p className="text-xs text-neutral-500 mt-1">100 AI tasks/month</p>
-            </div>
-            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                No key management
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                Haiku, Sonnet & Kimi
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                Email support
-              </li>
-            </ul>
-            <button
-              onClick={() => selectPlan('solo')}
-              disabled={selecting !== null}
-              className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium disabled:opacity-50"
-            >
-              {selecting === 'solo' ? 'Redirecting...' : 'Start 7-Day Trial'}
-            </button>
-          </div>
-
-          {/* Developer */}
-          <div className="p-6 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Developer</h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">Power features</p>
-            <div className="mb-6">
-              <span className="text-3xl font-bold">$49</span>
-              <span className="text-neutral-500 dark:text-neutral-400">/mo</span>
-              <p className="text-xs text-neutral-500 mt-1">400 AI tasks/month</p>
-            </div>
-            <ul className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400 mb-6 flex-1">
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                All models (Opus, GPT-4)
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                API & webhooks
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                Priority support
-              </li>
-            </ul>
-            <button
-              onClick={() => selectPlan('developer')}
-              disabled={selecting !== null}
-              className="block w-full text-center px-4 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 transition-colors font-medium disabled:opacity-50"
-            >
-              {selecting === 'developer' ? 'Redirecting...' : 'Start 7-Day Trial'}
+              {selecting === 'pro' ? 'Redirecting...' : 'Start Free Trial'}
             </button>
           </div>
         </div>
 
         <div className="text-center">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
-            Need a team plan? Contact us for pricing.
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            Need a team plan? <a href="/pricing" className="text-blue-600 dark:text-blue-400 hover:underline">See all plans</a>
           </p>
-          <a href="/services#contact" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            Contact Sales →
-          </a>
         </div>
       </div>
     </div>

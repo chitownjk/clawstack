@@ -57,7 +57,7 @@ export default function UsagePage() {
 
       setUsage({
         tasks_used: tasksThisMonth || 0,
-        tasks_limit: account.plan_tier === 'team' ? 1000 : account.plan_tier === 'developer' ? 400 : account.plan_tier === 'solo' ? 100 : null,
+        tasks_limit: account.plan_tier === 'cloud-plus' ? 1000 : (account.plan_tier === 'cloud' || account.plan_tier === 'cloud-developer') ? 200 : null,
         plan_tier: account.plan_tier,
         execution_mode: account.execution_mode,
         tokens_in_used: 0,
@@ -155,8 +155,8 @@ export default function UsagePage() {
                     Current Plan
                   </h2>
                   <div className="flex items-center gap-3">
-                    <span className="text-2xl font-bold text-blue-600 capitalize">
-                      {usage.plan_tier}
+                    <span className="text-2xl font-bold text-blue-600">
+                      {usage.plan_tier === 'cloud-plus' ? 'Team' : (usage.plan_tier === 'cloud' || usage.plan_tier === 'cloud-developer') ? 'Pro' : 'Free'}
                     </span>
                     <span className="text-sm text-neutral-600 dark:text-neutral-400">
                       {usage.tasks_limit} tasks/month

@@ -6,10 +6,10 @@ async function createCheckoutSession(request: NextRequest) {
   try {
     // Get plan from query params or body
     const url = new URL(request.url)
-    const plan = url.searchParams.get('plan') || 'solo'
-    
+    const plan = url.searchParams.get('plan') || 'pro'
+
     // Validate plan
-    const validPlans = ['solo', 'developer', 'team']
+    const validPlans = ['pro', 'team', 'solo', 'developer']  // solo/developer kept for legacy links
     if (!validPlans.includes(plan)) {
       return NextResponse.json(
         { error: 'Invalid plan' },
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
   // If authentication required, redirect to login
   if (result.status === 401) {
     const url = new URL(request.url)
-    const plan = url.searchParams.get('plan') || 'solo'
+    const plan = url.searchParams.get('plan') || 'pro'
     return NextResponse.redirect(new URL(`/auth/login?next=/api/stripe/checkout?plan=${plan}`, request.url))
   }
   
