@@ -1,7 +1,20 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Task } from '@/types/views';
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  allDay: boolean;
+  location?: string;
+  description?: string;
+  htmlLink?: string;
+  status?: string;
+  attendees?: number;
+}
 
 interface CalendarViewProps {
   tasks: Task[];
@@ -54,6 +67,9 @@ function priorityStyle(priority: string) {
 export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
   const today = useMemo(() => new Date(), []);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(today));
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
 
   const todayKey = dateKey(today);
 
@@ -63,6 +79,53 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
     [weekStart],
   );
   const weekDayKeys = useMemo(() => weekDays.map(dateKey), [weekDays]);
+
+  // Fetch Google Calendar events when week changes
+  useEffect(() => {
+    async function fetchCalendarEvents() {
+      setCalendarLoading(true);
+      try {
+        const startDate = dateKey(weekStart);
+        const endDate = dateKey(addDays(weekStart, 6));
+        const res = await fetch(`/api/command/calendar?start=${startDate}&end=${endDate}`, {
+          credentials: 'include',
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCalendarEvents(data.events || []);
+          setCalendarConnected(data.connected);
+        }
+      } catch (err) {
+        console.error('Failed to fetch calendar events:', err);
+      } finally {
+        setCalendarLoading(false);
+      }
+    }
+    fetchCalendarEvents();
+  }, [weekStart]);
+
+  // Bucket calendar events by date
+  const eventBuckets = useMemo(() => {
+    const buckets: Record<string, CalendarEvent[]> = {};
+    weekDayKeys.forEach(k => (buckets[k] = []));
+
+    calendarEvents.forEach(event => {
+      const startStr = event.start;
+      if (!startStr) return;
+      const d = new Date(startStr);
+      const key = dateKey(d);
+      if (buckets[key]) {
+        buckets[key].push(event);
+      }
+    });
+
+    // Sort by start time
+    Object.values(buckets).forEach(arr =>
+      arr.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+    );
+
+    return buckets;
+  }, [calendarEvents, weekDayKeys]);
 
   // Filter out completed tasks, then bucket by date key
   const { buckets, noDateTasks } = useMemo(() => {
@@ -104,6 +167,7 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
   }, [tasks, weekDayKeys]);
 
   const totalTasksThisWeek = weekDayKeys.reduce((sum, k) => sum + buckets[k].length, 0);
+  const totalEventsThisWeek = weekDayKeys.reduce((sum, k) => sum + eventBuckets[k].length, 0);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
 
@@ -152,16 +216,52 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
         </button>
       </div>
 
+      {/* ── Legend ─────────────────────────────────────────────────────── */}
+      {calendarConnected && (
+        <div className="flex items-center gap-4 px-4 py-2 text-[11px] text-gray-500 border-b border-gray-100">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Task (Now)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Task (Soon)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Google Calendar
+          </span>
+          {calendarLoading && (
+            <span className="text-blue-500 ml-auto">Syncing calendar...</span>
+          )}
+        </div>
+      )}
+
+      {/* ── Google Calendar Connection Banner ─────────────────────────── */}
+      {calendarConnected === false && (
+        <div className="mx-4 mt-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-blue-800">
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>Connect Google Calendar to see your events here</span>
+          </div>
+          <a
+            href="/settings/integrations"
+            className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
+          >
+            Connect
+          </a>
+        </div>
+      )}
+
       {/* ── Calendar Grid ───────────────────────────────────────────────── */}
       <div className="flex-1 overflow-auto p-4">
-        {totalTasksThisWeek === 0 && noDateTasks.length === 0 ? (
+        {totalTasksThisWeek === 0 && totalEventsThisWeek === 0 && noDateTasks.length === 0 ? (
           /* ── Empty Week State ──────────────────────────────────────── */
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <svg className="w-12 h-12 mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
-            <p className="text-lg font-medium">No tasks this week</p>
-            <p className="text-sm mt-1">Try navigating to another week or create a new task</p>
+            <p className="text-lg font-medium">Nothing this week</p>
+            <p className="text-sm mt-1">No tasks or calendar events scheduled</p>
           </div>
         ) : (
           <>
@@ -200,6 +300,8 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
                 const key = weekDayKeys[i];
                 const isToday = key === todayKey;
                 const dayTasks = buckets[key];
+                const dayEvents = eventBuckets[key] || [];
+                const isEmpty = dayTasks.length === 0 && dayEvents.length === 0;
 
                 return (
                   <div
@@ -207,13 +309,17 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
                     className={`min-h-[120px] sm:min-h-[160px] p-1.5 flex flex-col gap-1 ${
                       isToday ? 'bg-blue-50/40' : 'bg-white'
                     }`}
-                    title="Click to add task (coming soon)"
                   >
-                    {dayTasks.length === 0 && (
+                    {isEmpty && (
                       <div className="flex-1 flex items-center justify-center">
-                        <span className="text-[10px] text-gray-300 select-none">—</span>
+                        <span className="text-[10px] text-gray-300 select-none">--</span>
                       </div>
                     )}
+                    {/* Google Calendar events */}
+                    {dayEvents.map(event => (
+                      <CalendarEventCard key={event.id} event={event} />
+                    ))}
+                    {/* Tiker tasks */}
                     {dayTasks.map(task => (
                       <CalendarTaskCard
                         key={task.id}
@@ -272,9 +378,41 @@ function CalendarTaskCard({ task, onClick }: { task: Task; onClick: () => void }
       </div>
       {task.assigned_human && (
         <span className="block mt-0.5 text-[10px] text-gray-400 truncate pl-3.5">
-          👤 {task.assigned_human}
+          {task.assigned_human}
         </span>
       )}
     </button>
+  );
+}
+
+// ── Google Calendar Event Card ───────────────────────────────────────────────
+
+function CalendarEventCard({ event }: { event: CalendarEvent }) {
+  const startTime = event.allDay
+    ? 'All day'
+    : new Date(event.start).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+
+  return (
+    <a
+      href={event.htmlLink || '#'}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="w-full text-left px-2 py-1.5 rounded-md border border-green-200 bg-green-50 hover:bg-green-100 text-xs transition-all duration-200 cursor-pointer group hover:shadow-sm block"
+    >
+      <div className="flex items-start gap-1.5">
+        <span className="mt-0.5 flex-shrink-0 w-2 h-2 rounded-full bg-green-500" />
+        <span className="font-medium text-green-900 leading-tight line-clamp-2 group-hover:text-green-950">
+          {event.title}
+        </span>
+      </div>
+      <span className="block mt-0.5 text-[10px] text-green-600 pl-3.5">
+        {startTime}
+        {event.location && ` \u00B7 ${event.location}`}
+      </span>
+    </a>
   );
 }
