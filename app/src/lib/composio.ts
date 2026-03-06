@@ -96,13 +96,33 @@ export async function getComposioConnectionStatuses(
   return statuses;
 }
 
+// Resolve the auth config ID for a toolkit (find existing or create one)
+async function getOrCreateAuthConfig(
+  composio: Composio,
+  toolkitSlug: string
+): Promise<string> {
+  // Check for an existing auth config for this toolkit
+  const existing = await composio.authConfigs.list({
+    toolkit: toolkitSlug,
+  });
+
+  if (existing?.items?.length > 0) {
+    return existing.items[0].id;
+  }
+
+  // None found, create a Composio-managed auth config
+  const created = await composio.authConfigs.create(toolkitSlug);
+  return created.id;
+}
+
 // Initiate a Composio connection for a specific toolkit
-// Uses toolkits.authorize() which auto-creates auth config and returns OAuth redirect
+// Uses connectedAccounts.initiate() with callbackUrl so the user
+// is redirected back to Tiker after completing OAuth
 export async function initiateComposioConnection(
   userId: string,
   toolkitKey: string,
-  _callbackUrl: string,
-  authConfigId?: string
+  callbackUrl: string,
+  providedAuthConfigId?: string
 ): Promise<{ redirectUrl: string; connectionRequestId: string }> {
   const composio = getComposio();
   const config = COMPOSIO_TOOLKITS[toolkitKey];
@@ -111,11 +131,14 @@ export async function initiateComposioConnection(
     throw new Error(`Unknown toolkit: ${toolkitKey}`);
   }
 
-  // toolkits.authorize() creates an auth config if needed and initiates the connection
-  const connectionRequest = await composio.toolkits.authorize(
+  // Get or create an auth config for this toolkit
+  const authConfigId = providedAuthConfigId || await getOrCreateAuthConfig(composio, config.toolkit);
+
+  // Initiate connection with our callback URL so the user comes back to Tiker
+  const connectionRequest = await composio.connectedAccounts.initiate(
     userId,
-    config.toolkit,
-    authConfigId
+    authConfigId,
+    { callbackUrl }
   );
 
   return {
