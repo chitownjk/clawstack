@@ -1,95 +1,23 @@
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { encrypt } from '@/lib/crypto'
-import { cookies } from 'next/headers'
-import crypto from 'crypto'
-
-const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
-
-function getHmacSecret(): string {
-  const secret = process.env.NEXTAUTH_SECRET
-  if (!secret) {
-    throw new Error('NEXTAUTH_SECRET environment variable is required')
-  }
-  return secret
-}
 
 /**
- * Check if user has valid write access (2FA verified for self-hosted, automatic for cloud)
+ * Check if user is authenticated. 2FA is no longer required for write access.
  */
-async function checkWriteAccess(request: Request): Promise<{ hasAccess: boolean; requires2FA: boolean; needsSetup?: boolean }> {
+async function checkWriteAccess(request: Request): Promise<{ hasAccess: boolean }> {
   try {
     const supabase = await createRealSupabaseClient()
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    
-    console.log('[Tasks/Create] checkWriteAccess session check:', {
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      userId: session?.user?.id,
-      sessionError: sessionError?.message
-    })
-    
+    const { data: { session } } = await supabase.auth.getSession()
+
     if (!session?.user) {
-      console.log('[Tasks/Create] No session/user found - returning unauthorized')
-      return { hasAccess: false, requires2FA: false }
+      return { hasAccess: false }
     }
 
-    const adminClient = createAdminClient()
-    const { data: account, error: accountError } = await adminClient
-      .from('accounts')
-      .select('two_factor_enabled, execution_mode')
-      .eq('auth_uid', session.user.id)
-      .single()
-
-    console.log('[Tasks/Create] Account lookup:', {
-      hasAccount: !!account,
-      two_factor_enabled: account?.two_factor_enabled,
-      execution_mode: account?.execution_mode,
-      accountError: accountError?.message
-    })
-
-    // Cloud users (cloud-user-keys, cloud-our-keys) - 2FA optional, always have write access
-    // If execution_mode is null/undefined, treat as cloud user (safe default for OAuth users)
-    const isSelfHosted = account?.execution_mode === 'openclaw'
-
-    if (!isSelfHosted) {
-      console.log('[Tasks/Create] Cloud user (or execution_mode not set) - granting write access')
-      return { hasAccess: true, requires2FA: false }
-    }
-
-    // Self-hosted user - 2FA mandatory
-    if (!account?.two_factor_enabled) {
-      return { hasAccess: false, requires2FA: true, needsSetup: true }
-    }
-
-    // Check for valid write token
-    const cookieStore = await cookies()
-    const writeAccessCookie = cookieStore.get('tiker_write_access')
-    
-    if (!writeAccessCookie?.value) {
-      return { hasAccess: false, requires2FA: true }
-    }
-
-    const [token, expiresAtStr] = writeAccessCookie.value.split(':')
-    const expiresAt = parseInt(expiresAtStr)
-
-    if (Date.now() > expiresAt) {
-      return { hasAccess: false, requires2FA: true }
-    }
-
-    const expectedToken = crypto
-      .createHmac('sha256', getHmacSecret())
-      .update(`${session.user.id}:${expiresAt}`)
-      .digest('hex')
-
-    if (token !== expectedToken) {
-      return { hasAccess: false, requires2FA: true }
-    }
-
-    return { hasAccess: true, requires2FA: true }
+    return { hasAccess: true }
   } catch (error) {
     console.error('Write access check error:', error)
-    return { hasAccess: false, requires2FA: false }
+    return { hasAccess: false }
   }
 }
 
@@ -98,24 +26,9 @@ async function checkWriteAccess(request: Request): Promise<{ hasAccess: boolean;
 export async function POST(request: Request) {
   console.log('[Tasks/Create] POST called')
   try {
-    // Check 2FA for write access
+    // Check authentication
     const writeAccess = await checkWriteAccess(request)
-    console.log('[Tasks/Create] writeAccess result:', writeAccess)
     if (!writeAccess.hasAccess) {
-      if (writeAccess.needsSetup) {
-        return NextResponse.json({ 
-          error: '2FA setup required', 
-          code: '2FA_SETUP_REQUIRED',
-          message: 'Please enable 2FA in Settings to create tasks'
-        }, { status: 403 })
-      }
-      if (writeAccess.requires2FA) {
-        return NextResponse.json({ 
-          error: '2FA verification required', 
-          code: '2FA_REQUIRED',
-          message: 'Please verify 2FA to create tasks'
-        }, { status: 403 })
-      }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

@@ -65,12 +65,7 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
       await loadComments()
     } catch (error: any) {
       console.error('Failed to create comment:', error)
-      // Check for 2FA error
-      if (error.message?.includes('2FA') || error.message?.includes('2FA_REQUIRED')) {
-        alert('2FA Required: Please enable and verify 2FA in Settings to post comments.')
-      } else {
-        alert('Failed to post comment: ' + (error.message || 'Unknown error'))
-      }
+      alert('Failed to post comment: ' + (error.message || 'Unknown error'))
     } finally {
       setSubmitting(false)
     }

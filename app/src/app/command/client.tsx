@@ -7,8 +7,6 @@ import KanbanColumn from '@/components/KanbanColumn'
 import ActivityFeed from '@/components/ActivityFeed'
 import TaskDetailModal from '@/components/TaskDetailModal'
 import SimpleCreateTaskModal from '@/components/SimpleCreateTaskModal'
-import TwoFactorVerifyModal from '@/components/TwoFactorVerifyModal'
-import TwoFactorSetupModal from '@/components/TwoFactorSetupModal'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
 import FilesView from '@/components/FilesView'
 import ViewSwitcher from '@/components/ViewSwitcher'
@@ -16,7 +14,6 @@ import ListView from '@/components/ListView'
 import TimeView from '@/components/TimeView'
 import CalendarView from '@/components/CalendarView'
 import { ViewType } from '@/types/views'
-import { use2FA } from '@/hooks/use2FA'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
@@ -46,29 +43,6 @@ export default function MissionControlClient() {
   const [currentView, setCurrentView] = useState<ViewType>('kanban') // New: task view type
   const [view, setView] = useState<'board' | 'files'>('board')
   const [manualAgentSelection, setManualAgentSelection] = useState(false)
-  
-  // 2FA for write access
-  const { 
-    hasWriteAccess, 
-    requires2FA, 
-    needs2FASetup,
-    withWriteAccess,
-    showVerifyModal,
-    showSetupModal,
-    onVerifySuccess,
-    onVerifyCancel,
-    onSetupComplete,
-    onSetupCancel,
-    checkWriteAccess,
-    loading: twoFALoading 
-  } = use2FA()
-
-  // Refresh 2FA status when modal closes to ensure banner updates
-  useEffect(() => {
-    if (!showVerifyModal && !twoFALoading) {
-      checkWriteAccess()
-    }
-  }, [showVerifyModal, twoFALoading, checkWriteAccess])
 
   // Configure drag sensors with proper activation constraints
   const sensors = useSensors(
@@ -197,14 +171,6 @@ export default function MissionControlClient() {
       return
     }
     
-    // Check write access - if no access, prompt for 2FA
-    if (requires2FA && !hasWriteAccess) {
-      withWriteAccess(async () => {
-        await performTaskUpdate(taskId, newStatus, task?.title)
-      })
-      return
-    }
-    
     await performTaskUpdate(taskId, newStatus, task?.title)
   }
 
@@ -230,14 +196,7 @@ export default function MissionControlClient() {
   function handleMarkDone(taskId: string) {
     const task = tasks.find(t => t.id === taskId)
     if (!task) return
-    
-    if (requires2FA && !hasWriteAccess) {
-      withWriteAccess(async () => {
-        await performTaskUpdate(taskId, 'done', task.title)
-      })
-    } else {
-      performTaskUpdate(taskId, 'done', task.title)
-    }
+    performTaskUpdate(taskId, 'done', task.title)
   }
 
   // Initiate delete flow (shows confirmation modal)
@@ -261,28 +220,14 @@ export default function MissionControlClient() {
     
     const { task } = deleteModal
     
-    const doDelete = async () => {
-      try {
-        await deleteTask(task.id)
-        setDeleteModal(null)
-        // Remove from local state
-        setTasks(prev => prev.filter(t => t.id !== task.id))
-      } catch (error: any) {
-        console.error('Failed to delete task:', error)
-        if (error.message?.includes('2FA')) {
-          alert('2FA Required: Please verify 2FA to delete tasks.')
-        } else {
-          alert('Failed to delete task: ' + error.message)
-        }
-        throw error
-      }
-    }
-    
-    if (requires2FA && !hasWriteAccess) {
-      setDeleteModal(null) // Close first to avoid stacking modals
-      withWriteAccess(doDelete)
-    } else {
-      await doDelete()
+    try {
+      await deleteTask(task.id)
+      setDeleteModal(null)
+      // Remove from local state
+      setTasks(prev => prev.filter(t => t.id !== task.id))
+    } catch (error: any) {
+      console.error('Failed to delete task:', error)
+      alert('Failed to delete task: ' + error.message)
     }
   }
 
@@ -363,41 +308,6 @@ export default function MissionControlClient() {
         </div>
       </div>
 
-      {/* Write Access Banner */}
-      {requires2FA && !hasWriteAccess && !twoFALoading && (
-        <div className="bg-yellow-50 border-b border-yellow-200">
-          <div className="max-w-[1800px] mx-auto px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-              </svg>
-              <span className="text-sm text-yellow-800">
-                {needs2FASetup ? (
-                  <><strong>Read-only mode.</strong> Enable 2FA to create or edit tasks.</>
-                ) : (
-                  <><strong>Read-only mode.</strong> Verify 2FA to create or edit tasks.</>
-                )}
-              </span>
-            </div>
-            {needs2FASetup ? (
-              <a
-                href="/dashboard?tab=settings"
-                className="px-3 py-1 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700 transition"
-              >
-                Enable 2FA
-              </a>
-            ) : (
-              <button
-                onClick={() => withWriteAccess(async () => {})}
-                className="px-3 py-1 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700 transition"
-              >
-                Verify Now
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Main Content */}
       <div className="max-w-[2000px] mx-auto px-6 py-6">
         {/* Empty State - New User */}
@@ -416,13 +326,7 @@ export default function MissionControlClient() {
                 Browse Agents
               </Link>
               <button
-                onClick={() => {
-                  if (requires2FA && !hasWriteAccess) {
-                    withWriteAccess(async () => setShowCreateTask(true))
-                  } else {
-                    setShowCreateTask(true)
-                  }
-                }}
+                onClick={() => setShowCreateTask(true)}
                 className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
               >
                 Create your first task
@@ -513,13 +417,7 @@ export default function MissionControlClient() {
             )}
 
             <button
-              onClick={() => {
-                if (requires2FA && !hasWriteAccess) {
-                  withWriteAccess(async () => setShowCreateTask(true))
-                } else {
-                  setShowCreateTask(true)
-                }
-              }}
+              onClick={() => setShowCreateTask(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
               + Create Task
@@ -650,22 +548,6 @@ export default function MissionControlClient() {
           isOpen={showCreateTask}
           onClose={() => setShowCreateTask(false)}
           onTaskCreated={loadData}
-        />
-      )}
-
-      {/* 2FA Verify Modal */}
-      {showVerifyModal && (
-        <TwoFactorVerifyModal
-          onSuccess={onVerifySuccess}
-          onCancel={onVerifyCancel}
-        />
-      )}
-
-      {/* 2FA Setup Modal */}
-      {showSetupModal && (
-        <TwoFactorSetupModal
-          onComplete={onSetupComplete}
-          onCancel={onSetupCancel}
         />
       )}
 
