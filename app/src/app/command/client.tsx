@@ -13,6 +13,7 @@ import ViewSwitcher from '@/components/ViewSwitcher'
 import ListView from '@/components/ListView'
 import TimeView from '@/components/TimeView'
 import CalendarView from '@/components/CalendarView'
+import ChatPanel from '@/components/ChatPanel'
 import { ViewType } from '@/types/views'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase'
@@ -43,6 +44,8 @@ export default function MissionControlClient() {
   const [currentView, setCurrentView] = useState<ViewType>('kanban') // New: task view type
   const [view, setView] = useState<'board' | 'files'>('board')
   const [manualAgentSelection, setManualAgentSelection] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatTask, setChatTask] = useState<Task | null>(null)
 
   // Configure drag sensors with proper activation constraints
   const sensors = useSensors(
@@ -417,6 +420,13 @@ export default function MissionControlClient() {
             )}
 
             <button
+              onClick={() => { setChatTask(null); setChatOpen(true); }}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-1.5"
+            >
+              <span>💬</span> Chat
+            </button>
+
+            <button
               onClick={() => setShowCreateTask(true)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
@@ -539,6 +549,7 @@ export default function MissionControlClient() {
           onClose={() => setSelectedTask(null)}
           onMarkDone={handleMarkDone}
           onDelete={handleDeleteClick}
+          onOpenChat={(task) => { setChatTask(task); setChatOpen(true); }}
         />
       )}
 
@@ -560,6 +571,14 @@ export default function MissionControlClient() {
           onCancel={() => setDeleteModal(null)}
         />
       )}
+
+      {/* Chat Panel */}
+      <ChatPanel
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+        task={chatTask}
+        agents={agents}
+      />
     </div>
   )
 }

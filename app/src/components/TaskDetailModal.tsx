@@ -15,9 +15,10 @@ interface TaskDetailModalProps {
   onClose: () => void
   onDelete?: (taskId: string) => void
   onMarkDone?: (taskId: string) => void
+  onOpenChat?: (task: Task) => void
 }
 
-export default function TaskDetailModal({ task, agents, onClose, onDelete, onMarkDone }: TaskDetailModalProps) {
+export default function TaskDetailModal({ task, agents, onClose, onDelete, onMarkDone, onOpenChat }: TaskDetailModalProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
@@ -169,6 +170,17 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
                 </button>
               )}
               
+              {onOpenChat && (
+                <button
+                  onClick={() => onOpenChat(task)}
+                  className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded text-sm font-medium transition-colors flex items-center gap-2"
+                  title="Chat about this task"
+                >
+                  <span>💬</span>
+                  <span>Chat</span>
+                </button>
+              )}
+
               <button
                 onClick={copyForChat}
                 className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm font-medium transition-colors flex items-center gap-2"
