@@ -15,7 +15,7 @@ interface Connection {
 }
 
 // All Composio-powered integrations (matched to keys in composio.ts COMPOSIO_TOOLKITS)
-const COMPOSIO_INTEGRATIONS = ['gmail', 'google-calendar', 'google-drive', 'slack', 'notion', 'linear', 'github'];
+const COMPOSIO_INTEGRATIONS = ['gmail', 'google-calendar', 'google-drive', 'slack', 'notion', 'linear', 'github', 'twitter', 'linkedin', 'jira'];
 
 const CONNECTIONS: Connection[] = [
   {
@@ -86,6 +86,33 @@ const CONNECTIONS: Connection[] = [
     description: 'Create issues, update status, manage projects',
     icon: '📐',
     scopes: ['read', 'write', 'issues:create'],
+    comingSoon: false,
+    composio: true,
+  },
+  {
+    id: 'twitter',
+    name: 'Twitter / X',
+    description: 'Post tweets, read timelines, manage followers and lists',
+    icon: '\uD835\uDD4F',
+    scopes: ['tweet.read', 'tweet.write', 'users.read'],
+    comingSoon: false,
+    composio: true,
+  },
+  {
+    id: 'linkedin',
+    name: 'LinkedIn',
+    description: 'Share posts, manage connections, send messages',
+    icon: '\uD83D\uDCBC',
+    scopes: ['w_member_social', 'r_liteprofile', 'r_emailaddress'],
+    comingSoon: false,
+    composio: true,
+  },
+  {
+    id: 'jira',
+    name: 'Jira',
+    description: 'Create and manage issues, track sprints, update boards',
+    icon: '\uD83D\uDDD2\uFE0F',
+    scopes: ['read:jira-work', 'write:jira-work', 'read:jira-user'],
     comingSoon: false,
     composio: true,
   },

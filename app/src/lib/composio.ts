@@ -72,6 +72,27 @@ export const COMPOSIO_TOOLKITS: Record<string, {
     icon: '\uD83D\uDC19',
     scopes: ['repo', 'user', 'read:org'],
   },
+  twitter: {
+    toolkit: 'TWITTER',
+    name: 'Twitter / X',
+    description: 'Post tweets, read timelines, manage followers and lists',
+    icon: '\uD835\uDD4F',
+    scopes: ['tweet.read', 'tweet.write', 'users.read'],
+  },
+  linkedin: {
+    toolkit: 'LINKEDIN',
+    name: 'LinkedIn',
+    description: 'Share posts, manage connections, send messages',
+    icon: '\uD83D\uDCBC',
+    scopes: ['w_member_social', 'r_liteprofile', 'r_emailaddress'],
+  },
+  jira: {
+    toolkit: 'JIRA',
+    name: 'Jira',
+    description: 'Create and manage issues, track sprints, update boards',
+    icon: '\uD83D\uDDD2\uFE0F',
+    scopes: ['read:jira-work', 'write:jira-work', 'read:jira-user'],
+  },
 };
 
 // Check which Composio integrations are connected for a given user
