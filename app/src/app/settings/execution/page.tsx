@@ -171,11 +171,11 @@ export default function ExecutionSettingsPage() {
 
       {/* Execution Mode Selection */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Execution Mode</h2>
+        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">Execution Mode</h2>
 
         <div className="space-y-3">
           {/* OpenClaw (Self-Hosted) */}
-          <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+          <label className="flex items-start p-4 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
             <input
               type="radio"
               name="execution_mode"
@@ -185,8 +185,8 @@ export default function ExecutionSettingsPage() {
               className="mt-1"
             />
             <div className="ml-3">
-              <div className="font-medium">OpenClaw Gateway (Free)</div>
-              <div className="text-sm text-gray-600">
+              <div className="font-medium text-neutral-900 dark:text-neutral-100">OpenClaw Gateway (Free)</div>
+              <div className="text-sm text-neutral-600 dark:text-neutral-400">
                 Connect your own OpenClaw instance. You manage everything.
               </div>
             </div>
@@ -194,7 +194,7 @@ export default function ExecutionSettingsPage() {
 
           {/* Cloud with User Keys */}
           {isCloud && (
-            <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <label className="flex items-start p-4 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
               <input
                 type="radio"
                 name="execution_mode"
@@ -204,8 +204,8 @@ export default function ExecutionSettingsPage() {
                 className="mt-1"
               />
               <div className="ml-3">
-                <div className="font-medium">Cloud Execution - Your Keys ($7/mo)</div>
-                <div className="text-sm text-gray-600">
+                <div className="font-medium text-neutral-900 dark:text-neutral-100">Cloud Execution - Your Keys ($7/mo)</div>
+                <div className="text-sm text-neutral-600 dark:text-neutral-400">
                   We run the agents, you provide API keys. No limits.
                 </div>
               </div>
@@ -214,7 +214,7 @@ export default function ExecutionSettingsPage() {
 
           {/* Cloud with Our Keys */}
           {isCloud && (
-            <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+            <label className="flex items-start p-4 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors">
               <input
                 type="radio"
                 name="execution_mode"
@@ -224,8 +224,8 @@ export default function ExecutionSettingsPage() {
                 className="mt-1"
               />
               <div className="ml-3">
-                <div className="font-medium">Cloud Execution - Fully Managed ($19/mo)</div>
-                <div className="text-sm text-gray-600">
+                <div className="font-medium text-neutral-900 dark:text-neutral-100">Cloud Execution - Fully Managed ($19/mo)</div>
+                <div className="text-sm text-neutral-600 dark:text-neutral-400">
                   Everything included. {getTaskLimit()} tasks/month, no setup required.
                 </div>
               </div>
@@ -236,58 +236,58 @@ export default function ExecutionSettingsPage() {
 
       {/* OpenClaw Configuration */}
       {mode === 'openclaw' && (
-        <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-semibold">OpenClaw Gateway Configuration</h3>
-          
+        <div className="space-y-4 p-6 bg-neutral-50 dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl">
+          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">OpenClaw Gateway Configuration</h3>
+
           <div>
-            <label className="block text-sm font-medium mb-1">Gateway URL</label>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Gateway URL</label>
             <input
               type="url"
               value={gatewayUrl}
               onChange={(e) => setGatewayUrl(e.target.value)}
               placeholder="http://localhost:18789"
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">API Token</label>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">API Token</label>
             <input
               type="password"
               value={gatewayToken}
               onChange={(e) => setGatewayToken(e.target.value)}
               placeholder="Your OpenClaw API token"
-              className="w-full px-3 py-2 border rounded"
+              className="w-full px-3 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600"
             />
           </div>
 
           <button
             onClick={testGatewayConnection}
             disabled={testingConnection || !gatewayUrl || !gatewayToken}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium text-sm"
           >
             {testingConnection ? 'Testing...' : 'Test Connection'}
           </button>
 
           {connectionStatus === 'success' && (
-            <div className="text-green-600">✓ Connection successful!</div>
+            <div className="text-green-600 dark:text-green-400 text-sm font-medium">✓ Connection successful!</div>
           )}
           {connectionStatus === 'error' && (
-            <div className="text-red-600">✗ Connection failed. Check URL and token.</div>
+            <div className="text-red-600 dark:text-red-400 text-sm font-medium">✗ Connection failed. Check URL and token.</div>
           )}
         </div>
       )}
 
       {/* Cloud User Keys Configuration */}
       {mode === 'cloud-user-keys' && (
-        <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-semibold">Your API Keys</h3>
-          <p className="text-sm text-gray-600">
+        <div className="space-y-4 p-6 bg-neutral-50 dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl">
+          <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Your API Keys</h3>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
             Your keys are encrypted and never shared. You pay the model providers directly.
           </p>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               Anthropic API Key (Claude)
             </label>
             <input
@@ -295,15 +295,15 @@ export default function ExecutionSettingsPage() {
               value={anthropicKey}
               onChange={(e) => setAnthropicKey(e.target.value)}
               placeholder="sk-ant-..."
-              className="w-full px-3 py-2 border rounded font-mono text-sm"
+              className="w-full px-3 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono text-sm focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
               For Claude Sonnet, Opus, and Haiku models
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               OpenAI API Key (Optional)
             </label>
             <input
@@ -311,15 +311,15 @@ export default function ExecutionSettingsPage() {
               value={openaiKey}
               onChange={(e) => setOpenaiKey(e.target.value)}
               placeholder="sk-..."
-              className="w-full px-3 py-2 border rounded font-mono text-sm"
+              className="w-full px-3 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono text-sm focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
               For GPT-4, GPT-4 Turbo models
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               Google API Key (Optional)
             </label>
             <input
@@ -327,15 +327,15 @@ export default function ExecutionSettingsPage() {
               value={googleKey}
               onChange={(e) => setGoogleKey(e.target.value)}
               placeholder="AIza..."
-              className="w-full px-3 py-2 border rounded font-mono text-sm"
+              className="w-full px-3 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono text-sm focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
               For Gemini 2.0 Flash, Gemini Pro models
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               Kimi API Key (Optional)
             </label>
             <input
@@ -343,15 +343,15 @@ export default function ExecutionSettingsPage() {
               value={kimiKey}
               onChange={(e) => setKimiKey(e.target.value)}
               placeholder="..."
-              className="w-full px-3 py-2 border rounded font-mono text-sm"
+              className="w-full px-3 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 font-mono text-sm focus:outline-none focus:border-neutral-400 dark:focus:border-neutral-600"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">
               For Kimi K2.5 (Moonshot AI)
             </p>
           </div>
 
-          <div className="pt-4 border-t mt-6">
-            <p className="text-xs text-gray-500">
+          <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700 mt-6">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400">
               🔒 All API keys are encrypted with AES-256-GCM before storage. We never see your keys in plain text.
             </p>
           </div>
@@ -360,12 +360,12 @@ export default function ExecutionSettingsPage() {
 
       {/* Cloud Our Keys Info */}
       {mode === 'cloud-our-keys' && (
-        <div className="p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold">Fully Managed Execution</h3>
-          <p className="text-sm text-gray-600 mt-2">
+        <div className="p-6 bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-900 rounded-xl">
+          <h3 className="font-semibold text-blue-900 dark:text-blue-100">Fully Managed Execution</h3>
+          <p className="text-sm text-blue-800 dark:text-blue-200 mt-2">
             No setup required! We handle everything. Your plan includes {getTaskLimit()} tasks per month.
           </p>
-          <a href="/pricing" className="text-blue-600 text-sm hover:underline">
+          <a href="/pricing" className="text-blue-600 dark:text-blue-400 text-sm hover:underline font-medium">
             View pricing details →
           </a>
         </div>
@@ -376,7 +376,7 @@ export default function ExecutionSettingsPage() {
         <button
           onClick={saveSettings}
           disabled={saving}
-          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+          className="px-6 py-2 bg-neutral-900 dark:bg-neutral-100 text-white dark:text-neutral-900 rounded-lg hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 transition-colors font-medium"
         >
           {saving ? 'Saving...' : 'Save Settings'}
         </button>

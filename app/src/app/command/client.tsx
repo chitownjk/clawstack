@@ -45,6 +45,7 @@ export default function MissionControlClient() {
   const [executionMode, setExecutionMode] = useState<string | null>(null)
   const [currentView, setCurrentView] = useState<ViewType>('kanban') // New: task view type
   const [view, setView] = useState<'board' | 'files'>('board')
+  const [manualAgentSelection, setManualAgentSelection] = useState(false)
   
   // 2FA for write access
   const { 
@@ -121,6 +122,10 @@ export default function MissionControlClient() {
           setExecutionMode(account.execution_mode)
         }
       }
+
+      // Load manual agent selection preference
+      const savedManualAgent = localStorage.getItem('tiker_manual_agent_selection')
+      setManualAgentSelection(savedManualAgent === 'true')
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -498,13 +503,15 @@ export default function MissionControlClient() {
               </button>
             </div>
 
-            <Link
-              href={executionMode === 'openclaw' ? '/hub?type=agents' : '/agents'}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-            >
-              + Add Agent
-            </Link>
-            
+            {manualAgentSelection && (
+              <Link
+                href={executionMode === 'openclaw' ? '/hub?type=agents' : '/agents'}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+              >
+                + Add Agent
+              </Link>
+            )}
+
             <button
               onClick={() => {
                 if (requires2FA && !hasWriteAccess) {

@@ -13,7 +13,11 @@ interface Connection {
   comingSoon: boolean;
   connected?: boolean;
   connectUrl?: string;
+  composio?: boolean; // Uses Composio OAuth flow
 }
+
+// Composio-powered integrations
+const COMPOSIO_INTEGRATIONS = ['slack', 'notion', 'linear'];
 
 const CONNECTIONS: Connection[] = [
   {
@@ -34,28 +38,13 @@ const CONNECTIONS: Connection[] = [
     comingSoon: false,
   },
   {
-    id: 'microsoft-outlook',
-    name: 'Microsoft Outlook',
-    description: 'Send emails and manage your Outlook calendar',
-    icon: '📨',
-    scopes: ['Mail.Send', 'Mail.Read', 'Calendars.ReadWrite'],
-    comingSoon: true,
-  },
-  {
     id: 'slack',
     name: 'Slack',
     description: 'Send messages, read channels, manage workspace',
     icon: '💬',
     scopes: ['chat:write', 'channels:read', 'users:read'],
-    comingSoon: true,
-  },
-  {
-    id: 'discord',
-    name: 'Discord',
-    description: 'Send messages, manage servers, read channels',
-    icon: '🎮',
-    scopes: ['bot', 'messages.read', 'messages.write'],
-    comingSoon: true,
+    comingSoon: false,
+    composio: true,
   },
   {
     id: 'github',
@@ -67,27 +56,37 @@ const CONNECTIONS: Connection[] = [
     connectUrl: '/api/auth/github/initiate',
   },
   {
-    id: 'linear',
-    name: 'Linear',
-    description: 'Create issues, update status, manage projects',
-    icon: '📐',
-    scopes: ['read', 'write', 'issues:create'],
-    comingSoon: true,
-  },
-  {
     id: 'notion',
     name: 'Notion',
     description: 'Read and write pages, manage databases',
     icon: '📝',
     scopes: ['read_content', 'update_content', 'insert_content'],
+    comingSoon: false,
+    composio: true,
+  },
+  {
+    id: 'linear',
+    name: 'Linear',
+    description: 'Create issues, update status, manage projects',
+    icon: '📐',
+    scopes: ['read', 'write', 'issues:create'],
+    comingSoon: false,
+    composio: true,
+  },
+  {
+    id: 'microsoft-outlook',
+    name: 'Microsoft Outlook',
+    description: 'Send emails and manage your Outlook calendar',
+    icon: '📨',
+    scopes: ['Mail.Send', 'Mail.Read', 'Calendars.ReadWrite'],
     comingSoon: true,
   },
   {
-    id: 'google-drive',
-    name: 'Google Drive',
-    description: 'Upload files, manage folders, share documents',
-    icon: '📁',
-    scopes: ['drive.file', 'drive.readonly'],
+    id: 'discord',
+    name: 'Discord',
+    description: 'Send messages, manage servers, read channels',
+    icon: '🎮',
+    scopes: ['bot', 'messages.read', 'messages.write'],
     comingSoon: true,
   },
   {
@@ -105,6 +104,7 @@ export default function ConnectionsPage() {
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
   const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
   const [agentmailConnected, setAgentmailConnected] = useState<boolean | null>(null);
+  const [composioStatuses, setComposioStatuses] = useState<Record<string, { connected: boolean; connectionId?: string }>>({});
   const [showAgentmailModal, setShowAgentmailModal] = useState(false);
   const [agentmailApiKey, setAgentmailApiKey] = useState('');
   const [testingConnection, setTestingConnection] = useState(false);
@@ -114,7 +114,8 @@ export default function ConnectionsPage() {
     checkGoogleConnection();
     checkGithubConnection();
     checkAgentmailConnection();
-    
+    checkComposioStatuses();
+
     // Check if redirected back from OAuth
     const params = new URLSearchParams(window.location.search);
     if (params.get('google_connected') === 'true') {
@@ -124,6 +125,12 @@ export default function ConnectionsPage() {
     if (params.get('github_connected') === 'true') {
       window.history.replaceState({}, '', '/settings/connections');
       setTimeout(() => checkGithubConnection(), 500);
+    }
+    // Handle Composio OAuth callback
+    const composioConnected = params.get('composio_connected');
+    if (composioConnected) {
+      window.history.replaceState({}, '', '/settings/connections');
+      setTimeout(() => checkComposioStatuses(), 500);
     }
   }, []);
 
@@ -175,9 +182,45 @@ export default function ConnectionsPage() {
     }
   };
 
+  const checkComposioStatuses = async () => {
+    try {
+      const response = await fetch('/api/auth/composio/status');
+      const data = await response.json();
+      if (data.statuses) {
+        setComposioStatuses(data.statuses);
+      }
+    } catch (error) {
+      console.error('Error checking Composio statuses:', error);
+    }
+  };
+
   const handleConnect = async (connection: Connection) => {
     if (connection.comingSoon) {
       alert('Coming soon!');
+      return;
+    }
+
+    // Composio-powered integrations
+    if (connection.composio) {
+      setConnecting(connection.id);
+      try {
+        const response = await fetch('/api/auth/composio/initiate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toolkit: connection.id }),
+        });
+        const data = await response.json();
+        if (data.redirectUrl) {
+          window.location.href = data.redirectUrl;
+        } else {
+          alert(data.error || 'Failed to start connection');
+          setConnecting(null);
+        }
+      } catch (error) {
+        console.error('Composio connect error:', error);
+        alert('Failed to connect. Please try again.');
+        setConnecting(null);
+      }
       return;
     }
 
@@ -301,6 +344,35 @@ export default function ConnectionsPage() {
         alert('Error disconnecting');
       }
     }
+
+    // Composio-powered disconnections
+    if (COMPOSIO_INTEGRATIONS.includes(connectionId)) {
+      const connName = CONNECTIONS.find(c => c.id === connectionId)?.name || connectionId;
+      if (!confirm(`Disconnect ${connName}? Agents will lose access to this service.`)) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/auth/composio/disconnect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toolkit: connectionId }),
+        });
+
+        if (response.ok) {
+          setComposioStatuses(prev => ({
+            ...prev,
+            [connectionId]: { connected: false },
+          }));
+          alert(`${connName} disconnected`);
+        } else {
+          alert('Failed to disconnect');
+        }
+      } catch (error) {
+        console.error('Disconnect error:', error);
+        alert('Error disconnecting');
+      }
+    }
   };
 
   return (
@@ -323,9 +395,10 @@ export default function ConnectionsPage() {
 
       <div className="space-y-4">
         {CONNECTIONS.map((connection) => {
-          const isConnected = connection.id === 'google' ? googleConnected : 
+          const isConnected = connection.id === 'google' ? googleConnected :
                              connection.id === 'github' ? githubConnected :
                              connection.id === 'agentmail' ? agentmailConnected :
+                             connection.composio ? composioStatuses[connection.id]?.connected :
                              connection.connected;
           
           return (

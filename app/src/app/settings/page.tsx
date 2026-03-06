@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   const [redirectToMC, setRedirectToMC] = useState(false)
   const [contributionEnabled, setContributionEnabled] = useState(true)
+  const [manualAgentSelection, setManualAgentSelection] = useState(false)
   const [emailSignature, setEmailSignature] = useState('\n\n---\nSent by my Tiker assistant')
   const [exporting, setExporting] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -56,6 +57,10 @@ export default function SettingsPage() {
       // Load contribution preference (default to true)
       const savedContribution = localStorage.getItem('tiker_contribution_enabled')
       setContributionEnabled(savedContribution !== 'false')
+
+      // Load manual agent selection preference (default to false)
+      const savedManualAgent = localStorage.getItem('tiker_manual_agent_selection')
+      setManualAgentSelection(savedManualAgent === 'true')
       
       setLoading(false)
     }
@@ -71,6 +76,7 @@ export default function SettingsPage() {
       // Save to localStorage (no DB column yet for these)
       localStorage.setItem('tiker_redirect_to_mc', redirectToMC.toString())
       localStorage.setItem('tiker_contribution_enabled', contributionEnabled.toString())
+      localStorage.setItem('tiker_manual_agent_selection', manualAgentSelection.toString())
       
       // Save email signature to database
       const { error } = await supabase
@@ -237,7 +243,24 @@ export default function SettingsPage() {
                 </p>
               </div>
             </label>
-            
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={manualAgentSelection}
+                onChange={(e) => setManualAgentSelection(e.target.checked)}
+                className="w-5 h-5 rounded border-neutral-300 text-blue-600 mt-0.5"
+              />
+              <div>
+                <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                  Manual agent selection
+                </p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Show the "+ Add Agent" button in Command and choose which agent skill handles each task. When off, tagging "AI help needed" auto-selects the best agent.
+                </p>
+              </div>
+            </label>
+
             <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
               <label className="block">
                 <p className="font-medium text-neutral-900 dark:text-neutral-100 mb-2">
