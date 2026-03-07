@@ -101,8 +101,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{greeting}</h1>
-          <p className="text-sm text-gray-500 mt-1">{dateDisplay}</p>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{greeting}</h1>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{dateDisplay}</p>
         </div>
 
         {/* Quick Stats Row */}
@@ -133,7 +133,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
         {/* Urgent / Review Section */}
         {(urgentTasks.length > 0 || reviewTasks.length > 0) && (
           <section>
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
               Needs Your Attention
             </h2>
             <div className="space-y-2">
@@ -143,7 +143,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                   task={task}
                   agents={agents}
                   badge="Review"
-                  badgeColor="bg-amber-100 text-amber-700"
+                  badgeColor="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
                   onClick={() => onTaskClick(task)}
                 />
               ))}
@@ -153,7 +153,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                   task={task}
                   agents={agents}
                   badge="Urgent"
-                  badgeColor="bg-red-100 text-red-700"
+                  badgeColor="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
                   onClick={() => onTaskClick(task)}
                 />
               ))}
@@ -163,7 +163,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                   task={task}
                   agents={agents}
                   badge="Blocked"
-                  badgeColor="bg-gray-200 text-gray-700"
+                  badgeColor="bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300"
                   onClick={() => onTaskClick(task)}
                 />
               ))}
@@ -175,13 +175,13 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Today's Schedule (Calendar) */}
-          <section className="bg-white border border-gray-200 rounded-lg p-4">
+          <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
                 Today's Schedule
               </h2>
               {calendarConnected === false && (
-                <a href="/settings/connections" className="text-xs text-blue-600 hover:underline">
+                <a href="/settings/connections" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
                   Connect Calendar
                 </a>
               )}
@@ -196,14 +196,14 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                     href={event.htmlLink || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start gap-3 p-2 rounded-md hover:bg-green-50 transition-colors group"
+                    className="flex items-start gap-3 p-2 rounded-md hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors group"
                   >
                     <div className="w-1.5 rounded-full bg-green-500 self-stretch min-h-[28px] flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 group-hover:text-green-800 truncate">
+                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-green-800 dark:group-hover:text-green-300 truncate">
                         {event.title}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
                         {event.allDay
                           ? 'All day'
                           : new Date(event.start).toLocaleTimeString('en-US', {
@@ -218,30 +218,30 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                 ))}
               </div>
             ) : calendarConnected ? (
-              <p className="text-sm text-gray-400 py-4 text-center">No events today</p>
+              <p className="text-sm text-neutral-400 dark:text-neutral-500 py-4 text-center">No events today</p>
             ) : (
-              <p className="text-sm text-gray-400 py-4 text-center">
+              <p className="text-sm text-neutral-400 dark:text-neutral-500 py-4 text-center">
                 Connect Google Calendar to see your schedule
               </p>
             )}
 
             {/* Due Today tasks */}
             {dueTodayTasks.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-gray-100">
-                <p className="text-xs font-medium text-gray-500 mb-2">Tasks Due Today</p>
+              <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">Tasks Due Today</p>
                 <div className="space-y-1">
                   {dueTodayTasks.map(task => (
                     <button
                       key={task.id}
                       onClick={() => onTaskClick(task)}
-                      className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-blue-50 transition-colors text-left"
+                      className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors text-left"
                     >
                       <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
                         task.priority === 'now' ? 'bg-red-500' :
                         task.priority === 'soon' ? 'bg-yellow-400' :
-                        'bg-gray-400'
+                        'bg-neutral-400'
                       }`} />
-                      <span className="text-sm text-gray-800 truncate">{task.title}</span>
+                      <span className="text-sm text-neutral-800 dark:text-neutral-200 truncate">{task.title}</span>
                     </button>
                   ))}
                 </div>
@@ -250,8 +250,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
           </section>
 
           {/* In Progress + Inbox */}
-          <section className="bg-white border border-gray-200 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+          <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
               In Progress
             </h2>
 
@@ -267,12 +267,12 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 py-2">No tasks in progress</p>
+              <p className="text-sm text-neutral-400 dark:text-neutral-500 py-2">No tasks in progress</p>
             )}
 
             {inboxTasks.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-gray-100">
-                <p className="text-xs font-medium text-gray-500 mb-2">
+              <div className="mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 mb-2">
                   Inbox ({inboxTasks.length})
                 </p>
                 <div className="space-y-1">
@@ -280,14 +280,14 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                     <button
                       key={task.id}
                       onClick={() => onTaskClick(task)}
-                      className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-gray-50 transition-colors text-left"
+                      className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
                     >
-                      <span className="w-2 h-2 rounded-full bg-gray-300 flex-shrink-0" />
-                      <span className="text-sm text-gray-700 truncate">{task.title}</span>
+                      <span className="w-2 h-2 rounded-full bg-neutral-300 dark:bg-neutral-600 flex-shrink-0" />
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{task.title}</span>
                     </button>
                   ))}
                   {inboxTasks.length > 5 && (
-                    <p className="text-xs text-gray-400 pl-4">
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500 pl-4">
                       +{inboxTasks.length - 5} more in inbox
                     </p>
                   )}
@@ -299,8 +299,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
 
         {/* Agent Status */}
         {agents.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+          <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
               Agents
             </h2>
             <div className="flex flex-wrap gap-3">
@@ -311,12 +311,12 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                 return (
                   <div
                     key={agent.id}
-                    className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-sm"
+                    className="flex items-center gap-2 px-3 py-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg text-sm"
                   >
                     <span className="text-lg">{agent.emoji}</span>
                     <div>
-                      <span className="font-medium text-gray-800">{agent.name}</span>
-                      <span className="text-gray-500 ml-2">
+                      <span className="font-medium text-neutral-800 dark:text-neutral-200">{agent.name}</span>
+                      <span className="text-neutral-500 dark:text-neutral-400 ml-2">
                         {agentTasks.length === 0
                           ? 'idle'
                           : `${agentTasks.length} task${agentTasks.length !== 1 ? 's' : ''}`}
@@ -324,7 +324,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                     </div>
                     <span
                       className={`w-2 h-2 rounded-full ${
-                        agent.status === 'active' ? 'bg-green-500' : 'bg-gray-300'
+                        agent.status === 'active' ? 'bg-green-500' : 'bg-neutral-300 dark:bg-neutral-600'
                       }`}
                     />
                   </div>
@@ -336,8 +336,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
 
         {/* Recent Activity */}
         {recentActivities.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+          <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
               Recent Activity
             </h2>
             <div className="space-y-2">
@@ -347,8 +347,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                   <div key={activity.id} className="flex items-start gap-2 text-sm">
                     <span className="flex-shrink-0 text-base">{agent?.emoji || '>'}</span>
                     <div className="flex-1 min-w-0">
-                      <span className="text-gray-700">{activity.message}</span>
-                      <span className="text-gray-400 ml-2 text-xs">
+                      <span className="text-neutral-700 dark:text-neutral-300">{activity.message}</span>
+                      <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">
                         {timeAgo(new Date(activity.created_at))}
                       </span>
                     </div>
@@ -375,7 +375,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
   );
 }
 
-// ── Sub-components ───────────────────────────────────────────────────────────
+// -- Sub-components -----------------------------------------------------------
 
 function StatCard({
   label,
@@ -389,11 +389,11 @@ function StatCard({
   pulse?: boolean;
 }) {
   const colorMap: Record<string, { bg: string; text: string; value: string }> = {
-    blue:  { bg: 'bg-blue-50 border-blue-200',  text: 'text-blue-600',  value: 'text-blue-700' },
-    amber: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-600', value: 'text-amber-700' },
-    red:   { bg: 'bg-red-50 border-red-200',     text: 'text-red-600',   value: 'text-red-700' },
-    green: { bg: 'bg-green-50 border-green-200',  text: 'text-green-600', value: 'text-green-700' },
-    gray:  { bg: 'bg-gray-50 border-gray-200',   text: 'text-gray-500',  value: 'text-gray-600' },
+    blue:  { bg: 'bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900',  text: 'text-blue-600 dark:text-blue-400',  value: 'text-blue-700 dark:text-blue-300' },
+    amber: { bg: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900', text: 'text-amber-600 dark:text-amber-400', value: 'text-amber-700 dark:text-amber-300' },
+    red:   { bg: 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900',     text: 'text-red-600 dark:text-red-400',   value: 'text-red-700 dark:text-red-300' },
+    green: { bg: 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900',  text: 'text-green-600 dark:text-green-400', value: 'text-green-700 dark:text-green-300' },
+    gray:  { bg: 'bg-neutral-50 border-neutral-200 dark:bg-neutral-800 dark:border-neutral-700',   text: 'text-neutral-500 dark:text-neutral-400',  value: 'text-neutral-600 dark:text-neutral-300' },
   };
 
   const c = colorMap[color] || colorMap.gray;
@@ -424,25 +424,25 @@ function BriefingTaskRow({
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 transition-all text-left group"
+      className="w-full flex items-center gap-3 p-3 rounded-lg bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 transition-all text-left group"
     >
       <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
         task.priority === 'now' ? 'bg-red-500' :
         task.priority === 'soon' ? 'bg-yellow-400' :
-        'bg-gray-400'
+        'bg-neutral-400 dark:bg-neutral-600'
       }`} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-800">
+        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate group-hover:text-blue-800 dark:group-hover:text-blue-300">
           {task.title}
         </p>
         {assignedAgents.length > 0 && (
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
             {assignedAgents.map(a => `${a.emoji} ${a.name}`).join(', ')}
           </p>
         )}
       </div>
       {badge && (
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${badgeColor || 'bg-gray-100 text-gray-600'}`}>
+        <span className={`text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${badgeColor || 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'}`}>
           {badge}
         </span>
       )}
