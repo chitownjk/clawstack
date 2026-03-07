@@ -15,7 +15,7 @@ interface KanbanColumnProps {
 }
 
 const columnColors: Record<TaskStatus, string> = {
-  inbox: 'border-gray-300',
+  inbox: 'border-gray-300 dark:border-neutral-600',
   assigned: 'border-orange-400',
   in_progress: 'border-blue-500',
   review: 'border-purple-500',
@@ -30,20 +30,20 @@ export default function KanbanColumn({ status, title, tasks, agents, onTaskClick
 
   return (
     <div className="flex-1 min-w-[260px] w-[260px] sm:min-w-[280px] sm:w-[280px]">
-      <div className={`border-t-4 ${columnColors[status]} ${needsAttention ? 'ring-2 ring-orange-400 shadow-lg' : ''} bg-white rounded-lg p-4`}>
+      <div className={`border-t-4 ${columnColors[status]} ${needsAttention ? 'ring-2 ring-orange-400 shadow-lg' : ''} bg-white dark:bg-neutral-900 rounded-lg p-4`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`font-semibold uppercase text-sm tracking-wide ${needsAttention ? 'text-orange-600' : 'text-gray-900'}`}>
+          <h2 className={`font-semibold uppercase text-sm tracking-wide ${needsAttention ? 'text-orange-600' : 'text-gray-900 dark:text-neutral-100'}`}>
             {title}
             {needsAttention && ' ⚠️'}
           </h2>
-          <span className={`text-sm font-medium ${needsAttention ? 'bg-orange-500 text-white px-2 py-1 rounded-full' : 'text-gray-500'}`}>
+          <span className={`text-sm font-medium ${needsAttention ? 'bg-orange-500 text-white px-2 py-1 rounded-full' : 'text-gray-500 dark:text-neutral-400'}`}>
             {tasks.length}
           </span>
         </div>
 
-        <div 
-          ref={setNodeRef} 
-          className={`min-h-[400px] space-y-3 rounded-lg transition-colors ${isOver ? 'bg-blue-50 ring-2 ring-blue-400' : ''}`}
+        <div
+          ref={setNodeRef}
+          className={`min-h-[400px] space-y-3 rounded-lg transition-colors ${isOver ? 'bg-blue-50 dark:bg-blue-950/20 ring-2 ring-blue-400' : ''}`}
         >
           {tasks.map(task => (
             <TaskCard
@@ -55,9 +55,9 @@ export default function KanbanColumn({ status, title, tasks, agents, onTaskClick
               onDelete={onDelete}
             />
           ))}
-          
+
           {tasks.length === 0 && (
-            <div className="text-center text-gray-400 text-sm py-16">
+            <div className="text-center text-gray-400 dark:text-neutral-500 text-sm py-16">
               {isOver ? 'Drop here' : 'No tasks'}
             </div>
           )}

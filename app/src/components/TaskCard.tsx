@@ -20,12 +20,12 @@ const priorityColors: Record<string, string> = {
   urgent: 'border-l-red-500',
   now: 'border-l-red-500',
   soon: 'border-l-yellow-400',
-  later: 'border-l-gray-300'
+  later: 'border-l-gray-300 dark:border-l-neutral-600'
 }
 
 export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, showActions = true }: TaskCardProps) {
   const [isHovered, setIsHovered] = useState(false)
-  
+
   const {
     attributes,
     listeners,
@@ -67,7 +67,7 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
                 onMarkDone(task.id)
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="p-1.5 bg-green-100 hover:bg-green-200 text-green-600 rounded-md transition-colors"
+              className="p-1.5 bg-green-100 dark:bg-green-900/40 hover:bg-green-200 dark:hover:bg-green-800/50 text-green-600 dark:text-green-400 rounded-md transition-colors"
               title="Mark as done"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -82,7 +82,7 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
                 onDelete(task.id)
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="p-1.5 bg-red-100 hover:bg-red-200 text-red-600 rounded-md transition-colors"
+              className="p-1.5 bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-800/50 text-red-600 dark:text-red-400 rounded-md transition-colors"
               title="Delete task"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -92,16 +92,16 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
           )}
         </div>
       )}
-      
+
       {/* Clickable card area */}
       <div onClick={onClick} className="cursor-pointer">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-medium text-gray-900 text-sm flex-1">{task.title}</h3>
-          <span className="text-xs text-gray-400 font-mono shrink-0" title="Task ID">
+          <h3 className="font-medium text-gray-900 dark:text-neutral-100 text-sm flex-1">{task.title}</h3>
+          <span className="text-xs text-gray-400 dark:text-neutral-500 font-mono shrink-0" title="Task ID">
             #{task.id.substring(0, 8)}
           </span>
         </div>
-      
+
         {isReview && (
           <div className="flex items-center gap-1 mb-1">
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] font-medium">
@@ -124,13 +124,13 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
             ))}
           </div>
 
-          <span className="text-xs text-gray-500">{timeAgo}</span>
+          <span className="text-xs text-gray-500 dark:text-neutral-500">{timeAgo}</span>
         </div>
 
         {task.tags && task.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {task.tags.map(tag => (
-              <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+              <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-neutral-700 text-gray-600 dark:text-neutral-300 rounded">
                 {tag}
               </span>
             ))}
@@ -143,7 +143,7 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
 
 function getTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000)
-  
+
   if (seconds < 60) return 'just now'
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`

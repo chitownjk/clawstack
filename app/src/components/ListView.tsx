@@ -11,7 +11,7 @@ interface ListViewProps {
 
 export default function ListView({ tasks, onTaskClick, onTaskComplete }: ListViewProps) {
   const [filters, setFilters] = useState<TaskFilter>({});
-  
+
   // Apply filters
   const filteredTasks = tasks.filter(task => {
     if (filters.status && !filters.status.includes(task.status)) return false;
@@ -27,7 +27,7 @@ export default function ListView({ tasks, onTaskClick, onTaskComplete }: ListVie
     }
     return true;
   });
-  
+
   // Sort by position, then created_at
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     const posA = a.position ?? 0;
@@ -35,14 +35,14 @@ export default function ListView({ tasks, onTaskClick, onTaskComplete }: ListVie
     if (posA !== posB) return posA - posB;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
-  
+
   const toggleFilter = (key: keyof TaskFilter, value?: any) => {
     setFilters(prev => ({
       ...prev,
       [key]: prev[key] === value ? undefined : value
     }));
   };
-  
+
   // Count badges
   const counts = {
     all: tasks.length,
@@ -54,11 +54,11 @@ export default function ListView({ tasks, onTaskClick, onTaskComplete }: ListVie
       return new Date(t.due_date) < new Date();
     }).length
   };
-  
+
   return (
     <div className="flex flex-col h-full">
       {/* Filters */}
-      <div className="p-4 bg-white border-b border-gray-200">
+      <div className="p-4 bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800">
         <div className="flex flex-wrap gap-2">
           <FilterChip
             label="All"
@@ -92,11 +92,11 @@ export default function ListView({ tasks, onTaskClick, onTaskComplete }: ListVie
           />
         </div>
       </div>
-      
+
       {/* Task List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {sortedTasks.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-gray-400 dark:text-neutral-500">
             <p className="text-lg">No tasks found</p>
             <p className="text-sm mt-2">Try adjusting your filters or create a new task</p>
           </div>
@@ -116,15 +116,15 @@ export default function ListView({ tasks, onTaskClick, onTaskComplete }: ListVie
 }
 
 // Filter chip component
-function FilterChip({ 
-  label, 
-  count, 
-  active, 
-  onClick 
-}: { 
-  label: string; 
-  count: number; 
-  active: boolean; 
+function FilterChip({
+  label,
+  count,
+  active,
+  onClick
+}: {
+  label: string;
+  count: number;
+  active: boolean;
   onClick: () => void;
 }) {
   return (
@@ -133,14 +133,14 @@ function FilterChip({
       className={`
         flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
         transition-all duration-200
-        ${active 
-          ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-400' 
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        ${active
+          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 ring-2 ring-blue-400 dark:ring-blue-600'
+          : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-700'
         }
       `}
     >
       <span>{label}</span>
-      <span className={`text-xs ${active ? 'text-blue-600' : 'text-gray-500'}`}>
+      <span className={`text-xs ${active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-neutral-500'}`}>
         {count}
       </span>
     </button>
@@ -148,13 +148,13 @@ function FilterChip({
 }
 
 // Task item component
-function TaskItem({ 
-  task, 
-  onClick, 
-  onComplete 
-}: { 
-  task: Task; 
-  onClick: () => void; 
+function TaskItem({
+  task,
+  onClick,
+  onComplete
+}: {
+  task: Task;
+  onClick: () => void;
   onComplete: () => void;
 }) {
   const isComplete = task.status === 'done';
@@ -162,10 +162,10 @@ function TaskItem({
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isComplete;
 
   const priorityColor = {
-    now: 'text-red-600',
-    soon: 'text-yellow-600',
-    later: 'text-gray-400'
-  }[task.priority] || 'text-gray-400';
+    now: 'text-red-600 dark:text-red-400',
+    soon: 'text-yellow-600 dark:text-yellow-400',
+    later: 'text-gray-400 dark:text-neutral-500'
+  }[task.priority] || 'text-gray-400 dark:text-neutral-500';
 
   return (
     <div
@@ -191,9 +191,9 @@ function TaskItem({
         className={`
           mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center
           transition-all duration-200
-          ${isComplete 
-            ? 'bg-blue-500 border-blue-500' 
-            : 'border-gray-300 hover:border-blue-400 group-hover:border-blue-400'
+          ${isComplete
+            ? 'bg-blue-500 border-blue-500'
+            : 'border-gray-300 dark:border-neutral-600 hover:border-blue-400 group-hover:border-blue-400'
           }
         `}
       >
@@ -203,26 +203,26 @@ function TaskItem({
           </svg>
         )}
       </button>
-      
+
       {/* Task content */}
       <div className="flex-1 min-w-0">
-        <h3 className={`font-medium ${isComplete ? 'line-through text-gray-400' : 'text-gray-900'}`}>
+        <h3 className={`font-medium ${isComplete ? 'line-through text-gray-400 dark:text-neutral-500' : 'text-gray-900 dark:text-neutral-100'}`}>
           {task.title}
         </h3>
-        
+
         {/* Metadata */}
-        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-neutral-400">
           {task.due_date && (
-            <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+            <span className={isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : ''}>
               {isOverdue && '🔴 '}
               {new Date(task.due_date).toLocaleDateString()}
             </span>
           )}
-          
+
           {task.assigned_human && (
             <span>👤 {task.assigned_human}</span>
           )}
-          
+
           {task.assigned_agent_ids && task.assigned_agent_ids.length > 0 && (
             <span>🤖 AI assigned</span>
           )}

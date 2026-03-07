@@ -85,7 +85,7 @@ export default function MissionControlClient() {
       setAgents(botsData)
       setTasks(tasksData)
       setActivities(activitiesData)
-      
+
       // Get execution mode to determine if user is cloud or self-hosted
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
@@ -152,12 +152,12 @@ export default function MissionControlClient() {
     const { active, over } = event
     console.log('Drag end:', { activeId: active.id, overId: over?.id, overData: over })
     setActiveId(null)
-    
+
     if (!over) {
       console.log('No drop target detected')
       return
     }
-    
+
     // Check if over.id is a valid TaskStatus
     const validStatuses: TaskStatus[] = ['inbox', 'assigned', 'in_progress', 'review', 'error', 'done', 'blocked']
     if (!validStatuses.includes(over.id as TaskStatus)) {
@@ -168,12 +168,12 @@ export default function MissionControlClient() {
     const taskId = active.id as string
     const task = tasks.find(t => t.id === taskId)
     const newStatus = over.id as TaskStatus
-    
+
     if (task?.status === newStatus) {
       console.log('Dropped on same column, ignoring')
       return
     }
-    
+
     await performTaskUpdate(taskId, newStatus, task?.title)
   }
 
@@ -181,15 +181,15 @@ export default function MissionControlClient() {
     console.log(`Updating task "${taskTitle}" to ${newStatus}`)
 
     // Optimistically update UI first
-    setTasks(prev => prev.map(t => 
+    setTasks(prev => prev.map(t =>
       t.id === taskId ? { ...t, status: newStatus } : t
     ))
 
     try {
       await updateTaskStatus(taskId, newStatus)
-      console.log('✓ Task updated successfully in database')
+      console.log('Task updated successfully in database')
     } catch (error) {
-      console.error('✗ Failed to update task:', error)
+      console.error('Failed to update task:', error)
       alert(`Failed to update task: ${error}`)
       loadData() // Reload on error to revert
     }
@@ -206,7 +206,7 @@ export default function MissionControlClient() {
   async function handleDeleteClick(taskId: string) {
     const task = tasks.find(t => t.id === taskId)
     if (!task) return
-    
+
     // Get comment count for the warning
     try {
       const comments = await getTaskComments(taskId)
@@ -220,9 +220,9 @@ export default function MissionControlClient() {
   // Actually delete the task
   async function handleDeleteConfirm() {
     if (!deleteModal) return
-    
+
     const { task } = deleteModal
-    
+
     try {
       await deleteTask(task.id)
       setDeleteModal(null)
@@ -241,9 +241,9 @@ export default function MissionControlClient() {
   const totalAgents = agents.length
   const tasksInQueue = tasks.filter(t => t.status !== 'done').length
   const reviewCount = tasks.filter(t => t.status === 'review').length
-  
+
   // Filter tasks by selected agent
-  const filteredTasks = selectedAgent 
+  const filteredTasks = selectedAgent
     ? tasks.filter(t => {
         if (selectedAgent === 'Jay') {
           // Jay's tasks are ones not assigned to agents, or assigned to Jay
@@ -257,8 +257,8 @@ export default function MissionControlClient() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading Command...</div>
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center">
+        <div className="text-gray-500 dark:text-neutral-400">Loading Command...</div>
       </div>
     )
   }
@@ -266,24 +266,24 @@ export default function MissionControlClient() {
   const hasNoData = tasks.length === 0 && agents.length === 0
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-950">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800">
         <div className="max-w-[1800px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-900">COMMAND CENTER</h1>
-              <span className="text-sm text-gray-500">Made with ❤️ by two AI agents and a human</span>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-neutral-100">COMMAND CENTER</h1>
+              <span className="text-sm text-gray-500 dark:text-neutral-500">Made with ❤️ by two AI agents and a human</span>
             </div>
 
             <div className="flex items-center gap-8 text-sm">
               <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">{totalAgents}</div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide">Agents</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-neutral-100">{totalAgents}</div>
+                <div className="text-xs text-gray-500 dark:text-neutral-500 uppercase tracking-wide">Agents</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-gray-900">{tasksInQueue}</div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide">Tasks in Queue</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-neutral-100">{tasksInQueue}</div>
+                <div className="text-xs text-gray-500 dark:text-neutral-500 uppercase tracking-wide">Tasks in Queue</div>
               </div>
               {reviewCount > 0 && (
                 <div className="text-center">
@@ -295,16 +295,16 @@ export default function MissionControlClient() {
                 </div>
               )}
               <div className="text-center">
-                <div className="text-lg font-mono text-gray-900">
+                <div className="text-lg font-mono text-gray-900 dark:text-neutral-100">
                   {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 </div>
-                <div className="text-xs text-gray-500 uppercase tracking-wide">
+                <div className="text-xs text-gray-500 dark:text-neutral-500 uppercase tracking-wide">
                   {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-xs text-gray-500 uppercase tracking-wide">Online</span>
+                <span className="text-xs text-gray-500 dark:text-neutral-500 uppercase tracking-wide">Online</span>
               </div>
             </div>
           </div>
@@ -315,10 +315,10 @@ export default function MissionControlClient() {
       <div className="max-w-[2000px] mx-auto px-6 py-6">
         {/* Empty State - New User */}
         {hasNoData && (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center mb-8">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-200 dark:border-neutral-800 p-12 text-center mb-8">
             <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Command!</h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-100 mb-2">Welcome to Command!</h2>
+            <p className="text-gray-600 dark:text-neutral-400 mb-6 max-w-md mx-auto">
               Start by adding an agent to your team. Agents help you automate tasks, manage workflows, and get things done.
             </p>
             <div className="flex items-center justify-center gap-4">
@@ -330,7 +330,7 @@ export default function MissionControlClient() {
               </Link>
               <button
                 onClick={() => setShowCreateTask(true)}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                className="px-6 py-3 bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 rounded-lg hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors font-medium"
               >
                 Create your first task
               </button>
@@ -340,17 +340,17 @@ export default function MissionControlClient() {
         {/* Filter and Controls Bar */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="font-semibold text-gray-900 text-lg">MISSION QUEUE</h2>
-            
+            <h2 className="font-semibold text-gray-900 dark:text-neutral-100 text-lg">MISSION QUEUE</h2>
+
             {/* Agent Filter */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Filter:</span>
+              <span className="text-sm text-gray-600 dark:text-neutral-400">Filter:</span>
               <button
                 onClick={() => setSelectedAgent(null)}
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                  selectedAgent === null 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  selectedAgent === null
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-700'
                 }`}
               >
                 All
@@ -362,7 +362,7 @@ export default function MissionControlClient() {
                   className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-1 ${
                     selectedAgent === agent.name
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-700'
                   }`}
                 >
                   <span>{agent.emoji}</span>
@@ -371,29 +371,29 @@ export default function MissionControlClient() {
               ))}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Hide Done toggle */}
             <button
               onClick={() => setHideDone(!hideDone)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                hideDone 
-                  ? 'bg-gray-200 text-gray-600' 
-                  : 'bg-green-100 text-green-700'
+                hideDone
+                  ? 'bg-gray-200 dark:bg-neutral-700 text-gray-600 dark:text-neutral-300'
+                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
               }`}
             >
               {hideDone ? 'Show Done' : 'Hide Done'}
               {!hideDone && ` (${tasks.filter(t => t.status === 'done').length})`}
             </button>
-            
+
             {/* View Toggle */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 dark:bg-neutral-800 rounded-lg p-1">
               <button
                 onClick={() => setView('board')}
                 className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
                   view === 'board'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-neutral-700 text-gray-900 dark:text-neutral-100 shadow-sm'
+                    : 'text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-neutral-200'
                 }`}
               >
                 Board
@@ -402,8 +402,8 @@ export default function MissionControlClient() {
                 onClick={() => setView('files')}
                 className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
                   view === 'files'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white dark:bg-neutral-700 text-gray-900 dark:text-neutral-100 shadow-sm'
+                    : 'text-gray-600 dark:text-neutral-400 hover:text-gray-900 dark:hover:text-neutral-200'
                 }`}
               >
                 Files
@@ -413,7 +413,7 @@ export default function MissionControlClient() {
             {manualAgentSelection && (
               <Link
                 href={executionMode === 'openclaw' ? '/hub?type=agents' : '/agents'}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                className="px-4 py-2 bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 rounded-lg hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors text-sm font-medium"
               >
                 + Add Agent
               </Link>
@@ -421,7 +421,7 @@ export default function MissionControlClient() {
 
             <button
               onClick={() => { setChatTask(null); setChatOpen(true); }}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-1.5"
+              className="px-4 py-2 bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-neutral-300 rounded-lg hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors text-sm font-medium flex items-center gap-1.5"
             >
               <span>💬</span> Chat
             </button>
@@ -440,32 +440,32 @@ export default function MissionControlClient() {
           <>
         {/* View Switcher */}
         <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} />
-        
+
         {/* Kanban/List/Time Views - Conditional Rendering */}
         {currentView === 'kanban' && (
           <>
         {/* Kanban Board - Horizontal Scroll */}
         <div className="relative">
           {/* Scroll indicator */}
-          <div className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none z-10 md:hidden"></div>
-          
-          <DndContext 
+          <div className="absolute right-0 top-0 bottom-4 w-12 bg-gradient-to-l from-gray-50 dark:from-neutral-950 to-transparent pointer-events-none z-10 md:hidden"></div>
+
+          <DndContext
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
             sensors={sensors}
             collisionDetection={closestCenter}
           >
-            <div className="flex gap-4 pb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent snap-x">
+            <div className="flex gap-4 pb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-600 scrollbar-track-transparent snap-x">
               {COLUMNS.filter(col => {
                 // Hide "done" if toggle is on
                 if (hideDone && col.status === 'done') return false;
-                
+
                 // Hide "blocked" and "error" columns if no tasks have those statuses
                 if (col.status === 'blocked' || col.status === 'error') {
                   return filteredTasks.some(t => t.status === col.status);
                 }
-                
+
                 return true;
               }).map(column => (
                 <div key={column.status} className="snap-start">
@@ -483,8 +483,8 @@ export default function MissionControlClient() {
             </div>
             <DragOverlay>
               {activeId ? (
-                <div className="bg-white border-l-4 border-l-blue-400 rounded-lg p-3 shadow-xl opacity-90">
-                  <h3 className="font-medium text-gray-900 text-sm">
+                <div className="bg-white dark:bg-neutral-800 border-l-4 border-l-blue-400 rounded-lg p-3 shadow-xl opacity-90">
+                  <h3 className="font-medium text-gray-900 dark:text-neutral-100 text-sm">
                     {tasks.find(t => t.id === activeId)?.title}
                   </h3>
                 </div>
@@ -494,18 +494,18 @@ export default function MissionControlClient() {
         </div>
           </>
         )}
-        
+
         {currentView === 'list' && (
-          <ListView 
-            tasks={filteredTasks} 
+          <ListView
+            tasks={filteredTasks}
             onTaskClick={setSelectedTask}
             onTaskComplete={handleMarkDone}
           />
         )}
-        
+
         {currentView === 'time' && (
-          <TimeView 
-            tasks={filteredTasks} 
+          <TimeView
+            tasks={filteredTasks}
             onTaskClick={setSelectedTask}
           />
         )}
@@ -537,7 +537,7 @@ export default function MissionControlClient() {
           if (aiWorkTasks.length === 0) return null;
           return (
             <div className="mt-6">
-              <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 border border-gray-200 dark:border-neutral-700">
+              <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 border border-gray-200 dark:border-neutral-800">
                 <h2 className="font-semibold text-gray-900 dark:text-neutral-100 mb-4 flex items-center justify-between">
                   <span className="flex items-center gap-2">
                     AI Activity
@@ -582,7 +582,7 @@ export default function MissionControlClient() {
 
         {/* Files View */}
         {view === 'files' && (
-          <div className="bg-white rounded-lg min-h-[600px]">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg min-h-[600px]">
             <FilesView />
           </div>
         )}
