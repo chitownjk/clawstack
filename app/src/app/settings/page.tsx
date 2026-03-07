@@ -194,13 +194,15 @@ export default function SettingsPage() {
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
                 {user.email}
               </p>
-              {account?.tier && (
+              {account?.plan_tier && (
                 <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
-                  account.tier === 'team' 
+                  account.plan_tier === 'cloud-plus'
                     ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
+                    : account.plan_tier === 'cloud' || account.plan_tier === 'cloud-developer'
+                    ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300'
                     : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                 }`}>
-                  {account.tier === 'team' ? 'Team Plan' : 'Solo Plan'}
+                  {account.plan_tier === 'cloud-plus' ? 'Team Plan' : account.plan_tier === 'cloud' || account.plan_tier === 'cloud-developer' ? 'Solo Plan' : 'Free Plan'}
                 </span>
               )}
             </div>

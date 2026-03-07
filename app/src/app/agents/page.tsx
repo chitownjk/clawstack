@@ -194,7 +194,7 @@ export default function AgentsPage() {
                     </button>
                   ) : (
                     <Link
-                      href="/#pricing"
+                      href="/pricing"
                       className="px-4 py-2 bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-colors font-medium text-sm inline-block"
                     >
                       Upgrade to Enable

@@ -12,6 +12,11 @@ const MAX_TOKENS_RESPONSE = 1024      // Keep responses concise
 const DEFAULT_MODEL = 'claude-haiku-4-5-20241022'  // Fast + cheap for chat
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000  // 1 hour window
 
+// Admin emails bypass plan checks and rate limits
+const ADMIN_EMAILS = [
+  'jklauminzer@gmail.com',
+]
+
 // Per-plan rate limits (requests per hour)
 const PLAN_RATE_LIMITS: Record<string, number> = {
   free: 0,             // No chat on free
@@ -194,31 +199,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 })
     }
 
-    // Check plan access
+    // Check admin status
+    const isAdmin = ADMIN_EMAILS.includes(session.user.email ?? '')
+
+    // Check plan access (admins bypass)
     const isBYOK = account.execution_mode === 'cloud-user-keys'
-    const hasAI = account.plan_tier !== 'free' || isBYOK
+    const hasAI = isAdmin || account.plan_tier !== 'free' || isBYOK
     if (!hasAI) {
       return NextResponse.json({
-        error: 'AI chat requires a Pro plan',
+        error: 'AI chat requires an upgraded plan',
         code: 'UPGRADE_REQUIRED',
       }, { status: 403 })
     }
 
-    // Rate limit check
-    const rateCheck = checkRateLimit(account.id, account.plan_tier, isBYOK)
-    if (!rateCheck.allowed) {
-      return NextResponse.json({
-        error: 'Rate limit exceeded. Please wait before sending more messages.',
-        code: 'RATE_LIMITED',
-        retryAfter: 60,
-      }, {
-        status: 429,
-        headers: {
-          'Retry-After': '60',
-          'X-RateLimit-Limit': String(rateCheck.limit),
-          'X-RateLimit-Remaining': '0',
-        },
-      })
+    // Rate limit check (admins bypass)
+    if (!isAdmin) {
+      const rateCheck = checkRateLimit(account.id, account.plan_tier, isBYOK)
+      if (!rateCheck.allowed) {
+        return NextResponse.json({
+          error: 'Rate limit exceeded. Please wait before sending more messages.',
+          code: 'RATE_LIMITED',
+          retryAfter: 60,
+        }, {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Limit': String(rateCheck.limit),
+            'X-RateLimit-Remaining': '0',
+          },
+        })
+      }
     }
 
     // Resolve API key
@@ -239,7 +249,7 @@ export async function POST(request: Request) {
 
     if (!apiKey) {
       return NextResponse.json({
-        error: 'No API key configured',
+        error: 'No API key configured. The ANTHROPIC_API_KEY environment variable is not set.',
         code: 'NO_API_KEY',
       }, { status: 500 })
     }

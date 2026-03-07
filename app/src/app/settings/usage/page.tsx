@@ -92,19 +92,25 @@ export default function UsagePage() {
   }
 
   if (!usage || !usage.tasks_limit) {
+    const isFree = !usage?.plan_tier || usage?.plan_tier === 'free';
     return (
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-4">Usage</h1>
         <div className="p-6 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900">
           <p className="text-blue-900 dark:text-blue-100">
-            You're on a free plan with unlimited tasks (fair use applies).
+            {isFree
+              ? "You're on the Free plan. Upgrade to unlock AI agents and chat."
+              : "You're on a plan with unlimited tasks (fair use applies)."
+            }
           </p>
-          <Link
-            href="/#pricing"
-            className="inline-block mt-4 text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            View paid plans →
-          </Link>
+          {isFree && (
+            <a
+              href="/api/stripe/checkout?plan=solo"
+              className="inline-block mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+            >
+              Upgrade to Solo
+            </a>
+          )}
         </div>
       </div>
     );
@@ -173,12 +179,12 @@ export default function UsagePage() {
                     </p>
                   )}
                 </div>
-                <Link
-                  href="/pricing"
+                <a
+                  href="/api/stripe/checkout?plan=solo"
                   className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition text-sm"
                 >
-                  Change Plan
-                </Link>
+                  Upgrade Plan
+                </a>
               </div>
             </div>
           )}
@@ -236,16 +242,10 @@ export default function UsagePage() {
             </p>
             <div className="flex gap-2">
               <Link
-                href="/#pricing"
+                href="/api/stripe/checkout?plan=solo"
                 className="inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm"
               >
                 Upgrade Plan
-              </Link>
-              <Link
-                href="/settings/execution"
-                className="inline-block px-4 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition text-sm"
-              >
-                Switch to Free BYOK
               </Link>
             </div>
           </div>
@@ -261,7 +261,7 @@ export default function UsagePage() {
               Consider upgrading for more capacity.
             </p>
             <Link
-              href="/#pricing"
+              href="/api/stripe/checkout?plan=solo"
               className="inline-block mt-2 text-yellow-700 dark:text-yellow-300 hover:underline text-sm"
             >
               View upgrade options →

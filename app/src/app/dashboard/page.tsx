@@ -81,8 +81,24 @@ interface Bot {
 
 // Tier badge component
 function TierBadge({ tier, status }: { tier: string; status?: string | null }) {
+  // Map plan_tier values to display names
+  const tierDisplayNames: Record<string, string> = {
+    free: 'Free',
+    cloud: 'Solo',
+    'cloud-developer': 'Solo',
+    'cloud-plus': 'Team',
+    // Legacy values
+    solo: 'Solo',
+    pro: 'Pro',
+    team: 'Team',
+  }
+
   const tierStyles: Record<string, string> = {
     free: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
+    cloud: 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400',
+    'cloud-developer': 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400',
+    'cloud-plus': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+    // Legacy values
     basic: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     pro: 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 dark:from-amber-900/30 dark:to-yellow-900/30 dark:text-amber-400',
     team: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
@@ -99,7 +115,7 @@ function TierBadge({ tier, status }: { tier: string; status?: string | null }) {
 
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${tierStyles[tier] || tierStyles.free}`}>
-      {tier.charAt(0).toUpperCase() + tier.slice(1)}
+      {tierDisplayNames[tier] || tier.charAt(0).toUpperCase() + tier.slice(1)}
       {statusBadge}
     </span>
   )
@@ -377,7 +393,7 @@ function DashboardContent() {
     )
   }
 
-  const isPro = account?.tier === 'pro' || account?.tier === 'team'
+  const isPro = account?.plan_tier === 'cloud' || account?.plan_tier === 'cloud-developer' || account?.plan_tier === 'cloud-plus'
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -475,7 +491,7 @@ function DashboardContent() {
             </div>
             <div className="card p-6">
               <div className="text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
-                <TierBadge tier={account?.tier || 'free'} />
+                <TierBadge tier={account?.plan_tier || 'free'} />
               </div>
               <div className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
                 Subscription Tier
@@ -615,7 +631,7 @@ function DashboardContent() {
               <div>
                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 flex items-center gap-3">
                   Subscription
-                  <TierBadge tier={account?.tier || 'free'} status={account?.subscription_status} />
+                  <TierBadge tier={account?.plan_tier || 'free'} status={account?.subscription_status} />
                 </h2>
                 {account?.subscription_current_period_end && (
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">

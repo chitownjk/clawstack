@@ -42,7 +42,7 @@ export default async function HubPage({
     }
     
     // Set team plan flag for pattern filtering
-    isTeamPlan = account?.plan_tier === 'team'
+    isTeamPlan = account?.plan_tier === 'cloud-plus'
   }
   
   // Fetch validated patterns (public, shared economy)
