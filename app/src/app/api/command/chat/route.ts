@@ -213,22 +213,22 @@ export async function POST(request: Request) {
     }
 
     // Rate limit check (admins bypass)
-    if (!isAdmin) {
-      const rateCheck = checkRateLimit(account.id, account.plan_tier, isBYOK)
-      if (!rateCheck.allowed) {
-        return NextResponse.json({
-          error: 'Rate limit exceeded. Please wait before sending more messages.',
-          code: 'RATE_LIMITED',
-          retryAfter: 60,
-        }, {
-          status: 429,
-          headers: {
-            'Retry-After': '60',
-            'X-RateLimit-Limit': String(rateCheck.limit),
-            'X-RateLimit-Remaining': '0',
-          },
-        })
-      }
+    const rateCheck = isAdmin
+      ? { allowed: true, limit: 999999, remaining: 999999 }
+      : checkRateLimit(account.id, account.plan_tier, isBYOK)
+    if (!rateCheck.allowed) {
+      return NextResponse.json({
+        error: 'Rate limit exceeded. Please wait before sending more messages.',
+        code: 'RATE_LIMITED',
+        retryAfter: 60,
+      }, {
+        status: 429,
+        headers: {
+          'Retry-After': '60',
+          'X-RateLimit-Limit': String(rateCheck.limit),
+          'X-RateLimit-Remaining': '0',
+        },
+      })
     }
 
     // Resolve API key
