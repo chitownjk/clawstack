@@ -46,6 +46,7 @@ export default function MissionControlClient() {
   const [manualAgentSelection, setManualAgentSelection] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
   const [chatTask, setChatTask] = useState<Task | null>(null)
+  const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
 
   // Configure drag sensors with proper activation constraints
   const sensors = useSensors(
@@ -264,9 +265,6 @@ export default function MissionControlClient() {
   }
 
   const hasNoData = tasks.length === 0 && agents.length === 0
-
-  // Agent filter dropdown state
-  const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
