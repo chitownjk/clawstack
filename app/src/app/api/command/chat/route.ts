@@ -319,10 +319,10 @@ export async function POST(request: Request) {
         } catch (err: any) {
           console.error('Chat streaming error:', err)
 
-          // Temporarily expose error for debugging
+          // Don't leak internal error details to client
           const safeMessage = err.status === 429
             ? 'AI provider rate limited. Please try again in a moment.'
-            : `Chat error: ${err.message || err.toString()} (status: ${err.status || 'unknown'})`
+            : 'Something went wrong. Please try again.'
 
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: 'error', message: safeMessage })}\n\n`)
