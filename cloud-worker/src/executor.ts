@@ -319,7 +319,8 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
       
       await supabase.from('mc_comments').insert({
         task_id: taskId,
-        agent_id: task.account_agent_id,
+        agent_id: agentId,
+        agent_name: agent.name,
         content: `✅ Task complete. Response saved as file: **${filename}**${viewLink}`,
         created_at: new Date().toISOString(),
       });
@@ -327,7 +328,8 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
       // Fallback to comment if upload fails
       await supabase.from('mc_comments').insert({
         task_id: taskId,
-        agent_id: task.account_agent_id,
+        agent_id: agentId,
+        agent_name: agent.name,
         content: result,
         created_at: new Date().toISOString(),
       });
@@ -336,7 +338,8 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     // Short response - post as comment
     await supabase.from('mc_comments').insert({
       task_id: taskId,
-      agent_id: task.account_agent_id,
+      agent_id: agentId,
+      agent_name: agent.name,
       content: result,
       created_at: new Date().toISOString(),
     });
@@ -487,7 +490,8 @@ async function callModel(options: {
     throw new Error('No Anthropic API key configured');
   }
 
-  // Call Anthropic (with tools if Google token available)
+  // Call Anthropic (with tools if any credential is available)
+  const hasTools = !!(googleAccessToken || agentmailApiKey || githubToken);
   const anthropic = new Anthropic({ apiKey: anthropicKey });
 
   const messages: Anthropic.MessageParam[] = [
@@ -507,7 +511,7 @@ async function callModel(options: {
       model,
       max_tokens: 4096,
       messages,
-      ...(googleAccessToken ? { tools: TOOLS as any } : {}),
+      ...(hasTools ? { tools: TOOLS as any } : {}),
     });
 
     totalTokensIn += response.usage.input_tokens;
@@ -538,7 +542,7 @@ async function callModel(options: {
           toolResult = await executeTool(
             toolUseBlock.name,
             toolUseBlock.input,
-            googleAccessToken!,
+            googleAccessToken || '',
             supabase,
             taskId,
             account.id,
