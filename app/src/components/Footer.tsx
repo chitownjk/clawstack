@@ -31,7 +31,34 @@ export function Footer() {
               </li>
             </ul>
           </div>
-          
+
+          {/* Services */}
+          <div>
+            <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Services</h4>
+            <ul className="space-y-2 text-sm">
+              <li>
+                <Link href="/services" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition">
+                  All Services
+                </Link>
+              </li>
+              <li>
+                <Link href="/services#remote-setup" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition">
+                  Remote Setup
+                </Link>
+              </li>
+              <li>
+                <Link href="/services#pi-kit" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition">
+                  Pi 5 Kit
+                </Link>
+              </li>
+              <li>
+                <Link href="/services#custom" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition">
+                  Custom Builds
+                </Link>
+              </li>
+            </ul>
+          </div>
+
           {/* Resources */}
           <div>
             <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Resources</h4>
@@ -58,8 +85,8 @@ export function Footer() {
               </li>
             </ul>
           </div>
-          
-          {/* Company */}
+
+          {/* Company & Legal */}
           <div>
             <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Company</h4>
             <ul className="space-y-2 text-sm">
@@ -74,18 +101,6 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="https://x.com/tikerai" target="_blank" rel="noopener noreferrer" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition">
-                  X / Twitter
-                </a>
-              </li>
-            </ul>
-          </div>
-          
-          {/* Legal */}
-          <div>
-            <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Legal</h4>
-            <ul className="space-y-2 text-sm">
-              <li>
                 <Link href="/privacy" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition">
                   Privacy
                 </Link>
@@ -95,20 +110,25 @@ export function Footer() {
                   Terms
                 </Link>
               </li>
+              <li>
+                <a href="https://x.com/tikerai" target="_blank" rel="noopener noreferrer" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition">
+                  X / Twitter
+                </a>
+              </li>
             </ul>
           </div>
         </div>
-        
+
         {/* Bottom bar */}
         <div className="pt-8 border-t border-neutral-200 dark:border-neutral-700 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
-            <img 
-              src="/images/tiker-icon.svg" 
-              alt="Tiker" 
+            <img
+              src="/images/tiker-icon.svg"
+              alt="Tiker"
               className="h-6 w-6"
             />
             <span className="text-sm text-neutral-500 dark:text-neutral-400">
-              © 2026 Tiker. Open source under MIT.
+              &copy; 2026 Tiker. Open source under MIT.
             </span>
           </div>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">

@@ -154,6 +154,19 @@ export async function createComment(taskId: string, content: string, agentId?: s
   return response.json()
 }
 
+// Update task fields (title, description, priority, due_date, tags, recurrence_rule)
+export async function updateTask(taskId: string, updates: Partial<Pick<Task, 'title' | 'description' | 'priority' | 'due_date' | 'tags' | 'recurrence_rule'>>) {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('mc_tasks')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', taskId)
+    .select()
+
+  if (error) throw error
+  return data
+}
+
 // Delete a task
 export async function deleteTask(taskId: string): Promise<void> {
   const response = await fetch(`/api/command/tasks/${taskId}`, {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Agent, Task, Activity, TaskStatus, getAgents, getTasks, getActivities, updateTaskStatus, deleteTask, getTaskComments } from '@/lib/mission-control'
+import { Agent, Task, Activity, TaskStatus, getAgents, getTasks, getActivities, updateTaskStatus, updateTask, deleteTask, getTaskComments } from '@/lib/mission-control'
 import AgentCard from '@/components/AgentCard'
 import KanbanColumn from '@/components/KanbanColumn'
 import TaskDetailModal from '@/components/TaskDetailModal'
@@ -611,6 +611,7 @@ export default function MissionControlClient() {
           onMarkDone={handleMarkDone}
           onDelete={handleDeleteClick}
           onOpenChat={(task) => { setChatTask(task); setChatOpen(true); }}
+          onTaskUpdated={() => { loadData(); setSelectedTask(null); }}
         />
       )}
 
