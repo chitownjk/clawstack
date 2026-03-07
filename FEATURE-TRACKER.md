@@ -22,16 +22,16 @@
 
 | # | Feature | Status | Depends On | Files | Notes |
 |---|---------|--------|------------|-------|-------|
-| 9 | Gmail Scan: Bills & Due Dates | Not Started | P0 #3 | In email/scan | Already supported in classification (type: "bill"). Needs recurring sender patterns. |
-| 10 | Gmail Scan: Unresponded Invites | Not Started | P0 #3 | In email/scan | Flag calendar invites with no RSVP. |
+| 9 | Gmail Scan: Bills & Due Dates | Done | P0 #3 | In email/scan | Enhanced AI prompt with aggressive bill detection, is_recurring flag, bill categories. |
+| 10 | Gmail Scan: Unresponded Invites | Done | P0 #3 | `app/src/app/api/email/invites/route.ts` | Checks GCal for responseStatus: needsAction/tentative. Stores as extracted_items. |
 | 11 | Meeting Prep: Attendee Lookup | Done | None | `app/src/app/api/meeting-prep/route.ts` | LinkedIn via Composio with slug fallback. Email domain parsing fallback. |
 | 12 | Meeting Prep: Prior Context | Done | #11 | In meeting-prep route | Searches tasks + activities by attendee name/email/event keywords. Decrypts encrypted fields. |
 | 13 | Meeting Prep: Briefing Card | Done | #11, #12 | `app/src/components/MeetingPrepCard.tsx` | Attendee bios, talking points, questions. Wired into DailyBriefing calendar section. |
 | 14 | Smart Reminders: Escalation | Done | None | `app/src/app/api/reminders/route.ts`, `supabase/migrations/020-reminders.sql` | 3-stage escalation (1d/3d/7d). Snooze, dismiss, complete. Email escalation flag. |
-| 15 | Briefing Email Delivery | Not Started | P0 #2, #8 | `app/src/components/BriefingEmail.tsx` | HTML email via Nodemailer or Resend. TODO stub in cron route. |
+| 15 | Briefing Email Delivery | Done | P0 #2, #8 | `app/src/lib/briefing-email.ts` | HTML email via Nodemailer SMTP. Wired into cron route. Sends when briefing_email pref enabled. |
 | 16 | User Preferences: Briefing | Done | P0 #5 | `app/src/app/settings/briefing/page.tsx` | Delivery time, timezone, email opt-in, section toggles, reminder escalation config. |
 | 17 | Landing Page Rewrite | Done | None | `app/src/app/page.tsx` | "Your life, handled." New hero, problem section, 4 feature showcases with mockups, updated pricing with new features. |
-| 18 | Fix Broken Integrations | Not Started | None | Settings/connections | X/Twitter broken. LinkedIn untested. |
+| 18 | Fix Broken Integrations | Done | None | `app/src/lib/composio.ts` | Added toolkitFallbacks for Twitter (TWITTER_V2, X) and LinkedIn (LINKEDIN_V2). Connection check and initiation try fallback slugs. |
 
 ## P2: Intelligence Layer (Weeks 5-10)
 

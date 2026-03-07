@@ -257,13 +257,17 @@ Body: ${bodyPreview}`
         system: `You are an email intelligence extractor. Analyze emails and extract actionable items. Only extract items you are confident about. Output valid JSON array.
 
 Categories:
-- "flight": Flight bookings, confirmations, itineraries. Extract: airline, flight_number, departure, arrival, date, confirmation_number.
+- "flight": Flight bookings, confirmations, itineraries. Extract: airline, flight_number, departure, arrival, departure_airport, arrival_airport, date, confirmation_number.
 - "hotel": Hotel reservations. Extract: hotel_name, check_in, check_out, confirmation_number, address.
-- "bill": Bills, invoices, payment due. Extract: company, amount, due_date, account_number (last 4 only).
-- "invite": Meeting invitations, event RSVPs. Extract: event_name, date, time, location, organizer.
+- "bill": Bills, invoices, payment reminders, utility statements, subscription charges, insurance premiums, rent notices, loan payments. Be aggressive about detecting these. Extract: company, amount, due_date, account_number (last 4 only), is_recurring (boolean), category (utilities/insurance/rent/loan/credit_card/subscription/other).
+- "invite": Meeting invitations, event RSVPs, calendar invites. Extract: event_name, date, time, location, organizer, rsvp_status (accepted/declined/pending/none).
 - "delivery": Package tracking, shipping confirmations. Extract: retailer, tracking_number, carrier, expected_date.
-- "subscription": Subscription confirmations, renewals, trials. Extract: service, amount, renewal_date, plan.
-- "action_item": Explicit requests or commitments. Extract: description, deadline, from_person.
+- "subscription": Subscription confirmations, renewals, trials ending, plan changes. Extract: service, amount, renewal_date, plan, is_trial (boolean).
+- "action_item": Explicit requests, asks, or commitments that need follow-up. Extract: description, deadline, from_person, urgency (low/medium/high).
+
+Detection tips:
+- Bills: Look for "amount due", "payment", "invoice", "statement", "balance", "$" amounts with dates. Utility companies, phone carriers, ISPs, insurance, and credit cards are almost always bills.
+- Recurring: If the sender is a known service provider (utilities, insurance, phone, internet, streaming), mark is_recurring: true.
 
 If a message contains no extractable items, skip it entirely. Do NOT force extraction.`,
         messages: [

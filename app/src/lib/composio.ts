@@ -18,6 +18,7 @@ export function getComposio(): Composio {
 // These map to the toolkit slugs in Composio's registry
 export const COMPOSIO_TOOLKITS: Record<string, {
   toolkit: string;
+  toolkitFallbacks?: string[];
   name: string;
   description: string;
   icon: string;
@@ -74,6 +75,7 @@ export const COMPOSIO_TOOLKITS: Record<string, {
   },
   twitter: {
     toolkit: 'TWITTER',
+    toolkitFallbacks: ['TWITTER_V2', 'X', 'TWITTERV2'],
     name: 'Twitter / X',
     description: 'Post tweets, read timelines, manage followers and lists',
     icon: '\uD835\uDD4F',
@@ -81,6 +83,7 @@ export const COMPOSIO_TOOLKITS: Record<string, {
   },
   linkedin: {
     toolkit: 'LINKEDIN',
+    toolkitFallbacks: ['LINKEDIN_V2', 'LINKEDINV2'],
     name: 'LinkedIn',
     description: 'Share posts, manage connections, send messages',
     icon: '\uD83D\uDCBC',
@@ -104,17 +107,36 @@ export async function getComposioConnectionStatuses(
 
   for (const [key, config] of Object.entries(COMPOSIO_TOOLKITS)) {
     try {
-      const connections = await composio.connectedAccounts.list({
-        userIds: [userId],
-        toolkitSlugs: [config.toolkit],
-        statuses: ['ACTIVE'],
-      });
+      // Try primary toolkit slug first, then fallbacks
+      const slugsToTry = [config.toolkit, ...((config as any).toolkitFallbacks || [])]
+      let found = false
 
-      const activeConnection = connections?.items?.[0];
-      statuses[key] = {
-        connected: !!activeConnection,
-        connectionId: activeConnection?.id,
-      };
+      for (const slug of slugsToTry) {
+        try {
+          const connections = await composio.connectedAccounts.list({
+            userIds: [userId],
+            toolkitSlugs: [slug],
+            statuses: ['ACTIVE'],
+          });
+
+          const activeConnection = connections?.items?.[0];
+          if (activeConnection) {
+            statuses[key] = {
+              connected: true,
+              connectionId: activeConnection.id,
+            };
+            found = true
+            break
+          }
+        } catch {
+          // Slug not valid, try next
+          continue
+        }
+      }
+
+      if (!found) {
+        statuses[key] = { connected: false };
+      }
     } catch (error) {
       console.error(`Error checking ${key} connection:`, error);
       statuses[key] = { connected: false };
@@ -159,8 +181,22 @@ export async function initiateComposioConnection(
     throw new Error(`Unknown toolkit: ${toolkitKey}`);
   }
 
-  // Get or create an auth config for this toolkit
-  const authConfigId = providedAuthConfigId || await getOrCreateAuthConfig(composio, config.toolkit);
+  // Get or create an auth config for this toolkit, trying fallback slugs
+  let authConfigId = providedAuthConfigId
+  if (!authConfigId) {
+    const slugsToTry = [config.toolkit, ...((config as any).toolkitFallbacks || [])]
+    for (const slug of slugsToTry) {
+      try {
+        authConfigId = await getOrCreateAuthConfig(composio, slug)
+        if (authConfigId) break
+      } catch {
+        continue
+      }
+    }
+    if (!authConfigId) {
+      throw new Error(`Could not find or create auth config for ${toolkitKey}`)
+    }
+  }
 
   // Initiate connection with our callback URL so the user comes back to Tiker
   const connectionRequest = await composio.connectedAccounts.initiate(

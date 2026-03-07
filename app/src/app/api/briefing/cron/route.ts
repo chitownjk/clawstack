@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { getComposio } from '@/lib/composio'
 import Anthropic from '@anthropic-ai/sdk'
+import { sendBriefingEmail } from '@/lib/briefing-email'
 
 // GET /api/briefing/cron
 // Vercel Cron handler: generates daily briefings for all users.
@@ -113,8 +114,44 @@ export async function GET(request: Request) {
 
           results.push({ account_id: account.id, status: 'generated' })
 
-          // TODO: If briefing_email is true, send email via Resend/Nodemailer
-          // This will be P1 #15
+          // P1 #15: Send briefing email if enabled
+          if (prefs?.briefing_email) {
+            try {
+              // Get user email from Supabase auth
+              const { data: authData } = await adminClient.auth.admin.getUserById(account.auth_uid)
+              const userEmail = authData?.user?.email
+              const userName = authData?.user?.user_metadata?.full_name || authData?.user?.email?.split('@')[0] || 'there'
+
+              if (userEmail && process.env.SMTP_HOST) {
+                // Fetch extracted items for the email
+                let extractedItems: any[] = []
+                try {
+                  const { data: items } = await adminClient
+                    .from('extracted_items')
+                    .select('type, title, data')
+                    .eq('account_id', account.id)
+                    .eq('dismissed', false)
+                    .eq('processed', false)
+                    .limit(5)
+                  extractedItems = items || []
+                } catch { /* table may not exist */ }
+
+                const emailSent = await sendBriefingEmail({
+                  to: userEmail,
+                  userName,
+                  date: todayStr,
+                  briefing: briefingData.sections as any,
+                  extractedItems,
+                })
+
+                if (emailSent) {
+                  console.log(`[Cron] Briefing email sent to ${userEmail}`)
+                }
+              }
+            } catch (emailError) {
+              console.error(`[Cron] Email send failed for ${account.id}:`, emailError)
+            }
+          }
         } else {
           results.push({ account_id: account.id, status: 'failed', error: 'Generation returned null' })
         }
