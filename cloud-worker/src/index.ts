@@ -39,10 +39,11 @@ async function checkAccountTasks(accountId: string) {
     const { data: tasks, error } = await supabase
       .from('mc_tasks')
       .select(`
-        id, 
+        id,
         account_id,
         assigned_agent_ids,
         status,
+        updated_at,
         accounts!inner(execution_mode)
       `)
       .eq('account_id', accountId)
@@ -68,19 +69,21 @@ async function checkAccountTasks(accountId: string) {
     });
 
     // For tasks in 'review', only execute if there's a new human comment
+    // Detection: the executor posts the agent comment BEFORE setting status to 'review',
+    // so task.updated_at >= agent_comment.created_at. Any human comment will have
+    // created_at > task.updated_at. If no such comment exists, skip the task.
     const reviewTasks = cloudTasks.filter((t: any) => t.status === 'review');
     if (reviewTasks.length > 0) {
-      // Check each review task for new human comments
       for (const task of reviewTasks) {
         const { data: comments } = await supabase
           .from('mc_comments')
-          .select('agent_id, agent_name, created_at')
+          .select('created_at')
           .eq('task_id', task.id)
-          .order('created_at', { ascending: false })
-          .limit(2);
+          .gt('created_at', task.updated_at)
+          .limit(1);
 
-        // If last comment is from an agent (has agent_id OR agent_name), skip
-        if (comments && comments.length > 0 && (comments[0].agent_id || comments[0].agent_name)) {
+        // No comments newer than when the task was set to 'review' -> no human reply yet
+        if (!comments || comments.length === 0) {
           cloudTasks = cloudTasks.filter((t: any) => t.id !== task.id);
         }
       }

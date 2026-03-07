@@ -24,25 +24,29 @@ export async function GET(request: Request) {
     const composio = getComposio()
     const userId = `tiker_${session.user.id}`
 
-    // Check if Google Calendar is connected
+    // Step 1: Check if Google Calendar is connected (separate from event fetching)
+    let calendarConnection: any = null
     try {
       const connectedAccounts = await composio.connectedAccounts.list({
         userIds: [userId],
         toolkitSlugs: ['GOOGLECALENDAR'],
         statuses: ['ACTIVE'],
       })
+      calendarConnection = connectedAccounts.items?.[0]
+    } catch (connCheckError) {
+      console.error('Composio connection check error:', connCheckError)
+    }
 
-      const calendarConnection = connectedAccounts.items?.[0]
+    if (!calendarConnection) {
+      return NextResponse.json({
+        events: [],
+        connected: false,
+        message: 'Google Calendar not connected',
+      })
+    }
 
-      if (!calendarConnection) {
-        return NextResponse.json({
-          events: [],
-          connected: false,
-          message: 'Google Calendar not connected',
-        })
-      }
-
-      // Execute the Google Calendar list events action
+    // Step 2: Fetch events (connection exists, so always return connected: true)
+    try {
       const result = await composio.tools.execute('GOOGLECALENDAR_LIST_EVENTS', {
         userId,
         dangerouslySkipVersionCheck: true,
@@ -76,22 +80,17 @@ export async function GET(request: Request) {
         events,
         connected: true,
       })
-    } catch (composioError: any) {
-      console.error('Composio calendar error:', composioError)
+    } catch (fetchError: any) {
+      console.error('Composio calendar fetch error:', fetchError)
 
-      // If it's an auth error, return not connected
-      if (composioError.message?.includes('auth') || composioError.message?.includes('token')) {
-        return NextResponse.json({
-          events: [],
-          connected: false,
-          message: 'Calendar connection expired. Please reconnect in Settings.',
-        })
-      }
-
+      // Connection exists but fetch failed -- still report connected: true
+      // so the CalendarView doesn't show the "Connect" banner
       return NextResponse.json({
         events: [],
-        connected: false,
-        message: 'Failed to fetch calendar events',
+        connected: true,
+        message: fetchError.message?.includes('auth') || fetchError.message?.includes('token')
+          ? 'Calendar token may have expired. Try reconnecting in Settings.'
+          : 'Failed to fetch calendar events. Try again later.',
       })
     }
   } catch (error) {

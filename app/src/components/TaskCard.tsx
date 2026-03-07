@@ -41,6 +41,7 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
   const assignedAgents = agents.filter(a => task.assigned_agent_ids?.includes(a.id))
   const timeAgo = getTimeAgo(new Date(task.created_at))
   const isDone = task.status === 'done'
+  const isReview = task.status === 'review'
 
   return (
     <div
@@ -48,7 +49,11 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white border-l-4 ${priorityColors[task.priority]} rounded-lg p-3 hover:shadow-md transition-shadow relative cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : ''}`}
+      className={`border-l-4 ${priorityColors[task.priority]} rounded-lg p-3 hover:shadow-md transition-shadow relative cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-50' : ''} ${
+        isReview
+          ? 'bg-purple-50 dark:bg-purple-950/20 ring-1 ring-purple-300 dark:ring-purple-700'
+          : 'bg-white dark:bg-neutral-800'
+      }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -97,8 +102,17 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
           </span>
         </div>
       
+        {isReview && (
+          <div className="flex items-center gap-1 mb-1">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+              AI done - needs review
+            </span>
+          </div>
+        )}
+
         {task.description && (
-          <p className="text-xs text-gray-600 mb-2 line-clamp-2">{task.description}</p>
+          <p className="text-xs text-gray-600 dark:text-neutral-400 mb-2 line-clamp-2">{task.description}</p>
         )}
 
         <div className="flex items-center justify-between mt-2">

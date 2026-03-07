@@ -111,6 +111,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     if (isOver.data) {
       // Don't execute, post comment explaining why
       await supabase.from('mc_comments').insert({
+        account_id: task.account_id,
         task_id: taskId,
         content: `⚠️ Monthly task limit reached (${account.features.task_limit} tasks). This task will queue until your limit resets. [Upgrade](/pricing) for more capacity.`,
         created_at: new Date().toISOString(),
@@ -246,6 +247,8 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     modelTier: agent.model_tier,
     account,
     googleAccessToken,
+    agentmailApiKey,
+    githubToken,
     supabase,
     taskId: task.id,
   });
@@ -318,18 +321,16 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
       const viewLink = fileId ? ` [View response](/files/${fileId})` : '';
       
       await supabase.from('mc_comments').insert({
+        account_id: task.account_id,
         task_id: taskId,
-        agent_id: agentId,
-        agent_name: agent.name,
         content: `✅ Task complete. Response saved as file: **${filename}**${viewLink}`,
         created_at: new Date().toISOString(),
       });
     } else {
       // Fallback to comment if upload fails
       await supabase.from('mc_comments').insert({
+        account_id: task.account_id,
         task_id: taskId,
-        agent_id: agentId,
-        agent_name: agent.name,
         content: result,
         created_at: new Date().toISOString(),
       });
@@ -337,9 +338,8 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
   } else {
     // Short response - post as comment
     await supabase.from('mc_comments').insert({
+      account_id: task.account_id,
       task_id: taskId,
-      agent_id: agentId,
-      agent_name: agent.name,
       content: result,
       created_at: new Date().toISOString(),
     });
@@ -412,6 +412,8 @@ async function callModel(options: {
   modelTier: ModelTier;
   account: Account;
   googleAccessToken?: string;
+  agentmailApiKey?: string;
+  githubToken?: string;
   supabase: SupabaseClient;
   taskId: string;
 }): Promise<{
@@ -421,7 +423,7 @@ async function callModel(options: {
   model: string;
   cost: number;
 }> {
-  const { prompt, modelTier, account, googleAccessToken, supabase, taskId } = options;
+  const { prompt, modelTier, account, googleAccessToken, agentmailApiKey, githubToken, supabase, taskId } = options;
 
   // Determine which model to use based on tier and account features
   let model: string;

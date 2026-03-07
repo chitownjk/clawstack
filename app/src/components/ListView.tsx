@@ -158,22 +158,25 @@ function TaskItem({
   onComplete: () => void;
 }) {
   const isComplete = task.status === 'done';
+  const isReview = task.status === 'review';
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isComplete;
-  
+
   const priorityColor = {
     now: 'text-red-600',
     soon: 'text-yellow-600',
     later: 'text-gray-400'
   }[task.priority] || 'text-gray-400';
-  
+
   return (
     <div
       className={`
         group flex items-start gap-3 p-3 rounded-lg border
         transition-all duration-200
-        ${isComplete 
-          ? 'bg-gray-50 border-gray-200 opacity-60' 
-          : 'bg-white border-gray-200 hover:border-gray-300 hover:shadow-sm'
+        ${isComplete
+          ? 'bg-gray-50 dark:bg-neutral-800/50 border-gray-200 dark:border-neutral-700 opacity-60'
+          : isReview
+          ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600 hover:shadow-sm ring-1 ring-purple-200 dark:ring-purple-800'
+          : 'bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700 hover:border-gray-300 dark:hover:border-neutral-600 hover:shadow-sm'
         }
         cursor-pointer
       `}
@@ -223,7 +226,14 @@ function TaskItem({
           {task.assigned_agent_ids && task.assigned_agent_ids.length > 0 && (
             <span>🤖 AI assigned</span>
           )}
-          
+
+          {isReview && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+              AI done - review
+            </span>
+          )}
+
           <span className={`${priorityColor} font-medium uppercase`}>
             {task.priority}
           </span>

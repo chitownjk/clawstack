@@ -159,22 +159,27 @@ function TimeColumn({
 
 function TimeTaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
   const isOverdue = task.due_date && new Date(task.due_date) < new Date();
-  
+  const isReview = task.status === 'review';
+
   const priorityDot = {
     now: '🔴',
     soon: '🟡',
     later: '⚪️'
   }[task.priority] || '⚪️';
-  
+
   return (
     <div
       onClick={onClick}
-      className="
-        p-3 rounded-lg bg-white border border-gray-200
-        hover:border-gray-300 hover:shadow-sm
+      className={`
+        p-3 rounded-lg border
+        hover:shadow-sm
         transition-all duration-200 cursor-pointer
         group
-      "
+        ${isReview
+          ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-300 dark:border-purple-700 hover:border-purple-400 ring-1 ring-purple-200 dark:ring-purple-800'
+          : 'bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700 hover:border-gray-300 dark:hover:border-neutral-600'
+        }
+      `}
     >
       <div className="flex items-start gap-2">
         <span className="text-xs mt-0.5">{priorityDot}</span>
@@ -203,6 +208,13 @@ function TimeTaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
             {task.assigned_agent_ids && task.assigned_agent_ids.length > 0 && (
               <span className="text-gray-500">
                 🤖
+              </span>
+            )}
+
+            {isReview && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                Review
               </span>
             )}
           </div>

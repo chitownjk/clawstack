@@ -21,12 +21,17 @@ interface CalendarViewProps {
   onTaskClick: (task: Task) => void;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// -- Helpers ------------------------------------------------------------------
 
-/** Return the Sunday that starts the week containing `date`. */
-function startOfWeek(date: Date): Date {
-  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  d.setDate(d.getDate() - d.getDay()); // rewind to Sunday
+/** First day of the month. */
+function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+/** Add `n` months to a date (pure). */
+function addMonths(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setMonth(d.getMonth() + n);
   return d;
 }
 
@@ -42,51 +47,70 @@ function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-/** Format like "Mar 2 – Mar 8, 2026" */
-function weekRangeLabel(weekStart: Date): string {
-  const weekEnd = addDays(weekStart, 6);
-  const startStr = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const endStr = weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  return `${startStr} – ${endStr}`;
+/** Format like "March 2026" */
+function monthLabel(date: Date): string {
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+/** Get all calendar grid dates for a month (pad to full weeks, Sun-Sat). */
+function getMonthGrid(monthStart: Date): Date[] {
+  const dates: Date[] = [];
+  // Rewind to the Sunday of the week containing the 1st
+  const gridStart = new Date(monthStart);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+
+  // Build 6 weeks (42 days) to cover any month layout
+  for (let i = 0; i < 42; i++) {
+    dates.push(addDays(gridStart, i));
+  }
+
+  // Trim trailing week if all dates are in the next month
+  const lastWeekStart = 35;
+  const allNextMonth = dates
+    .slice(lastWeekStart)
+    .every(d => d.getMonth() !== monthStart.getMonth());
+  if (allNextMonth) {
+    dates.splice(lastWeekStart);
+  }
+
+  return dates;
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
 
-const PRIORITY_STYLES: Record<string, { dot: string; border: string; bg: string }> = {
-  now:   { dot: 'bg-red-500',    border: 'border-red-300',    bg: 'hover:bg-red-50' },
-  soon:  { dot: 'bg-yellow-400', border: 'border-yellow-300', bg: 'hover:bg-yellow-50' },
-  later: { dot: 'bg-gray-400',   border: 'border-gray-300',   bg: 'hover:bg-gray-50' },
+const PRIORITY_STYLES: Record<string, { dot: string; border: string; bg: string; bgDark: string }> = {
+  now:   { dot: 'bg-red-500',    border: 'border-red-300 dark:border-red-700',    bg: 'hover:bg-red-50',    bgDark: 'dark:hover:bg-red-950/30' },
+  soon:  { dot: 'bg-yellow-400', border: 'border-yellow-300 dark:border-yellow-700', bg: 'hover:bg-yellow-50', bgDark: 'dark:hover:bg-yellow-950/30' },
+  later: { dot: 'bg-gray-400',   border: 'border-gray-300 dark:border-gray-600',  bg: 'hover:bg-gray-50',   bgDark: 'dark:hover:bg-gray-800' },
 };
 
 function priorityStyle(priority: string) {
   return PRIORITY_STYLES[priority] ?? PRIORITY_STYLES.later;
 }
 
-// ── Main Component ───────────────────────────────────────────────────────────
+// -- Main Component -----------------------------------------------------------
 
 export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
   const today = useMemo(() => new Date(), []);
-  const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(today));
+  const [monthStart, setMonthStart] = useState<Date>(() => startOfMonth(today));
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   const [calendarLoading, setCalendarLoading] = useState(false);
 
   const todayKey = dateKey(today);
+  const currentMonth = monthStart.getMonth();
 
-  // Build the 7 day-keys for the current week
-  const weekDays = useMemo(
-    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart],
-  );
-  const weekDayKeys = useMemo(() => weekDays.map(dateKey), [weekDays]);
+  // Build the grid of dates for the current month view
+  const gridDates = useMemo(() => getMonthGrid(monthStart), [monthStart]);
+  const gridDateKeys = useMemo(() => gridDates.map(dateKey), [gridDates]);
 
-  // Fetch Google Calendar events when week changes
+  // Fetch Google Calendar events for the visible range
   useEffect(() => {
     async function fetchCalendarEvents() {
       setCalendarLoading(true);
       try {
-        const startDate = dateKey(weekStart);
-        const endDate = dateKey(addDays(weekStart, 6));
+        const startDate = dateKey(gridDates[0]);
+        const endDate = dateKey(gridDates[gridDates.length - 1]);
         const res = await fetch(`/api/command/calendar?start=${startDate}&end=${endDate}`, {
           credentials: 'include',
         });
@@ -102,12 +126,12 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
       }
     }
     fetchCalendarEvents();
-  }, [weekStart]);
+  }, [monthStart]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Bucket calendar events by date
   const eventBuckets = useMemo(() => {
     const buckets: Record<string, CalendarEvent[]> = {};
-    weekDayKeys.forEach(k => (buckets[k] = []));
+    gridDateKeys.forEach(k => (buckets[k] = []));
 
     calendarEvents.forEach(event => {
       const startStr = event.start;
@@ -119,21 +143,19 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
       }
     });
 
-    // Sort by start time
     Object.values(buckets).forEach(arr =>
       arr.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
     );
 
     return buckets;
-  }, [calendarEvents, weekDayKeys]);
+  }, [calendarEvents, gridDateKeys]);
 
-  // Filter out completed tasks, then bucket by date key
+  // Bucket tasks by date
   const { buckets, noDateTasks } = useMemo(() => {
     const buckets: Record<string, Task[]> = {};
     const noDateTasks: Task[] = [];
 
-    // Initialise empty buckets for every day in the week
-    weekDayKeys.forEach(k => (buckets[k] = []));
+    gridDateKeys.forEach(k => (buckets[k] = []));
 
     tasks.forEach(task => {
       if (task.status === 'done') return;
@@ -149,10 +171,8 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
       if (buckets[key]) {
         buckets[key].push(task);
       }
-      // Tasks outside this week are simply not shown
     });
 
-    // Sort each bucket by priority weight then position
     const priorityWeight: Record<string, number> = { now: 0, soon: 1, later: 2 };
     const sorter = (a: Task, b: Task) => {
       const pa = priorityWeight[a.priority] ?? 2;
@@ -164,26 +184,27 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
     noDateTasks.sort(sorter);
 
     return { buckets, noDateTasks };
-  }, [tasks, weekDayKeys]);
+  }, [tasks, gridDateKeys]);
 
-  const totalTasksThisWeek = weekDayKeys.reduce((sum, k) => sum + buckets[k].length, 0);
-  const totalEventsThisWeek = weekDayKeys.reduce((sum, k) => sum + eventBuckets[k].length, 0);
+  // -- Navigation -------------------------------------------------------------
 
-  // ── Navigation ─────────────────────────────────────────────────────────────
+  const goToday = () => setMonthStart(startOfMonth(today));
+  const goPrev  = () => setMonthStart(prev => addMonths(prev, -1));
+  const goNext  = () => setMonthStart(prev => addMonths(prev, 1));
 
-  const goToday = () => setWeekStart(startOfWeek(today));
-  const goPrev  = () => setWeekStart(prev => addDays(prev, -7));
-  const goNext  = () => setWeekStart(prev => addDays(prev, 7));
+  const isCurrentMonth =
+    monthStart.getMonth() === today.getMonth() &&
+    monthStart.getFullYear() === today.getFullYear();
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // -- Render -----------------------------------------------------------------
 
   return (
     <div className="flex flex-col h-full">
-      {/* ── Week Navigation Bar ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
+      {/* -- Month Navigation Bar -- */}
+      <div className="flex items-center justify-between p-4 bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
         <button
           onClick={goPrev}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors duration-200"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-neutral-300 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors duration-200"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -192,22 +213,25 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
         </button>
 
         <div className="flex items-center gap-3">
-          <h2 className="text-sm sm:text-base font-semibold text-gray-800">
-            {weekRangeLabel(weekStart)}
+          <h2 className="text-sm sm:text-base font-semibold text-gray-800 dark:text-neutral-100">
+            {monthLabel(monthStart)}
           </h2>
-          {dateKey(weekStart) !== dateKey(startOfWeek(today)) && (
+          {!isCurrentMonth && (
             <button
               onClick={goToday}
-              className="px-2.5 py-1 rounded-md text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors duration-200"
+              className="px-2.5 py-1 rounded-md text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors duration-200"
             >
               Today
             </button>
+          )}
+          {calendarLoading && (
+            <span className="text-xs text-blue-500">Syncing...</span>
           )}
         </div>
 
         <button
           onClick={goNext}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors duration-200"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-neutral-300 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors duration-200"
         >
           Next
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -216,28 +240,28 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
         </button>
       </div>
 
-      {/* ── Legend ─────────────────────────────────────────────────────── */}
+      {/* -- Legend -- */}
       {calendarConnected && (
-        <div className="flex items-center gap-4 px-4 py-2 text-[11px] text-gray-500 border-b border-gray-100">
+        <div className="flex items-center gap-4 px-4 py-2 text-[11px] text-gray-500 dark:text-neutral-400 border-b border-gray-100 dark:border-neutral-800">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Task (Now)
+            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Now
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Task (Soon)
+            <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" /> Soon
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Google Calendar
+            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Calendar
           </span>
-          {calendarLoading && (
-            <span className="text-blue-500 ml-auto">Syncing calendar...</span>
-          )}
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> AI completed
+          </span>
         </div>
       )}
 
-      {/* ── Google Calendar Connection Banner ─────────────────────────── */}
+      {/* -- Google Calendar Connection Banner -- */}
       {calendarConnected === false && (
-        <div className="mx-4 mt-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-blue-800">
+        <div className="mx-4 mt-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-300">
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
@@ -252,132 +276,140 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
         </div>
       )}
 
-      {/* ── Calendar Grid ───────────────────────────────────────────────── */}
+      {/* -- Calendar Grid -- */}
       <div className="flex-1 overflow-auto p-4">
-        {totalTasksThisWeek === 0 && totalEventsThisWeek === 0 && noDateTasks.length === 0 ? (
-          /* ── Empty Week State ──────────────────────────────────────── */
-          <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <svg className="w-12 h-12 mb-3 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <p className="text-lg font-medium">Nothing this week</p>
-            <p className="text-sm mt-1">No tasks or calendar events scheduled</p>
-          </div>
-        ) : (
-          <>
-            {/* 7-column grid — scrolls horizontally on mobile */}
-            <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden min-w-[640px]">
-              {/* ── Day Headers ──────────────────────────────────────── */}
-              {weekDays.map((day, i) => {
-                const key = weekDayKeys[i];
-                const isToday = key === todayKey;
-                return (
-                  <div
-                    key={`header-${key}`}
-                    className={`px-2 py-2.5 text-center text-xs font-semibold uppercase tracking-wide ${
-                      isToday
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'bg-gray-50 text-gray-500'
-                    }`}
-                  >
-                    <span className="hidden sm:inline">{DAY_NAMES[i]}</span>
-                    <span className="sm:hidden">{DAY_NAMES[i][0]}</span>
-                    <span
-                      className={`ml-1.5 inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                        isToday
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700'
-                      }`}
-                    >
-                      {day.getDate()}
-                    </span>
-                  </div>
-                );
-              })}
-
-              {/* ── Day Cells ────────────────────────────────────────── */}
-              {weekDays.map((day, i) => {
-                const key = weekDayKeys[i];
-                const isToday = key === todayKey;
-                const dayTasks = buckets[key];
-                const dayEvents = eventBuckets[key] || [];
-                const isEmpty = dayTasks.length === 0 && dayEvents.length === 0;
-
-                return (
-                  <div
-                    key={`cell-${key}`}
-                    className={`min-h-[120px] sm:min-h-[160px] p-1.5 flex flex-col gap-1 ${
-                      isToday ? 'bg-blue-50/40' : 'bg-white'
-                    }`}
-                  >
-                    {isEmpty && (
-                      <div className="flex-1 flex items-center justify-center">
-                        <span className="text-[10px] text-gray-300 select-none">--</span>
-                      </div>
-                    )}
-                    {/* Google Calendar events */}
-                    {dayEvents.map(event => (
-                      <CalendarEventCard key={event.id} event={event} />
-                    ))}
-                    {/* Tiker tasks */}
-                    {dayTasks.map(task => (
-                      <CalendarTaskCard
-                        key={task.id}
-                        task={task}
-                        onClick={() => onTaskClick(task)}
-                      />
-                    ))}
-                  </div>
-                );
-              })}
+        <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-neutral-700 rounded-lg overflow-hidden min-w-[640px]">
+          {/* -- Day Headers -- */}
+          {DAY_NAMES.map((name) => (
+            <div
+              key={`header-${name}`}
+              className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wide bg-gray-50 dark:bg-neutral-800 text-gray-500 dark:text-neutral-400"
+            >
+              <span className="hidden sm:inline">{name}</span>
+              <span className="sm:hidden">{name[0]}</span>
             </div>
+          ))}
 
-            {/* ── No-Date Section ────────────────────────────────────── */}
-            {noDateTasks.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2 px-1">
-                  No Date Assigned ({noDateTasks.length})
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {noDateTasks.map(task => (
+          {/* -- Day Cells -- */}
+          {gridDates.map((day, i) => {
+            const key = gridDateKeys[i];
+            const isToday = key === todayKey;
+            const isCurrentMonthDay = day.getMonth() === currentMonth;
+            const dayTasks = buckets[key] || [];
+            const dayEvents = eventBuckets[key] || [];
+            const hasReviewTasks = dayTasks.some(t => t.status === 'review');
+
+            return (
+              <div
+                key={`cell-${key}`}
+                className={`min-h-[90px] sm:min-h-[110px] p-1 flex flex-col gap-0.5 ${
+                  isToday
+                    ? 'bg-blue-50/60 dark:bg-blue-950/20'
+                    : isCurrentMonthDay
+                    ? 'bg-white dark:bg-neutral-900'
+                    : 'bg-gray-50/50 dark:bg-neutral-900/50'
+                }`}
+              >
+                {/* Date number */}
+                <div className="flex items-center justify-between px-0.5 mb-0.5">
+                  <span
+                    className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${
+                      isToday
+                        ? 'bg-blue-600 text-white'
+                        : isCurrentMonthDay
+                        ? 'text-gray-700 dark:text-neutral-300'
+                        : 'text-gray-400 dark:text-neutral-600'
+                    }`}
+                  >
+                    {day.getDate()}
+                  </span>
+                  {hasReviewTasks && (
+                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" title="AI completed work - needs review" />
+                  )}
+                </div>
+
+                {/* Events and tasks (capped to avoid overflow) */}
+                <div className="flex-1 space-y-0.5 overflow-hidden">
+                  {dayEvents.slice(0, 2).map(event => (
+                    <CalendarEventCard key={event.id} event={event} compact />
+                  ))}
+                  {dayTasks.slice(0, 2).map(task => (
                     <CalendarTaskCard
                       key={task.id}
                       task={task}
                       onClick={() => onTaskClick(task)}
+                      compact
                     />
                   ))}
+                  {(dayEvents.length + dayTasks.length) > 4 && (
+                    <span className="text-[9px] text-gray-400 dark:text-neutral-500 pl-1">
+                      +{dayEvents.length + dayTasks.length - 4} more
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
-          </>
+            );
+          })}
+        </div>
+
+        {/* -- No-Date Section -- */}
+        {noDateTasks.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-neutral-500 mb-2 px-1">
+              No Date Assigned ({noDateTasks.length})
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {noDateTasks.map(task => (
+                <CalendarTaskCard
+                  key={task.id}
+                  task={task}
+                  onClick={() => onTaskClick(task)}
+                />
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-// ── Task Card ────────────────────────────────────────────────────────────────
+// -- Task Card ----------------------------------------------------------------
 
-function CalendarTaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
+function CalendarTaskCard({
+  task,
+  onClick,
+  compact = false,
+}: {
+  task: Task;
+  onClick: () => void;
+  compact?: boolean;
+}) {
   const style = priorityStyle(task.priority);
+  const isReview = task.status === 'review';
 
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-2 py-1.5 rounded-md border text-xs transition-all duration-200 cursor-pointer group ${style.border} ${style.bg} bg-white hover:shadow-sm`}
+      className={`w-full text-left rounded-md border text-xs transition-all duration-200 cursor-pointer group ${style.border} ${style.bg} ${style.bgDark} bg-white dark:bg-neutral-800 hover:shadow-sm ${
+        compact ? 'px-1.5 py-0.5' : 'px-2 py-1.5'
+      } ${isReview ? 'ring-1 ring-purple-400 dark:ring-purple-600' : ''}`}
     >
-      <div className="flex items-start gap-1.5">
+      <div className="flex items-start gap-1">
         {/* Priority dot */}
         <span
-          className={`mt-0.5 flex-shrink-0 w-2 h-2 rounded-full ${style.dot}`}
-          aria-label={`Priority: ${task.priority}`}
+          className={`mt-0.5 flex-shrink-0 w-1.5 h-1.5 rounded-full ${
+            isReview ? 'bg-purple-500' : style.dot
+          }`}
         />
-        <span className="font-medium text-gray-800 leading-tight line-clamp-2 group-hover:text-gray-900">
+        <span className={`font-medium text-gray-800 dark:text-neutral-200 leading-tight group-hover:text-gray-900 dark:group-hover:text-white ${
+          compact ? 'line-clamp-1 text-[10px]' : 'line-clamp-2'
+        }`}>
           {task.title}
         </span>
       </div>
-      {task.assigned_human && (
-        <span className="block mt-0.5 text-[10px] text-gray-400 truncate pl-3.5">
+      {!compact && task.assigned_human && (
+        <span className="block mt-0.5 text-[10px] text-gray-400 dark:text-neutral-500 truncate pl-3">
           {task.assigned_human}
         </span>
       )}
@@ -385,9 +417,9 @@ function CalendarTaskCard({ task, onClick }: { task: Task; onClick: () => void }
   );
 }
 
-// ── Google Calendar Event Card ───────────────────────────────────────────────
+// -- Google Calendar Event Card -----------------------------------------------
 
-function CalendarEventCard({ event }: { event: CalendarEvent }) {
+function CalendarEventCard({ event, compact = false }: { event: CalendarEvent; compact?: boolean }) {
   const startTime = event.allDay
     ? 'All day'
     : new Date(event.start).toLocaleTimeString('en-US', {
@@ -401,18 +433,24 @@ function CalendarEventCard({ event }: { event: CalendarEvent }) {
       href={event.htmlLink || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-full text-left px-2 py-1.5 rounded-md border border-green-200 bg-green-50 hover:bg-green-100 text-xs transition-all duration-200 cursor-pointer group hover:shadow-sm block"
+      className={`w-full text-left rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/40 text-xs transition-all duration-200 cursor-pointer group hover:shadow-sm block ${
+        compact ? 'px-1.5 py-0.5' : 'px-2 py-1.5'
+      }`}
     >
-      <div className="flex items-start gap-1.5">
-        <span className="mt-0.5 flex-shrink-0 w-2 h-2 rounded-full bg-green-500" />
-        <span className="font-medium text-green-900 leading-tight line-clamp-2 group-hover:text-green-950">
-          {event.title}
+      <div className="flex items-start gap-1">
+        <span className={`mt-0.5 flex-shrink-0 rounded-full bg-green-500 ${compact ? 'w-1.5 h-1.5' : 'w-2 h-2'}`} />
+        <span className={`font-medium text-green-900 dark:text-green-300 leading-tight group-hover:text-green-950 dark:group-hover:text-green-200 ${
+          compact ? 'line-clamp-1 text-[10px]' : 'line-clamp-2'
+        }`}>
+          {compact ? event.title : `${startTime} ${event.title}`}
         </span>
       </div>
-      <span className="block mt-0.5 text-[10px] text-green-600 pl-3.5">
-        {startTime}
-        {event.location && ` \u00B7 ${event.location}`}
-      </span>
+      {!compact && (
+        <span className="block mt-0.5 text-[10px] text-green-600 dark:text-green-500 pl-3">
+          {startTime}
+          {event.location && ` \u00B7 ${event.location}`}
+        </span>
+      )}
     </a>
   );
 }

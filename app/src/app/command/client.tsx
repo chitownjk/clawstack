@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { Agent, Task, Activity, TaskStatus, getAgents, getTasks, getActivities, updateTaskStatus, deleteTask, getTaskComments } from '@/lib/mission-control'
 import AgentCard from '@/components/AgentCard'
 import KanbanColumn from '@/components/KanbanColumn'
-import ActivityFeed from '@/components/ActivityFeed'
 import TaskDetailModal from '@/components/TaskDetailModal'
 import SimpleCreateTaskModal from '@/components/SimpleCreateTaskModal'
 import DeleteConfirmModal from '@/components/DeleteConfirmModal'
@@ -528,19 +527,56 @@ export default function MissionControlClient() {
           />
         )}
 
-        {/* Activity Feed - Below Board */}
-        <div className="mt-6">
-          <div className="bg-white rounded-lg p-6">
-            <h2 className="font-semibold text-gray-900 mb-4 flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                LIVE FEED
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              </span>
-              <span className="text-sm font-normal text-gray-500">{activities.length} recent</span>
-            </h2>
-            <ActivityFeed activities={activities} />
-          </div>
-        </div>
+        {/* AI Activity History - Shows completed AI work */}
+        {(() => {
+          const reviewTasks = tasks.filter(t => t.status === 'review');
+          const recentlyDone = tasks.filter(t => t.status === 'done' && t.updated_at && Date.now() - new Date(t.updated_at).getTime() < 7 * 24 * 60 * 60 * 1000);
+          const aiWorkTasks = [...reviewTasks, ...recentlyDone].sort((a, b) =>
+            new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime()
+          );
+          if (aiWorkTasks.length === 0) return null;
+          return (
+            <div className="mt-6">
+              <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 border border-gray-200 dark:border-neutral-700">
+                <h2 className="font-semibold text-gray-900 dark:text-neutral-100 mb-4 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    AI Activity
+                    {reviewTasks.length > 0 && (
+                      <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium rounded-full">
+                        {reviewTasks.length} needs review
+                      </span>
+                    )}
+                  </span>
+                </h2>
+                <div className="space-y-2">
+                  {aiWorkTasks.slice(0, 10).map(task => (
+                    <button
+                      key={task.id}
+                      onClick={() => setSelectedTask(task)}
+                      className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors group"
+                    >
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        task.status === 'review' ? 'bg-purple-500 animate-pulse' : 'bg-green-500'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-800 dark:text-neutral-200 group-hover:text-gray-900 dark:group-hover:text-white truncate block">
+                          {task.title}
+                        </span>
+                        <span className="text-xs text-gray-400 dark:text-neutral-500">
+                          {task.status === 'review' ? 'Completed by AI - needs review' : 'Done'}
+                          {task.updated_at && ` \u00B7 ${new Date(task.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                        </span>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-400 dark:text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
           </>
         )}
 
