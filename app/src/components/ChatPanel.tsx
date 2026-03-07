@@ -123,7 +123,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
       if (!response.ok) {
         const data = await response.json()
         if (data.code === 'UPGRADE_REQUIRED') {
-          setError('AI chat requires a Pro plan. Upgrade to start chatting with your tasks.')
+          setError('AI chat requires the Solo plan or higher. Upgrade to start chatting with your tasks.')
         } else if (data.code === 'RATE_LIMITED') {
           setRateLimited(true)
           setError('You\'ve hit the rate limit. Take a breather and try again in a minute.')
