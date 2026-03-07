@@ -131,17 +131,20 @@ export async function GET(request: Request) {
         connected: true,
       })
     } catch (fetchError: any) {
-      console.error('Composio calendar fetch error:', fetchError?.message || fetchError)
-      console.error('Composio calendar fetch error detail:', JSON.stringify(fetchError, null, 2).slice(0, 1000))
+      const errMsg = fetchError?.message || String(fetchError)
+      console.error('Composio calendar fetch error:', errMsg)
+      console.error('Composio calendar fetch error stack:', fetchError?.stack?.slice(0, 500))
 
-      // Connection exists but fetch failed -- still report connected: true
-      // so the CalendarView doesn't show the "Connect" banner
+      const isAuthError = errMsg.includes('auth') || errMsg.includes('token') || errMsg.includes('credential') || errMsg.includes('401') || errMsg.includes('403')
+
       return NextResponse.json({
         events: [],
         connected: true,
-        message: fetchError.message?.includes('auth') || fetchError.message?.includes('token')
+        message: isAuthError
           ? 'Calendar token may have expired. Try reconnecting in Settings.'
           : 'Failed to fetch calendar events. Try again later.',
+        _error: debug ? errMsg : undefined,
+        _errorStack: debug ? fetchError?.stack?.slice(0, 500) : undefined,
       })
     }
   } catch (error) {
