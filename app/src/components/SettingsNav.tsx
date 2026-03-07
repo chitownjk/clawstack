@@ -9,6 +9,7 @@ export default function SettingsNav() {
   const tabs = [
     { href: '/settings', label: 'Account' },
     { href: '/settings/connections', label: 'Connections' },
+    { href: '/settings/briefing', label: 'Briefing' },
     { href: '/settings/execution', label: 'Execution' },
     { href: '/settings/usage', label: 'Usage' },
   ];

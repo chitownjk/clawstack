@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task } from '@/types/views';
 import { Agent, Activity } from '@/lib/mission-control';
+import MeetingPrepCard from '@/components/MeetingPrepCard';
 
 interface CalendarEvent {
   id: string;
@@ -303,27 +304,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
             {sortedEvents.length > 0 ? (
               <div className="space-y-2">
                 {sortedEvents.map(event => (
-                  <a
-                    key={event.id}
-                    href={event.htmlLink || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start gap-3 p-2 rounded-md hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors group"
-                  >
-                    <div className="w-1.5 rounded-full bg-green-500 self-stretch min-h-[28px] flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 group-hover:text-green-800 dark:group-hover:text-green-300 truncate">
-                        {event.title}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        {event.allDay
-                          ? 'All day'
-                          : new Date(event.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                        {event.location && ` \u00B7 ${event.location}`}
-                        {event.attendees && event.attendees > 0 && ` \u00B7 ${event.attendees} attendees`}
-                      </p>
-                    </div>
-                  </a>
+                  <MeetingPrepCard key={event.id} event={event} />
                 ))}
               </div>
             ) : calendarConnected ? (

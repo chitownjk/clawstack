@@ -24,13 +24,13 @@
 |---|---------|--------|------------|-------|-------|
 | 9 | Gmail Scan: Bills & Due Dates | Not Started | P0 #3 | In email/scan | Already supported in classification (type: "bill"). Needs recurring sender patterns. |
 | 10 | Gmail Scan: Unresponded Invites | Not Started | P0 #3 | In email/scan | Flag calendar invites with no RSVP. |
-| 11 | Meeting Prep: Attendee Lookup | Not Started | None | `app/src/app/api/meeting-prep/[eventId]/route.ts` | LinkedIn via Composio. |
-| 12 | Meeting Prep: Prior Context | Not Started | #11 | In meeting-prep route | Search tasks/comments by attendee. |
-| 13 | Meeting Prep: Briefing Card | Not Started | #11, #12 | `app/src/components/MeetingPrepCard.tsx` | Attendee bios, talking points. |
-| 14 | Smart Reminders: Escalation | Not Started | None | `app/src/app/api/reminders/route.ts`, new reminders table | Re-notify at +1d, +3d, +7d. |
+| 11 | Meeting Prep: Attendee Lookup | Done | None | `app/src/app/api/meeting-prep/route.ts` | LinkedIn via Composio with slug fallback. Email domain parsing fallback. |
+| 12 | Meeting Prep: Prior Context | Done | #11 | In meeting-prep route | Searches tasks + activities by attendee name/email/event keywords. Decrypts encrypted fields. |
+| 13 | Meeting Prep: Briefing Card | Done | #11, #12 | `app/src/components/MeetingPrepCard.tsx` | Attendee bios, talking points, questions. Wired into DailyBriefing calendar section. |
+| 14 | Smart Reminders: Escalation | Done | None | `app/src/app/api/reminders/route.ts`, `supabase/migrations/020-reminders.sql` | 3-stage escalation (1d/3d/7d). Snooze, dismiss, complete. Email escalation flag. |
 | 15 | Briefing Email Delivery | Not Started | P0 #2, #8 | `app/src/components/BriefingEmail.tsx` | HTML email via Nodemailer or Resend. TODO stub in cron route. |
-| 16 | User Preferences: Briefing | Not Started | P0 #5 | Settings UI, user_preferences table | Delivery time, email opt-in, sections. DB columns already added. |
-| 17 | Landing Page Rewrite | Not Started | None | `app/src/app/page.tsx` | New hero, messaging. "Your life, handled." |
+| 16 | User Preferences: Briefing | Done | P0 #5 | `app/src/app/settings/briefing/page.tsx` | Delivery time, timezone, email opt-in, section toggles, reminder escalation config. |
+| 17 | Landing Page Rewrite | Done | None | `app/src/app/page.tsx` | "Your life, handled." New hero, problem section, 4 feature showcases with mockups, updated pricing with new features. |
 | 18 | Fix Broken Integrations | Not Started | None | Settings/connections | X/Twitter broken. LinkedIn untested. |
 
 ## P2: Intelligence Layer (Weeks 5-10)
@@ -86,6 +86,10 @@
 
 | Feature | Date | Commit |
 |---------|------|--------|
+| P1 #11-13: Meeting prep system | 2026-03-07 | Attendee lookup (LinkedIn + email), prior context search, MeetingPrepCard component |
+| P1 #14: Smart reminders | 2026-03-07 | Migration 020, reminders API with 3-stage escalation, snooze/dismiss/complete |
+| P1 #16: Briefing settings | 2026-03-07 | Settings page with time, timezone, email, section toggles, reminder config |
+| P1 #17: Landing page rewrite | 2026-03-07 | "Your life, handled." New hero, problem, features, pricing with life operator positioning |
 | P0 #1-#8: Full briefing system | 2026-03-07 | DB migration, briefing engine, Gmail scan, auto-create events, tab redesign, cron job |
 | Google Calendar sync (events display) | 2026-03-07 | Fixed Composio slug to GOOGLECALENDAR_EVENTS_LIST |
 | Card modal layout redesign | 2026-03-07 | Split status/actions into two rows |
