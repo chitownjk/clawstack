@@ -577,9 +577,10 @@ export async function GET(request: Request) {
       if (agentId) {
         assignedAgentIds = [agentId]
       } else {
-        for (const [name, id] of agentMap) {
-          if (name.toLowerCase().includes(taskDef.agent_name.toLowerCase())) {
-            assignedAgentIds = [id as string]
+        const entries = Array.from(agentMap.entries())
+        for (let i = 0; i < entries.length; i++) {
+          if (entries[i][0].toLowerCase().includes(taskDef.agent_name.toLowerCase())) {
+            assignedAgentIds = [entries[i][1] as string]
             break
           }
         }
