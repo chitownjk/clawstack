@@ -162,7 +162,7 @@ export default function UsagePage() {
                   </h2>
                   <div className="flex items-center gap-3">
                     <span className="text-2xl font-bold text-blue-600">
-                      {usage.plan_tier === 'cloud-plus' ? 'Team' : (usage.plan_tier === 'cloud' || usage.plan_tier === 'cloud-developer') ? 'Pro' : 'Free'}
+                      {usage.plan_tier === 'cloud-plus' ? 'Team' : (usage.plan_tier === 'cloud' || usage.plan_tier === 'cloud-developer') ? 'Solo' : 'Free'}
                     </span>
                     <span className="text-sm text-neutral-600 dark:text-neutral-400">
                       {usage.tasks_limit} tasks/month

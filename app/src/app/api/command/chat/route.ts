@@ -9,7 +9,7 @@ const MAX_MESSAGE_LENGTH = 2000       // Max chars per user message
 const MAX_MESSAGES_PER_REQUEST = 20   // Max conversation turns sent to API
 const MAX_BODY_SIZE = 50_000          // ~50KB max request body
 const MAX_TOKENS_RESPONSE = 1024      // Keep responses concise
-const DEFAULT_MODEL = 'claude-haiku-4-5-20241022'  // Fast + cheap for chat
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001'  // Fast + cheap for chat
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000  // 1 hour window
 
 // Admin emails bypass plan checks and rate limits
@@ -319,10 +319,10 @@ export async function POST(request: Request) {
         } catch (err: any) {
           console.error('Chat streaming error:', err)
 
-          // Don't leak internal error details to client
+          // Temporarily expose error for debugging
           const safeMessage = err.status === 429
             ? 'AI provider rate limited. Please try again in a moment.'
-            : 'Something went wrong. Please try again.'
+            : `Chat error: ${err.message || err.toString()} (status: ${err.status || 'unknown'})`
 
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: 'error', message: safeMessage })}\n\n`)
