@@ -62,6 +62,13 @@ export interface Task {
   created_at: string;
   updated_at: string;
   completed_at?: string;
+  recurrence_rule?: RecurrenceRule | null;
+}
+
+export interface RecurrenceRule {
+  freq: 'daily' | 'weekdays' | 'weekends' | 'weekly' | 'monthly';
+  days?: number[];       // 0=Sun, 1=Mon, ... 6=Sat (for weekly)
+  endDate?: string;      // ISO date string
 }
 
 export interface TaskFilter {

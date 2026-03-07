@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Task } from '@/types/views';
+import { Task, RecurrenceRule } from '@/types/views';
 
 interface CalendarEvent {
   id: string;
@@ -19,52 +19,44 @@ interface CalendarEvent {
 interface CalendarViewProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
+  onDayClick?: (date: Date) => void;
 }
 
 // -- Helpers ------------------------------------------------------------------
 
-/** First day of the month. */
 function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
-/** Add `n` months to a date (pure). */
 function addMonths(date: Date, n: number): Date {
   const d = new Date(date);
   d.setMonth(d.getMonth() + n);
   return d;
 }
 
-/** Add `n` days to a date (pure). */
 function addDays(date: Date, n: number): Date {
   const d = new Date(date);
   d.setDate(d.getDate() + n);
   return d;
 }
 
-/** YYYY-MM-DD key for bucketing. */
 function dateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-/** Format like "March 2026" */
 function monthLabel(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-/** Get all calendar grid dates for a month (pad to full weeks, Sun-Sat). */
 function getMonthGrid(monthStart: Date): Date[] {
   const dates: Date[] = [];
-  // Rewind to the Sunday of the week containing the 1st
   const gridStart = new Date(monthStart);
   gridStart.setDate(gridStart.getDate() - gridStart.getDay());
 
-  // Build 6 weeks (42 days) to cover any month layout
   for (let i = 0; i < 42; i++) {
     dates.push(addDays(gridStart, i));
   }
 
-  // Trim trailing week if all dates are in the next month
   const lastWeekStart = 35;
   const allNextMonth = dates
     .slice(lastWeekStart)
@@ -74,6 +66,62 @@ function getMonthGrid(monthStart: Date): Date[] {
   }
 
   return dates;
+}
+
+/** Check if a recurring task should appear on a given date. */
+function matchesRecurrence(rule: RecurrenceRule, taskDueDate: string, targetDate: Date): boolean {
+  const start = new Date(taskDueDate);
+  const startKey = dateKey(start);
+  const targetKey = dateKey(targetDate);
+
+  // Don't generate instance on the original due date (it's already shown)
+  if (startKey === targetKey) return false;
+
+  // Only generate instances after the start date
+  if (targetDate < start) return false;
+
+  // Check end date
+  if (rule.endDate && targetKey > rule.endDate) return false;
+
+  const dayOfWeek = targetDate.getDay(); // 0=Sun
+
+  switch (rule.freq) {
+    case 'daily':
+      return true;
+    case 'weekdays':
+      return dayOfWeek >= 1 && dayOfWeek <= 5;
+    case 'weekends':
+      return dayOfWeek === 0 || dayOfWeek === 6;
+    case 'weekly':
+      if (rule.days && rule.days.length > 0) {
+        return rule.days.includes(dayOfWeek);
+      }
+      // Default: same day of week as original
+      return dayOfWeek === start.getDay();
+    case 'monthly':
+      return targetDate.getDate() === start.getDate();
+    default:
+      return false;
+  }
+}
+
+/** Generate virtual recurring task instances for the visible grid. */
+function generateRecurringInstances(task: Task, gridDates: Date[]): Task[] {
+  if (!task.recurrence_rule || !task.due_date) return [];
+
+  const instances: Task[] = [];
+
+  for (const gridDate of gridDates) {
+    if (matchesRecurrence(task.recurrence_rule, task.due_date, gridDate)) {
+      instances.push({
+        ...task,
+        id: `${task.id}__recur__${dateKey(gridDate)}`,
+        due_date: gridDate.toISOString(),
+      });
+    }
+  }
+
+  return instances;
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
@@ -90,7 +138,7 @@ function priorityStyle(priority: string) {
 
 // -- Main Component -----------------------------------------------------------
 
-export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) {
+export default function CalendarView({ tasks, onTaskClick, onDayClick }: CalendarViewProps) {
   const today = useMemo(() => new Date(), []);
   const [monthStart, setMonthStart] = useState<Date>(() => startOfMonth(today));
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -100,11 +148,10 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
   const todayKey = dateKey(today);
   const currentMonth = monthStart.getMonth();
 
-  // Build the grid of dates for the current month view
   const gridDates = useMemo(() => getMonthGrid(monthStart), [monthStart]);
   const gridDateKeys = useMemo(() => gridDates.map(dateKey), [gridDates]);
 
-  // Fetch Google Calendar events for the visible range
+  // Fetch Google Calendar events
   useEffect(() => {
     async function fetchCalendarEvents() {
       setCalendarLoading(true);
@@ -150,13 +197,14 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
     return buckets;
   }, [calendarEvents, gridDateKeys]);
 
-  // Bucket tasks by date
+  // Bucket tasks by date (including recurring virtual instances)
   const { buckets, noDateTasks } = useMemo(() => {
     const buckets: Record<string, Task[]> = {};
     const noDateTasks: Task[] = [];
 
     gridDateKeys.forEach(k => (buckets[k] = []));
 
+    // First pass: bucket real tasks
     tasks.forEach(task => {
       if (task.status === 'done') return;
 
@@ -173,6 +221,19 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
       }
     });
 
+    // Second pass: generate recurring virtual instances
+    tasks.forEach(task => {
+      if (task.status === 'done' || !task.recurrence_rule || !task.due_date) return;
+
+      const instances = generateRecurringInstances(task, gridDates);
+      instances.forEach(inst => {
+        const key = dateKey(new Date(inst.due_date!));
+        if (buckets[key]) {
+          buckets[key].push(inst);
+        }
+      });
+    });
+
     const priorityWeight: Record<string, number> = { now: 0, soon: 1, later: 2 };
     const sorter = (a: Task, b: Task) => {
       const pa = priorityWeight[a.priority] ?? 2;
@@ -184,10 +245,9 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
     noDateTasks.sort(sorter);
 
     return { buckets, noDateTasks };
-  }, [tasks, gridDateKeys]);
+  }, [tasks, gridDates, gridDateKeys]);
 
-  // -- Navigation -------------------------------------------------------------
-
+  // Navigation
   const goToday = () => setMonthStart(startOfMonth(today));
   const goPrev  = () => setMonthStart(prev => addMonths(prev, -1));
   const goNext  = () => setMonthStart(prev => addMonths(prev, 1));
@@ -196,11 +256,17 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
     monthStart.getMonth() === today.getMonth() &&
     monthStart.getFullYear() === today.getFullYear();
 
+  function handleDayClick(day: Date, e: React.MouseEvent) {
+    // Only fire if clicking the cell background, not a task/event card
+    if ((e.target as HTMLElement).closest('[data-calendar-item]')) return;
+    onDayClick?.(day);
+  }
+
   // -- Render -----------------------------------------------------------------
 
   return (
     <div className="flex flex-col h-full">
-      {/* -- Month Navigation Bar -- */}
+      {/* Month Navigation */}
       <div className="flex items-center justify-between p-4 bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700">
         <button
           onClick={goPrev}
@@ -240,7 +306,7 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
         </button>
       </div>
 
-      {/* -- Legend -- */}
+      {/* Legend */}
       {calendarConnected && (
         <div className="flex items-center gap-4 px-4 py-2 text-[11px] text-gray-500 dark:text-neutral-400 border-b border-gray-100 dark:border-neutral-800">
           <span className="flex items-center gap-1.5">
@@ -258,7 +324,7 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
         </div>
       )}
 
-      {/* -- Google Calendar Connection Banner -- */}
+      {/* Google Calendar Connection Banner */}
       {calendarConnected === false && (
         <div className="mx-4 mt-3 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-blue-800 dark:text-blue-300">
@@ -276,10 +342,10 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
         </div>
       )}
 
-      {/* -- Calendar Grid -- */}
+      {/* Calendar Grid */}
       <div className="flex-1 overflow-auto p-4">
         <div className="grid grid-cols-7 gap-px bg-gray-200 dark:bg-neutral-700 rounded-lg overflow-hidden min-w-[640px]">
-          {/* -- Day Headers -- */}
+          {/* Day Headers */}
           {DAY_NAMES.map((name) => (
             <div
               key={`header-${name}`}
@@ -290,7 +356,7 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
             </div>
           ))}
 
-          {/* -- Day Cells -- */}
+          {/* Day Cells */}
           {gridDates.map((day, i) => {
             const key = gridDateKeys[i];
             const isToday = key === todayKey;
@@ -298,11 +364,15 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
             const dayTasks = buckets[key] || [];
             const dayEvents = eventBuckets[key] || [];
             const hasReviewTasks = dayTasks.some(t => t.status === 'review');
+            const totalItems = dayEvents.length + dayTasks.length;
 
             return (
               <div
                 key={`cell-${key}`}
-                className={`min-h-[90px] sm:min-h-[110px] p-1 flex flex-col gap-0.5 ${
+                onClick={(e) => handleDayClick(day, e)}
+                className={`min-h-[90px] sm:min-h-[110px] p-1 flex flex-col gap-0.5 group/cell relative ${
+                  onDayClick ? 'cursor-pointer' : ''
+                } ${
                   isToday
                     ? 'bg-blue-50/60 dark:bg-blue-950/20'
                     : isCurrentMonthDay
@@ -310,7 +380,7 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
                     : 'bg-gray-50/50 dark:bg-neutral-900/50'
                 }`}
               >
-                {/* Date number */}
+                {/* Date number + add button */}
                 <div className="flex items-center justify-between px-0.5 mb-0.5">
                   <span
                     className={`text-xs font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${
@@ -323,27 +393,55 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
                   >
                     {day.getDate()}
                   </span>
-                  {hasReviewTasks && (
-                    <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" title="AI completed work - needs review" />
-                  )}
+                  <div className="flex items-center gap-1">
+                    {hasReviewTasks && (
+                      <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" title="AI completed work - needs review" />
+                    )}
+                    {onDayClick && (
+                      <span
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-neutral-400 dark:text-neutral-500 opacity-0 group-hover/cell:opacity-100 transition-opacity hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400"
+                        title="Add task"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Events and tasks (capped to avoid overflow) */}
+                {/* Events and tasks */}
                 <div className="flex-1 space-y-0.5 overflow-hidden">
                   {dayEvents.slice(0, 2).map(event => (
-                    <CalendarEventCard key={event.id} event={event} compact />
+                    <div key={event.id} data-calendar-item>
+                      <CalendarEventCard event={event} compact />
+                    </div>
                   ))}
-                  {dayTasks.slice(0, 2).map(task => (
-                    <CalendarTaskCard
-                      key={task.id}
-                      task={task}
-                      onClick={() => onTaskClick(task)}
-                      compact
-                    />
-                  ))}
-                  {(dayEvents.length + dayTasks.length) > 4 && (
+                  {dayTasks.slice(0, 2).map(task => {
+                    const isVirtual = task.id.includes('__recur__');
+                    return (
+                      <div key={task.id} data-calendar-item>
+                        <CalendarTaskCard
+                          task={task}
+                          onClick={() => {
+                            if (isVirtual) {
+                              // Click through to parent task
+                              const parentId = task.id.split('__recur__')[0];
+                              const parentTask = tasks.find(t => t.id === parentId);
+                              if (parentTask) onTaskClick(parentTask);
+                            } else {
+                              onTaskClick(task);
+                            }
+                          }}
+                          compact
+                          isRecurring={!!task.recurrence_rule}
+                        />
+                      </div>
+                    );
+                  })}
+                  {totalItems > 4 && (
                     <span className="text-[9px] text-gray-400 dark:text-neutral-500 pl-1">
-                      +{dayEvents.length + dayTasks.length - 4} more
+                      +{totalItems - 4} more
                     </span>
                   )}
                 </div>
@@ -352,7 +450,7 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
           })}
         </div>
 
-        {/* -- No-Date Section -- */}
+        {/* No-Date Section */}
         {noDateTasks.length > 0 && (
           <div className="mt-4">
             <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-neutral-500 mb-2 px-1">
@@ -364,6 +462,7 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
                   key={task.id}
                   task={task}
                   onClick={() => onTaskClick(task)}
+                  isRecurring={!!task.recurrence_rule}
                 />
               ))}
             </div>
@@ -380,17 +479,19 @@ function CalendarTaskCard({
   task,
   onClick,
   compact = false,
+  isRecurring = false,
 }: {
   task: Task;
   onClick: () => void;
   compact?: boolean;
+  isRecurring?: boolean;
 }) {
   const style = priorityStyle(task.priority);
   const isReview = task.status === 'review';
 
   return (
     <button
-      onClick={onClick}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
       className={`w-full text-left rounded-md border text-xs transition-all duration-200 cursor-pointer group ${style.border} ${style.bg} ${style.bgDark} bg-white dark:bg-neutral-800 hover:shadow-sm ${
         compact ? 'px-1.5 py-0.5' : 'px-2 py-1.5'
       } ${isReview ? 'ring-1 ring-purple-400 dark:ring-purple-600' : ''}`}
@@ -402,11 +503,16 @@ function CalendarTaskCard({
             isReview ? 'bg-purple-500' : style.dot
           }`}
         />
-        <span className={`font-medium text-gray-800 dark:text-neutral-200 leading-tight group-hover:text-gray-900 dark:group-hover:text-white ${
+        <span className={`font-medium text-gray-800 dark:text-neutral-200 leading-tight group-hover:text-gray-900 dark:group-hover:text-white flex-1 ${
           compact ? 'line-clamp-1 text-[10px]' : 'line-clamp-2'
         }`}>
           {task.title}
         </span>
+        {isRecurring && (
+          <span className="flex-shrink-0 text-[9px] text-neutral-400 dark:text-neutral-500 mt-0.5" title="Recurring">
+            ↻
+          </span>
+        )}
       </div>
       {!compact && task.assigned_human && (
         <span className="block mt-0.5 text-[10px] text-gray-400 dark:text-neutral-500 truncate pl-3">
@@ -433,6 +539,7 @@ function CalendarEventCard({ event, compact = false }: { event: CalendarEvent; c
       href={event.htmlLink || '#'}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
       className={`w-full text-left rounded-md border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 hover:bg-green-100 dark:hover:bg-green-900/40 text-xs transition-all duration-200 cursor-pointer group hover:shadow-sm block ${
         compact ? 'px-1.5 py-0.5' : 'px-2 py-1.5'
       }`}

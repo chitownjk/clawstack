@@ -47,6 +47,7 @@ export default function MissionControlClient() {
   const [chatOpen, setChatOpen] = useState(false)
   const [chatTask, setChatTask] = useState<Task | null>(null)
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
+  const [createTaskDate, setCreateTaskDate] = useState<string | null>(null)
 
   // Configure drag sensors with proper activation constraints
   const sensors = useSensors(
@@ -522,6 +523,11 @@ export default function MissionControlClient() {
           <CalendarView
             tasks={filteredTasks}
             onTaskClick={setSelectedTask}
+            onDayClick={(date) => {
+              const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+              setCreateTaskDate(key);
+              setShowCreateTask(true);
+            }}
           />
         )}
 
@@ -612,8 +618,9 @@ export default function MissionControlClient() {
       {showCreateTask && (
         <SimpleCreateTaskModal
           isOpen={showCreateTask}
-          onClose={() => setShowCreateTask(false)}
+          onClose={() => { setShowCreateTask(false); setCreateTaskDate(null); }}
           onTaskCreated={loadData}
+          initialDate={createTaskDate || undefined}
         />
       )}
 
