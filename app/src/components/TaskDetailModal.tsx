@@ -313,178 +313,185 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
             </div>
           )}
 
-          {/* Status / Assignment / Actions row */}
-          <div className="flex items-center justify-between mt-4 text-sm">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-700 dark:text-neutral-300">Status:</span>
-                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs">
-                  {task.status}
-                </span>
-              </div>
-
-              {/* Agent assignment area */}
-              <div className="flex items-center gap-2 relative">
-                <span className="font-medium text-gray-700 dark:text-neutral-300">Assigned:</span>
-                {assignedAgents.length > 0 ? (
-                  <div className="flex gap-1">
-                    {assignedAgents.map(agent => (
-                      <span key={agent.id} title={agent.name} className="text-gray-900 dark:text-neutral-100 text-sm">
-                        {agent.emoji} {agent.name}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-gray-400 dark:text-neutral-500 text-xs">None</span>
-                )}
-                <button
-                  onClick={() => setShowAgentPicker(!showAgentPicker)}
-                  className="ml-1 px-2 py-0.5 text-xs rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors font-medium"
-                  title="Assign or remove AI agent"
-                >
-                  {assignedAgents.length > 0 ? 'Edit' : '+ AI'}
-                </button>
-
-                {/* Agent picker dropdown */}
-                {showAgentPicker && (
-                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
-                    {agents.map(agent => {
-                      const isAssigned = task.assigned_agent_ids?.includes(agent.id)
-                      return (
-                        <button
-                          key={agent.id}
-                          onClick={() => handleAssignAgent(agent.id)}
-                          disabled={assigningAgent}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
-                            isAssigned
-                              ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
-                              : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-50 dark:hover:bg-neutral-700'
-                          } ${assigningAgent ? 'opacity-50' : ''}`}
-                        >
-                          <span>{agent.emoji}</span>
-                          <span>{agent.name}</span>
-                          {isAssigned && <span className="ml-auto text-purple-500">&#10003;</span>}
-                        </button>
-                      )
-                    })}
-                    {agents.length === 0 && (
-                      <div className="px-3 py-2 text-sm text-gray-400 dark:text-neutral-500">No agents available</div>
-                    )}
-                  </div>
-                )}
-              </div>
+          {/* Status & Assignment Row */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-700 dark:text-neutral-300">Status:</span>
+              <span className="px-2.5 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                {task.status}
+              </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Edit / Save buttons */}
-              {editing ? (
-                <>
-                  <button
-                    onClick={() => {
-                      setEditing(false)
-                      setEditTitle(task.title)
-                      setEditDescription(task.description || '')
-                      setEditPriority(task.priority)
-                      setEditDueDate(task.due_date || '')
-                      setEditRecurrence(task.recurrence_rule?.freq || 'none')
-                      setEditWeeklyDays(task.recurrence_rule?.days || [])
-                    }}
-                    className="px-3 py-1 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 rounded text-sm font-medium transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveEdits}
-                    disabled={saving || !editTitle.trim()}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {saving ? 'Saving...' : 'Save'}
-                  </button>
-                </>
+            {/* Agent assignment area */}
+            <div className="flex items-center gap-2 relative">
+              <span className="font-medium text-gray-700 dark:text-neutral-300">Assigned:</span>
+              {assignedAgents.length > 0 ? (
+                <div className="flex gap-1.5">
+                  {assignedAgents.map(agent => (
+                    <span key={agent.id} title={agent.name} className="text-gray-900 dark:text-neutral-100 text-sm">
+                      {agent.emoji} {agent.name}
+                    </span>
+                  ))}
+                </div>
               ) : (
-                <>
-                  {/* Edit button */}
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="px-3 py-1 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 rounded text-sm font-medium transition-colors flex items-center gap-1.5"
-                    title="Edit task"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                    Edit
-                  </button>
+                <span className="text-gray-400 dark:text-neutral-500 text-xs">None</span>
+              )}
+              <button
+                onClick={() => setShowAgentPicker(!showAgentPicker)}
+                className="ml-1 px-2.5 py-1 text-xs rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors font-medium"
+                title="Assign or remove AI agent"
+              >
+                {assignedAgents.length > 0 ? 'Edit' : '+ AI'}
+              </button>
 
-                  {/* Mark Done */}
-                  {task.status !== 'done' && onMarkDone && (
-                    <button
-                      onClick={() => {
-                        onMarkDone(task.id)
-                        onClose()
-                      }}
-                      className="px-3 py-1 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300 rounded text-sm font-medium transition-colors flex items-center gap-2"
-                      title="Mark as done"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Done
-                    </button>
+              {/* Agent picker dropdown */}
+              {showAgentPicker && (
+                <div className="absolute top-full left-0 mt-1 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 z-50 min-w-[200px]">
+                  {agents.map(agent => {
+                    const isAssigned = task.assigned_agent_ids?.includes(agent.id)
+                    return (
+                      <button
+                        key={agent.id}
+                        onClick={() => handleAssignAgent(agent.id)}
+                        disabled={assigningAgent}
+                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                          isAssigned
+                            ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
+                            : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-50 dark:hover:bg-neutral-700'
+                        } ${assigningAgent ? 'opacity-50' : ''}`}
+                      >
+                        <span>{agent.emoji}</span>
+                        <span>{agent.name}</span>
+                        {isAssigned && <span className="ml-auto text-purple-500">&#10003;</span>}
+                      </button>
+                    )
+                  })}
+                  {agents.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-gray-400 dark:text-neutral-500">No agents available</div>
                   )}
-
-                  {/* Chat */}
-                  {onOpenChat && (
-                    <button
-                      onClick={() => onOpenChat(task)}
-                      className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded text-sm font-medium transition-colors flex items-center gap-2"
-                      title="Chat about this task"
-                    >
-                      <span>&#128172;</span>
-                      Chat
-                    </button>
-                  )}
-
-                  {/* Copy */}
-                  <button
-                    onClick={copyForChat}
-                    className="px-3 py-1 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 rounded text-sm font-medium transition-colors flex items-center gap-2"
-                  >
-                    {copied ? (
-                      <>
-                        <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="text-green-600 dark:text-green-400">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        Copy
-                      </>
-                    )}
-                  </button>
-
-                  {/* Delete */}
-                  {onDelete && (
-                    <button
-                      onClick={() => {
-                        onDelete(task.id)
-                        onClose()
-                      }}
-                      className="px-3 py-1 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 rounded text-sm font-medium transition-colors flex items-center gap-2"
-                      title="Delete task permanently"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      Delete
-                    </button>
-                  )}
-                </>
+                </div>
               )}
             </div>
+
+            {task.due_date && (
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-gray-700 dark:text-neutral-300">Due:</span>
+                <span className="text-gray-600 dark:text-neutral-400 text-xs">
+                  {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Actions Row */}
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+            {editing ? (
+              <>
+                <button
+                  onClick={() => {
+                    setEditing(false)
+                    setEditTitle(task.title)
+                    setEditDescription(task.description || '')
+                    setEditPriority(task.priority)
+                    setEditDueDate(task.due_date || '')
+                    setEditRecurrence(task.recurrence_rule?.freq || 'none')
+                    setEditWeeklyDays(task.recurrence_rule?.days || [])
+                  }}
+                  className="px-3 py-1.5 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdits}
+                  disabled={saving || !editTitle.trim()}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Edit button */}
+                <button
+                  onClick={() => setEditing(true)}
+                  className="px-3 py-1.5 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                  title="Edit task"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                  Edit
+                </button>
+
+                {/* Mark Done */}
+                {task.status !== 'done' && onMarkDone && (
+                  <button
+                    onClick={() => {
+                      onMarkDone(task.id)
+                      onClose()
+                    }}
+                    className="px-3 py-1.5 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                    title="Mark as done"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Done
+                  </button>
+                )}
+
+                {/* Chat */}
+                {onOpenChat && (
+                  <button
+                    onClick={() => onOpenChat(task)}
+                    className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                    title="Chat about this task"
+                  >
+                    <span>&#128172;</span>
+                    Chat
+                  </button>
+                )}
+
+                {/* Copy */}
+                <button
+                  onClick={copyForChat}
+                  className="px-3 py-1.5 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 text-gray-700 dark:text-neutral-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                >
+                  {copied ? (
+                    <>
+                      <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-green-600 dark:text-green-400">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copy
+                    </>
+                  )}
+                </button>
+
+                {/* Delete */}
+                {onDelete && (
+                  <button
+                    onClick={() => {
+                      onDelete(task.id)
+                      onClose()
+                    }}
+                    className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                    title="Delete task permanently"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           {/* Tags */}

@@ -72,8 +72,10 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
     return dateKey(new Date(t.completed_at)) === todayStr;
   });
 
-  // Recent activities (last 10)
-  const recentActivities = activities.slice(0, 10);
+  // Recent activities: filter out heartbeats (not relevant for cloud), show last 10
+  const recentActivities = activities
+    .filter(a => a.type !== 'heartbeat')
+    .slice(0, 10);
 
   // Agent status summary
   const activeAgents = agents.filter(a => a.status === 'active');
@@ -334,24 +336,36 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
           </section>
         )}
 
-        {/* Recent Activity */}
+        {/* AI Activity (consolidated: filters out heartbeats, shows agent actions only) */}
         {recentActivities.length > 0 && (
           <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
             <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
-              Recent Activity
+              AI Activity
             </h2>
             <div className="space-y-2">
               {recentActivities.map(activity => {
                 const agent = agents.find(a => a.id === activity.agent_id);
+                const typeIcon: Record<string, string> = {
+                  task_created: '+',
+                  task_updated: '~',
+                  task_assigned: '>',
+                  comment: '#',
+                  status_change: '*',
+                  blocked: '!',
+                  unblocked: 'o',
+                };
                 return (
-                  <div key={activity.id} className="flex items-start gap-2 text-sm">
-                    <span className="flex-shrink-0 text-base">{agent?.emoji || '>'}</span>
+                  <div key={activity.id} className="flex items-start gap-2.5 text-sm">
+                    <span className="flex-shrink-0 text-base">{agent?.emoji || typeIcon[activity.type] || '>'}</span>
                     <div className="flex-1 min-w-0">
                       <span className="text-neutral-700 dark:text-neutral-300">{activity.message}</span>
                       <span className="text-neutral-400 dark:text-neutral-500 ml-2 text-xs">
                         {timeAgo(new Date(activity.created_at))}
                       </span>
                     </div>
+                    <span className="flex-shrink-0 text-xs px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 capitalize">
+                      {activity.type.replace(/_/g, ' ')}
+                    </span>
                   </div>
                 );
               })}
