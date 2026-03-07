@@ -43,10 +43,10 @@ export async function GET(request: Request) {
       }
 
       // Execute the Google Calendar list events action
-      const result = await composio.actions.execute({
-        actionName: 'GOOGLECALENDAR_LIST_EVENTS',
-        connectedAccountId: calendarConnection.id,
-        input: {
+      const result = await composio.tools.execute('GOOGLECALENDAR_LIST_EVENTS', {
+        userId,
+        dangerouslySkipVersionCheck: true,
+        arguments: {
           timeMin: new Date(start).toISOString(),
           timeMax: new Date(end + 'T23:59:59').toISOString(),
           singleEvents: true,
@@ -56,7 +56,8 @@ export async function GET(request: Request) {
       })
 
       // Parse events from Composio response
-      const rawEvents = result?.data?.items || result?.data?.events || []
+      const data = result?.data || result || {}
+      const rawEvents = data?.items || data?.events || data?.data?.items || []
 
       const events = rawEvents.map((event: any) => ({
         id: event.id,
