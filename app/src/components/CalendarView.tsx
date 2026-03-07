@@ -244,7 +244,7 @@ export default function CalendarView({ tasks, onTaskClick }: CalendarViewProps) 
             <span>Connect Google Calendar to see your events here</span>
           </div>
           <a
-            href="/settings/integrations"
+            href="/settings/connections"
             className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
           >
             Connect

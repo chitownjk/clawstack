@@ -15,10 +15,11 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000  // 1 hour window
 // Per-plan rate limits (requests per hour)
 const PLAN_RATE_LIMITS: Record<string, number> = {
   free: 0,             // No chat on free
-  cloud: 60,           // Pro: 60/hr (1 per minute avg)
-  'cloud-developer': 60,
-  'cloud-plus': 200,   // Team: 200/hr
-  'cloud-user-keys': 300, // BYOK: higher since they pay for tokens
+  pro: 60,             // Pro: 60/hr (1 per minute avg)
+  solo: 60,            // Legacy Pro alias
+  developer: 60,       // Legacy Pro alias
+  team: 200,           // Team: 200/hr
+  byok: 300,           // BYOK: higher since they pay for tokens
 }
 
 // In-memory rate limiter (resets on deploy, which is fine for Vercel)
@@ -30,7 +31,7 @@ function checkRateLimit(accountId: string, planTier: string, isBYOK: boolean): {
   remaining: number
   limit: number
 } {
-  const key = isBYOK ? 'cloud-user-keys' : planTier
+  const key = isBYOK ? 'byok' : planTier
   const limit = PLAN_RATE_LIMITS[key] ?? 0
   if (limit === 0) return { allowed: false, remaining: 0, limit: 0 }
 

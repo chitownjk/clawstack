@@ -181,7 +181,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
                 Today's Schedule
               </h2>
               {calendarConnected === false && (
-                <a href="/settings/integrations" className="text-xs text-blue-600 hover:underline">
+                <a href="/settings/connections" className="text-xs text-blue-600 hover:underline">
                   Connect Calendar
                 </a>
               )}

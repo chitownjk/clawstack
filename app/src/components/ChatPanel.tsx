@@ -198,15 +198,15 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
   if (!isOpen) return null
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 w-[420px] bg-white border-l border-gray-200 shadow-xl flex flex-col z-[9999]">
+    <div className="fixed right-0 top-0 bottom-0 w-[420px] bg-white dark:bg-[#171717] border-l border-gray-200 dark:border-[#262626] shadow-xl flex flex-col z-[9999]">
       {/* Header */}
-      <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between flex-shrink-0">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-[#262626] bg-gray-50 dark:bg-[#0a0a0a] flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-lg">💬</span>
           <div>
-            <h3 className="font-semibold text-gray-900 text-sm">Chat</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">Chat</h3>
             {task && (
-              <p className="text-xs text-gray-500 truncate max-w-[280px]">
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[280px]">
                 Re: {task.title}
               </p>
             )}
@@ -214,7 +214,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
         </div>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-600 p-1"
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -225,7 +225,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center text-gray-400 py-12">
+          <div className="text-center text-gray-400 dark:text-gray-500 py-12">
             <span className="text-3xl block mb-3">💬</span>
             <p className="text-sm">
               {task
@@ -256,12 +256,12 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
               className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-900'
+                  : 'bg-gray-100 dark:bg-[#262626] text-gray-900 dark:text-gray-100'
               }`}
             >
               {msg.role === 'assistant' ? (
                 msg.content ? (
-                  <div className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5">
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5">
                     <SimpleMarkdown content={msg.content} />
                   </div>
                 ) : (
@@ -279,7 +279,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
         ))}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
             {error}
           </div>
         )}
@@ -288,7 +288,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
       </div>
 
       {/* Input */}
-      <div className="p-3 border-t bg-white flex-shrink-0">
+      <div className="p-3 border-t border-gray-200 dark:border-[#262626] bg-white dark:bg-[#171717] flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex items-end gap-2">
           <div className="flex-1 relative">
             <textarea
@@ -299,7 +299,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
               placeholder={task ? `Chat about "${task.title}"...` : 'Ask me anything...'}
               rows={1}
               maxLength={MAX_INPUT_LENGTH}
-              className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
+              className="w-full resize-none rounded-lg border border-gray-300 dark:border-[#404040] bg-white dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
               style={{ minHeight: '38px' }}
               disabled={streaming || rateLimited}
             />
@@ -315,7 +315,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
             <button
               type="button"
               onClick={handleStop}
-              className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition text-sm font-medium flex-shrink-0"
+              className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition text-sm font-medium flex-shrink-0"
             >
               Stop
             </button>
@@ -323,7 +323,7 @@ export default function ChatPanel({ isOpen, onClose, task, agents }: ChatPanelPr
             <button
               type="submit"
               disabled={!input.trim() || rateLimited}
-              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm font-medium flex-shrink-0"
+              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed transition text-sm font-medium flex-shrink-0"
             >
               Send
             </button>
@@ -338,7 +338,7 @@ function SuggestionChip({ text, onClick }: { text: string; onClick: (text: strin
   return (
     <button
       onClick={() => onClick(text)}
-      className="block w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-xs text-gray-600 transition"
+      className="block w-full text-left px-3 py-2 bg-gray-50 dark:bg-[#262626] hover:bg-gray-100 dark:hover:bg-[#333333] rounded-lg text-xs text-gray-600 dark:text-gray-400 transition"
     >
       {text}
     </button>

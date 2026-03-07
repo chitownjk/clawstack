@@ -28,11 +28,11 @@ export async function GET(request: Request) {
     try {
       const connectedAccounts = await composio.connectedAccounts.list({
         userIds: [userId],
+        toolkitSlugs: ['GOOGLECALENDAR'],
+        statuses: ['ACTIVE'],
       })
 
-      const calendarConnection = connectedAccounts.items?.find(
-        (acc: any) => acc.appName === 'googlecalendar' && acc.status === 'ACTIVE'
-      )
+      const calendarConnection = connectedAccounts.items?.[0]
 
       if (!calendarConnection) {
         return NextResponse.json({
