@@ -10,6 +10,7 @@ interface Account {
   id: string
   email: string
   tier: 'free' | 'basic' | 'pro' | 'team'
+  plan_tier: string
   stripe_customer_id: string | null
   subscription_status: string | null
   subscription_current_period_end: string | null
