@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       })
 
       // Parse events from Composio response
-      const data = result?.data || result || {}
+      const data: any = result?.data || result || {}
       const rawEvents = data?.items || data?.events || data?.data?.items || []
 
       const events = rawEvents.map((event: any) => ({
