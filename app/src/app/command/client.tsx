@@ -14,7 +14,11 @@ import TimeView from '@/components/TimeView'
 import CalendarView from '@/components/CalendarView'
 import ChatPanel from '@/components/ChatPanel'
 import DailyBriefing from '@/components/DailyBriefing'
+import ActionBar from '@/components/ActionBar'
+import ActionSheet from '@/components/ActionSheet'
+import ActionCenter from '@/components/ActionCenter'
 import { ViewType } from '@/types/views'
+import { ActionDefinition, WorkflowDefinition } from '@/lib/action-registry'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
@@ -49,6 +53,18 @@ export default function MissionControlClient() {
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
   const [createTaskDate, setCreateTaskDate] = useState<string | null>(null)
 
+  // Action system state
+  const [actionBarActions, setActionBarActions] = useState<ActionDefinition[]>([])
+  const [actionBarLoading, setActionBarLoading] = useState(true)
+  const [activeAction, setActiveAction] = useState<ActionDefinition | null>(null)
+  const [showActionCenter, setShowActionCenter] = useState(false)
+  const [actionCenterData, setActionCenterData] = useState<{
+    quickActions: ActionDefinition[];
+    workflows: WorkflowDefinition[];
+    suggestedQuick: (ActionDefinition & { needsConnection?: boolean })[];
+    suggestedWorkflows: (WorkflowDefinition & { needsConnection?: boolean })[];
+  }>({ quickActions: [], workflows: [], suggestedQuick: [], suggestedWorkflows: [] })
+
   // Configure drag sensors with proper activation constraints
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -64,8 +80,30 @@ export default function MissionControlClient() {
 
   useEffect(() => {
     loadData()
+    loadAvailableActions()
     setupRealtimeSubscriptions()
   }, [])
+
+  async function loadAvailableActions() {
+    try {
+      setActionBarLoading(true)
+      const res = await fetch('/api/actions/available')
+      if (!res.ok) throw new Error('Failed to load actions')
+      const data = await res.json()
+      setActionBarActions(data.quick_actions || [])
+      setActionCenterData({
+        quickActions: data.quick_actions || [],
+        workflows: data.workflows || [],
+        suggestedQuick: data.suggested?.quick_actions || [],
+        suggestedWorkflows: data.suggested?.workflows || [],
+      })
+    } catch (err) {
+      console.error('Failed to load available actions:', err)
+      setActionBarActions([])
+    } finally {
+      setActionBarLoading(false)
+    }
+  }
 
   // Update tab title when tasks need attention
   useEffect(() => {
@@ -430,6 +468,16 @@ export default function MissionControlClient() {
         </div>
       </div>
 
+      {/* Action Bar - always visible quick actions based on connections */}
+      <div className="max-w-[2000px] mx-auto px-6 pt-2">
+        <ActionBar
+          actions={actionBarActions}
+          loading={actionBarLoading}
+          onActionClick={(action) => setActiveAction(action)}
+          onMoreClick={() => setShowActionCenter(true)}
+        />
+      </div>
+
       {/* Main Content */}
       <div className="max-w-[2000px] mx-auto px-6 py-6">
         {/* Empty State - New User */}
@@ -636,6 +684,26 @@ export default function MissionControlClient() {
           initialDate={createTaskDate || undefined}
         />
       )}
+
+      {/* Action Sheet - 3-tap execution flow */}
+      <ActionSheet
+        action={activeAction}
+        isOpen={!!activeAction}
+        onClose={() => setActiveAction(null)}
+        onExecuted={() => { loadData(); loadAvailableActions(); }}
+      />
+
+      {/* Action Center - full modal with all actions + templates */}
+      <ActionCenter
+        isOpen={showActionCenter}
+        onClose={() => setShowActionCenter(false)}
+        quickActions={actionCenterData.quickActions}
+        workflows={actionCenterData.workflows as WorkflowDefinition[]}
+        suggestedQuickActions={actionCenterData.suggestedQuick}
+        suggestedWorkflows={actionCenterData.suggestedWorkflows as (WorkflowDefinition & { needsConnection?: boolean })[]}
+        onActionSelect={(action) => setActiveAction(action)}
+        onManualTask={() => setShowCreateTask(true)}
+      />
 
       {/* Delete Confirmation Modal */}
       {deleteModal && (
