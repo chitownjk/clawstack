@@ -252,7 +252,7 @@ Body: ${bodyPreview}`
 
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         system: `You are an email intelligence extractor. Analyze emails and extract actionable items. Only extract items you are confident about. Output valid JSON array.
 

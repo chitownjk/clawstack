@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     // Call Claude Haiku for synthesis
     const anthropic = new Anthropic()
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2000,
       system: `You are Tiker, a personal life operator AI. Generate a concise, actionable daily briefing. Be warm but efficient. Use short sentences. Highlight conflicts, urgent items, and things that need attention. Output valid JSON matching the schema provided.`,
       messages: [
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
           content,
           sections,
           metadata: {
-            model: 'claude-3-5-haiku-20241022',
+            model: 'claude-haiku-4-5-20251001',
             tokens_used: response.usage?.input_tokens + response.usage?.output_tokens,
             data_sources: ['calendar', 'tasks', 'activities', 'extracted_items'],
           },

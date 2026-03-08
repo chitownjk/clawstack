@@ -251,7 +251,7 @@ async function generateCallScript(
     const anthropic = new Anthropic()
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 1000,
       system: `You are Tiker's voice agent script writer. Generate a natural, polite phone call script.
 The script should sound human, not robotic. Include fallback responses for common scenarios.

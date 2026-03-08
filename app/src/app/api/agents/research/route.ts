@@ -131,7 +131,7 @@ async function generateResearch(
   const extraContext = options.context ? `Additional context: ${options.context}` : ''
 
   const response = await anthropic.messages.create({
-    model: 'claude-3-5-haiku-20241022',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 2000,
     system: `You are Tiker's Life Admin Research Agent. You help people figure out and complete life admin tasks they keep putting off. Be practical, specific, and actionable. Include real timelines and cost estimates when possible. ${locationContext} ${deadlineContext}
 

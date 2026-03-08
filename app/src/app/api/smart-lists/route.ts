@@ -223,7 +223,7 @@ async function generateListItems(
     const prompt = prompts[type] || prompts.custom
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 800,
       system: 'You are a helpful assistant that generates practical checklists. Return a JSON array of strings, each being a list item. Keep items concise (5-10 words each). Return 10-20 items.',
       messages: [{ role: 'user', content: `${prompt}\n\nReturn ONLY a JSON array of strings.` }],
