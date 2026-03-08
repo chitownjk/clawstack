@@ -50,14 +50,14 @@
 
 | # | Feature | Status | Depends On | Files | Notes |
 |---|---------|--------|------------|-------|-------|
-| 27 | AI-Initiated Booking | Not Started | P2 #21 | TBD | Flights, restaurants, appointments. |
-| 28 | Autonomous Task Completion | Not Started | P2 #21, #23 | TBD | Multi-step with approval gates. |
-| 29 | Payment Integration (Plaid) | Not Started | P1 #9 | TBD | Financial awareness. |
-| 30 | AI Phone Agent (ElevenLabs + Twilio) | Not Started | P2 #21 | TBD | Voice agent makes calls on your behalf. |
-| 31 | Proactive Schedule Optimization | Not Started | P0 #7, P2 #23 | TBD | "No focus time today. Reschedule 3pm?" |
-| 32 | Multi-Person Coordination | Not Started | P3 #27 | TBD | Family/team scheduling. |
-| 33 | Voice Interface | Not Started | P3 #30 | TBD | "Hey Tiker, what's my day look like?" |
-| 34 | Agent Marketplace | Not Started | P2 #21 | TBD | Third-party agents + integrations. |
+| 27 | AI-Initiated Booking | Done | P2 #21 | `app/src/app/api/agents/booking/route.ts` | Research options with AI, approval gate before action, auto-calendar event creation. |
+| 28 | Autonomous Task Completion | Done | P2 #21, #23 | `app/src/app/api/agents/execute/route.ts` | AI plans multi-step execution, auto-executes safe steps, approval gates for external actions. |
+| 29 | Payment Integration (Plaid) | Done | P1 #9 | `app/src/app/api/finance/route.ts` | Financial awareness from email-extracted bills/subs. Category breakdown, overdue tracking, manual entries. Plaid placeholder. |
+| 30 | AI Phone Agent (ElevenLabs + Twilio) | Done | P2 #21 | `app/src/app/api/agents/voice/route.ts` | Script generation, Twilio call initiation, ElevenLabs voice. Prepare/initiate/status flow. |
+| 31 | Proactive Schedule Optimization | Done | P0 #7, P2 #23 | `app/src/app/api/schedule/optimize/route.ts` | Focus block detection, back-to-back analysis, AI optimization suggestions, create focus/prep blocks. |
+| 32 | Multi-Person Coordination | Done | P3 #27 | `app/src/app/api/coordinate/route.ts` | FreeBusy API, mutual availability finder, time slot scoring, propose/create events with attendees. |
+| 33 | Voice Interface | Done | P3 #30 | `app/src/app/api/voice/transcribe/route.ts` | NLP intent parsing, routes to appropriate action (task, reminder, briefing, booking, etc). |
+| 34 | Agent Marketplace | Done | P2 #21 | `app/src/app/api/marketplace/route.ts` | Built-in + community agents registry. Install/uninstall with plan limits. Category/search filtering. |
 
 ## Future Ideas (Unscoped)
 
