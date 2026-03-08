@@ -122,6 +122,9 @@ export function NavBar() {
                       </Link>
                     )
                   )}
+                  <Link href="/blog" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors">
+                    Blog
+                  </Link>
                 </>
               ) : (
                 /* Logged OUT nav */
@@ -132,6 +135,10 @@ export function NavBar() {
                   </Link>
                   <Link href="/#pricing" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors relative group">
                     Pricing
+                    <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-neutral-900 dark:bg-neutral-100 transition-all duration-300 group-hover:w-full"></span>
+                  </Link>
+                  <Link href="/blog" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors relative group">
+                    Blog
                     <span className="absolute -bottom-0.5 left-0 w-0 h-px bg-neutral-900 dark:bg-neutral-100 transition-all duration-300 group-hover:w-full"></span>
                   </Link>
                 </>
