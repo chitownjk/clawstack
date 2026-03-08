@@ -198,11 +198,33 @@ export async function initiateComposioConnection(
     }
   }
 
+  // Clean up any existing connections for this toolkit so we can reconnect cleanly
+  const slugsToCheck = [config.toolkit, ...((config as any).toolkitFallbacks || [])]
+  for (const slug of slugsToCheck) {
+    try {
+      const existing = await composio.connectedAccounts.list({
+        userIds: [userId],
+        toolkitSlugs: [slug],
+      });
+      if (existing?.items?.length) {
+        for (const conn of existing.items) {
+          try {
+            await composio.connectedAccounts.delete(conn.id);
+          } catch {
+            // Ignore deletion errors
+          }
+        }
+      }
+    } catch {
+      // Ignore listing errors
+    }
+  }
+
   // Initiate connection with our callback URL so the user comes back to Tiker
   const connectionRequest = await composio.connectedAccounts.initiate(
     userId,
     authConfigId,
-    { callbackUrl }
+    { callbackUrl, allowMultiple: true } as any
   );
 
   return {
