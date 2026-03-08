@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Blog | Tiker',
+  title: 'Blog',
   description: 'Thoughts on AI coordination, productivity, and building tools that actually work for real people.',
 }
 
@@ -11,27 +11,7 @@ export default function BlogPage() {
   const posts = getAllPosts()
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
-      {/* Header */}
-      <header className="border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-3xl mx-auto px-6 py-6 flex items-center justify-between">
-          <Link href="/" className="text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-            Tiker
-          </Link>
-          <nav className="flex items-center gap-6 text-sm">
-            <Link href="/" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Home
-            </Link>
-            <Link href="/pricing" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-              Pricing
-            </Link>
-            <Link href="/blog" className="text-gray-900 dark:text-white font-medium">
-              Blog
-            </Link>
-          </nav>
-        </div>
-      </header>
-
+    <div className="min-h-screen">
       <main className="max-w-3xl mx-auto px-6 py-16">
         <div className="mb-12">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">
@@ -88,13 +68,6 @@ export default function BlogPage() {
           </div>
         )}
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 mt-20">
-        <div className="max-w-3xl mx-auto px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>&copy; {new Date().getFullYear()} Tiker. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   )
 }

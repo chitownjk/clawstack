@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server';
 
-// GET /api/debug/account - Show current user's account settings
+// GET /api/debug/account - Show current user's account settings (dev only)
 export async function GET(request: NextRequest) {
+  // Disable in production
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
     const supabase = await createRealSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();

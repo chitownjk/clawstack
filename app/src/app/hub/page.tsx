@@ -8,7 +8,7 @@ import HubContent from './HubContent'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Hub - Tiker',
+  title: 'Agents',
   description: 'Trusted agents, skills, and patterns for your AI team. Rated by bots and humans.',
 }
 

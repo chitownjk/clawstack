@@ -1,6 +1,6 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createRealSupabaseClient } from '@/lib/supabase-server'
-import CommandRedirect from '@/components/CommandRedirect'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,73 +13,14 @@ export default async function LandingPage() {
   const supabase = await createRealSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Logged-in users go straight to the app
+  if (user) {
+    redirect('/command')
+  }
+
   return (
     <main className="min-h-screen">
-      {/* Logged in: redirect to command */}
-      {user ? (
-        <>
-          <CommandRedirect />
-          <section className="relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-            <div className="max-w-6xl mx-auto px-6 py-16 md:py-24">
-              <div className="max-w-4xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-900 text-sm text-green-700 dark:text-green-300 mb-6">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                  Tiker is working for you
-                </div>
-
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-neutral-900 dark:text-neutral-100 leading-[1] tracking-tight mb-6">
-                  Welcome back.
-                </h1>
-
-                <div className="grid md:grid-cols-2 gap-4 mb-8">
-                  <Link
-                    href="/command"
-                    className="group p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl hover:border-blue-400 dark:hover:border-blue-600 transition"
-                  >
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition">
-                          Today's Briefing
-                        </h2>
-                      </div>
-                    </div>
-                    <p className="text-neutral-600 dark:text-neutral-400 text-sm">
-                      Your daily intelligence report. Calendar, tasks, inbox highlights.
-                    </p>
-                  </Link>
-
-                  <Link
-                    href="/hub"
-                    className="group p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl hover:border-purple-400 dark:hover:border-purple-600 transition"
-                  >
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-950 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition">
-                          Agent Hub
-                        </h2>
-                      </div>
-                    </div>
-                    <p className="text-neutral-600 dark:text-neutral-400 text-sm">
-                      Add specialists to your team.
-                    </p>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </section>
-        </>
-      ) : (
-        <>
+      <>
           {/* Navigation */}
           <nav className="sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md">
             <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -812,7 +753,6 @@ export default async function LandingPage() {
             </div>
           </footer>
         </>
-      )}
     </main>
   )
 }

@@ -5,6 +5,7 @@ import { remark } from 'remark'
 import remarkGfm from 'remark-gfm'
 import remarkHtml from 'remark-html'
 import readingTime from 'reading-time'
+import DOMPurify from 'isomorphic-dompurify'
 
 export interface BlogPost {
   slug: string
@@ -100,7 +101,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
     author: data.author || 'Tiker Team',
     tags: data.tags || [],
     coverImage: data.coverImage || undefined,
-    content: processedContent.toString(),
+    content: DOMPurify.sanitize(processedContent.toString()),
     readingTime: stats.text,
     published: data.published !== false,
   }

@@ -15,11 +15,14 @@ const jetbrains = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Tiker - Infrastructure for the Automated Economy',
-  description: 'Async coordination for multi-agent teams. Persistent context, no bottlenecks, and a workflow that actually works.',
+  title: {
+    default: 'Tiker - Your AI-Powered Life Operator',
+    template: '%s | Tiker',
+  },
+  description: 'AI agents that handle your tasks, calendar, and daily operations. Tiker works while you sleep.',
   openGraph: {
-    title: 'Tiker - Infrastructure for the Automated Economy',
-    description: 'Async coordination for multi-agent teams. Your agents work while you sleep.',
+    title: 'Tiker - Your AI-Powered Life Operator',
+    description: 'AI agents that handle your tasks, calendar, and daily operations. Tiker works while you sleep.',
     type: 'website',
   },
 }

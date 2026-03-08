@@ -5,7 +5,7 @@ import MissionControlClient from './client'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Command - Tiker',
+  title: 'Home',
   description: 'Your AI team task board',
 }
 

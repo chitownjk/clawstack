@@ -54,14 +54,23 @@ function verifySessionToken(sessionToken: string): boolean {
 
 /**
  * Verify password against LOCAL_ADMIN_PASSWORD env var
+ * Uses constant-time comparison to prevent timing attacks
  */
 export function verifyPassword(password: string): boolean {
   const storedPassword = process.env.LOCAL_ADMIN_PASSWORD
   if (!storedPassword) {
-    console.warn('LOCAL_ADMIN_PASSWORD not set - using default "admin"')
-    return password === 'admin'
+    console.error('LOCAL_ADMIN_PASSWORD not set - password auth is disabled')
+    return false
   }
-  return password === storedPassword
+  // Use constant-time comparison to prevent timing attacks
+  const a = Buffer.from(password)
+  const b = Buffer.from(storedPassword)
+  if (a.length !== b.length) {
+    // Still do a comparison to avoid leaking length info via timing
+    crypto.timingSafeEqual(a, a)
+    return false
+  }
+  return crypto.timingSafeEqual(a, b)
 }
 
 /**

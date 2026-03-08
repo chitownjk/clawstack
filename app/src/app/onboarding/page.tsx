@@ -106,19 +106,19 @@ export default function OnboardingPage() {
             </div>
             <ul className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400 mb-8 flex-1">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">&check;</span>
+                <span className="text-green-600 mt-0.5">✓</span>
                 Unlimited tasks
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">&check;</span>
+                <span className="text-green-600 mt-0.5">✓</span>
                 Kanban, list, and calendar views
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">&check;</span>
+                <span className="text-green-600 mt-0.5">✓</span>
                 Organize and track your work
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-neutral-400 mt-0.5">&mdash;</span>
+                <span className="text-neutral-400 mt-0.5">—</span>
                 <span className="text-neutral-400">No AI agents</span>
               </li>
             </ul>
@@ -146,19 +146,19 @@ export default function OnboardingPage() {
             </div>
             <ul className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400 mb-8 flex-1">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">&check;</span>
+                <span className="text-green-600 mt-0.5">✓</span>
                 200 AI tasks/month
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">&check;</span>
+                <span className="text-green-600 mt-0.5">✓</span>
                 All AI models and integrations
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">&check;</span>
+                <span className="text-green-600 mt-0.5">✓</span>
                 API access and webhooks
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">&check;</span>
+                <span className="text-green-600 mt-0.5">✓</span>
                 2 GB file storage
               </li>
             </ul>

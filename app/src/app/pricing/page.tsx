@@ -4,6 +4,11 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = {
+  title: 'Pricing',
+  description: 'Simple pricing for Tiker. Free to start, upgrade when your AI team is ready.',
+}
+
 export default async function PricingPage() {
   const supabase = await createRealSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -48,19 +53,19 @@ export default async function PricingPage() {
             </p>
             <ul className="space-y-3 mb-8 text-sm">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>Unlimited manual tasks</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>Kanban, list, and calendar views</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>File attachments (10 MB)</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-neutral-400 mt-1">&mdash;</span>
+                <span className="text-neutral-400 mt-1">—</span>
                 <span className="text-neutral-400">No AI agents</span>
               </li>
             </ul>
@@ -84,23 +89,23 @@ export default async function PricingPage() {
             </p>
             <ul className="space-y-3 mb-8 text-sm">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>200 AI tasks/month</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>All models (Sonnet, Opus, GPT-4, Gemini)</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>All integrations (Gmail, Slack, GitHub, etc.)</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>API access and webhooks</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>2 GB file storage</span>
               </li>
             </ul>
@@ -124,23 +129,23 @@ export default async function PricingPage() {
             </p>
             <ul className="space-y-3 mb-8 text-sm">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>1,000 AI tasks/month</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>Everything in Pro</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>Up to 10 team members</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>Shared boards and role permissions</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-1">&check;</span>
+                <span className="text-green-600 mt-1">✓</span>
                 <span>10 GB file storage</span>
               </li>
             </ul>

@@ -18,8 +18,12 @@ export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
 
-    // In production, verify the secret. In dev, allow unauthenticated.
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret) {
+      console.error('[Cron] CRON_SECRET not configured - endpoint disabled')
+      return NextResponse.json({ error: 'Cron endpoint not configured' }, { status: 503 })
+    }
+
+    if (authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

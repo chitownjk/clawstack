@@ -15,7 +15,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
-  const [redirectToMC, setRedirectToMC] = useState(false)
   const [contributionEnabled, setContributionEnabled] = useState(true)
   const [manualAgentSelection, setManualAgentSelection] = useState(false)
   const [emailSignature, setEmailSignature] = useState('\n\n---\nSent by my Tiker assistant')
@@ -53,10 +52,6 @@ export default function SettingsPage() {
         }
       }
       
-      // Load redirect preference from localStorage
-      const savedRedirect = localStorage.getItem('tiker_redirect_to_mc')
-      setRedirectToMC(savedRedirect === 'true')
-      
       // Load contribution preference (default to true)
       const savedContribution = localStorage.getItem('tiker_contribution_enabled')
       setContributionEnabled(savedContribution !== 'false')
@@ -77,7 +72,6 @@ export default function SettingsPage() {
 
     try {
       // Save to localStorage (no DB column yet for these)
-      localStorage.setItem('tiker_redirect_to_mc', redirectToMC.toString())
       localStorage.setItem('tiker_contribution_enabled', contributionEnabled.toString())
       localStorage.setItem('tiker_manual_agent_selection', manualAgentSelection.toString())
 
@@ -260,25 +254,6 @@ export default function SettingsPage() {
           </h2>
 
           <div className="space-y-4">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={redirectToMC}
-                onChange={(e) => setRedirectToMC(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 text-blue-600 mt-0.5"
-              />
-              <div>
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  {isConsumer ? 'Go to Home on login' : 'Go to Command on login'}
-                </p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  {isConsumer
-                    ? 'Skip the landing page and go straight to your dashboard when you log in'
-                    : 'Skip the landing page and go straight to MC when you\'re logged in'}
-                </p>
-              </div>
-            </label>
-
             {/* Default View */}
             <div className="flex items-start gap-3">
               <div className="w-5 flex-shrink-0" /> {/* spacer to align with checkboxes */}
