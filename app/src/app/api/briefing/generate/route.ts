@@ -91,7 +91,9 @@ export async function POST(request: Request) {
 
     let sections: Record<string, any> = {}
     try {
-      sections = JSON.parse(aiText)
+      // Strip markdown code fences if present (e.g. ```json ... ```)
+      const cleaned = aiText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+      sections = JSON.parse(cleaned)
     } catch {
       // If JSON parsing fails, wrap the raw text
       console.error('[Briefing] Failed to parse AI response as JSON, using raw text')

@@ -64,8 +64,10 @@ export async function executeComposioAction(
   }
 
   // Try each action slug until one works
+  const slugErrors: string[] = [];
   for (const slug of action.composioActionSlugs) {
     try {
+      console.log(`[ActionExecutor] Trying slug: ${slug} with params:`, JSON.stringify(params));
       const result = await composio.tools.execute(slug, {
         userId,
         dangerouslySkipVersionCheck: true,
@@ -79,6 +81,8 @@ export async function executeComposioAction(
       };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
+      slugErrors.push(`${slug}: ${message}`);
+      console.log(`[ActionExecutor] Slug ${slug} failed:`, message);
       // If it's an auth/connection error, don't try other slugs
       if (message.includes('not connected') || message.includes('unauthorized')) {
         return { success: false, error: `Not connected to ${toolkitConfig.name}. Please connect in Settings.` };
@@ -88,9 +92,11 @@ export async function executeComposioAction(
     }
   }
 
+  console.error(`[ActionExecutor] All slugs failed for ${action.id}:`, slugErrors);
+
   return {
     success: false,
-    error: `Could not execute action on ${toolkitConfig.name}. The action may not be available with your current connection.`,
+    error: `Could not execute action on ${toolkitConfig.name}. Tried slugs: ${action.composioActionSlugs.join(', ')}. Check Vercel logs for details.`,
   };
 }
 
@@ -129,7 +135,11 @@ export function mapFormToComposioParams(
 ): Record<string, unknown> {
   switch (actionId) {
     case 'linkedin-post':
-      return { text: formData.content || formData.draft };
+      return {
+        text: formData.content || formData.draft,
+        content: formData.content || formData.draft,
+        commentary: formData.content || formData.draft,
+      };
 
     case 'tweet':
       return { text: formData.content || formData.draft, status: formData.content || formData.draft };

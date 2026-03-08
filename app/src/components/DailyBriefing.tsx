@@ -112,7 +112,31 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
         });
         if (res.ok) {
           const data = await res.json();
-          setBriefing(data.briefing);
+          const raw = data.briefing;
+          if (raw) {
+            // Normalize: sections might be a JSON string from the DB
+            let sections = raw.sections;
+            if (typeof sections === 'string') {
+              try { sections = JSON.parse(sections); } catch { sections = {}; }
+            }
+            // If sections is still not an object, try treating the whole raw as sections
+            if (!sections || typeof sections !== 'object') {
+              sections = {};
+            }
+            // If the briefing itself IS the sections (no wrapper), detect by presence of summary key
+            if (!raw.content && raw.summary) {
+              sections = raw;
+            }
+            setBriefing({
+              content: raw.content || {
+                greeting: '',
+                date: '',
+                generated_at: '',
+                raw_data: { calendar_count: 0, active_tasks: 0, review_tasks: 0, extracted_items: 0, recent_activities: 0 },
+              },
+              sections,
+            });
+          }
         }
       } catch (err) {
         console.error('Failed to fetch briefing:', err);
