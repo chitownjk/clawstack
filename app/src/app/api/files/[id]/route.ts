@@ -66,6 +66,79 @@ export async function GET(
   }
 }
 
+// PATCH /api/files/[id] - Rename a file
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const supabase = await createRealSupabaseClient()
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { name } = await request.json()
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    }
+
+    const adminClient = createAdminClient()
+
+    // Get file metadata
+    const { data: file, error } = await adminClient
+      .from('mc_files')
+      .select('*')
+      .eq('id', params.id)
+      .single()
+
+    if (error || !file) {
+      return NextResponse.json({ error: 'File not found' }, { status: 404 })
+    }
+
+    // Verify ownership
+    const { data: account } = await adminClient
+      .from('accounts')
+      .select('id')
+      .eq('auth_uid', session.user.id)
+      .single()
+
+    if (!account || account.id !== file.account_id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Sanitize the new name - preserve extension
+    const oldExt = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')) : ''
+    let newName = name.trim()
+    // Add back the extension if user didn't include it
+    if (oldExt && !newName.endsWith(oldExt)) {
+      newName = newName + oldExt
+    }
+
+    // Update the name in the database (storage path stays the same)
+    const { data: updated, error: updateError } = await adminClient
+      .from('mc_files')
+      .update({ name: newName })
+      .eq('id', params.id)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('[Files/Rename] DB error:', updateError)
+      return NextResponse.json({ error: 'Failed to rename file' }, { status: 500 })
+    }
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    console.error('[Files/Rename] Error:', error)
+    return NextResponse.json({
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 })
+  }
+}
+
 // DELETE /api/files/[id] - Delete file and metadata
 export async function DELETE(
   request: NextRequest,

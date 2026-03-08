@@ -276,17 +276,25 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
   }
 
   // 8. Post result (as file if long/markdown, otherwise as comment)
-  const shouldSaveAsFile = result.length > 500 || 
-                           result.includes('```') || 
+  const shouldSaveAsFile = result.length > 500 ||
+                           result.includes('```') ||
                            result.includes('\n#') ||
                            result.split('\n').length > 15;
 
   if (shouldSaveAsFile) {
-    // Save response as file
+    // Save response as file - use task title for human-readable name
     const now = new Date();
     const year = now.getUTCFullYear();
     const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-    const filename = `response-${Date.now()}.md`;
+    const dateStr = `${year}-${month}-${String(now.getUTCDate()).padStart(2, '0')}`;
+
+    // Build filename from task title (sanitized) + date
+    const sanitizedTitle = (task.title || 'response')
+      .replace(/[^a-zA-Z0-9\s\-_]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 80) || 'response';
+    const filename = `${sanitizedTitle} - ${dateStr}.md`;
     const storagePath = `${task.account_id}/${year}/${month}/${taskId}/${filename}`;
 
     // Upload to storage
@@ -319,10 +327,11 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
       // Post summary comment with link to viewer
       const fileId = fileRecord?.id;
       const viewLink = fileId ? ` [View response](/files/${fileId})` : '';
-      
+
       await supabase.from('mc_comments').insert({
         account_id: task.account_id,
         task_id: taskId,
+        agent_id: agentId,
         content: `✅ Task complete. Response saved as file: **${filename}**${viewLink}`,
         created_at: new Date().toISOString(),
       });
@@ -331,6 +340,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
       await supabase.from('mc_comments').insert({
         account_id: task.account_id,
         task_id: taskId,
+        agent_id: agentId,
         content: result,
         created_at: new Date().toISOString(),
       });
@@ -340,6 +350,7 @@ export async function executeTask(taskId: string, supabase: SupabaseClient) {
     await supabase.from('mc_comments').insert({
       account_id: task.account_id,
       task_id: taskId,
+      agent_id: agentId,
       content: result,
       created_at: new Date().toISOString(),
     });

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 
 interface File {
@@ -23,6 +23,10 @@ export default function FileAttachments({ taskId, onUploadComplete }: FileAttach
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [renamingFileId, setRenamingFileId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [renaming, setRenaming] = useState(false)
+  const renameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadFiles()
@@ -121,11 +125,44 @@ export default function FileAttachments({ taskId, onUploadComplete }: FileAttach
       })
 
       if (!response.ok) throw new Error('Failed to delete file')
-      
+
       await loadFiles()
     } catch (error) {
       console.error('Delete error:', error)
       alert('Failed to delete file')
+    }
+  }
+
+  function startRename(file: File) {
+    // Strip extension for editing
+    const ext = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')) : ''
+    const nameWithoutExt = ext ? file.name.substring(0, file.name.lastIndexOf('.')) : file.name
+    setRenamingFileId(file.id)
+    setRenameValue(nameWithoutExt)
+    setTimeout(() => renameInputRef.current?.select(), 50)
+  }
+
+  async function handleRename(fileId: string) {
+    if (!renameValue.trim()) {
+      setRenamingFileId(null)
+      return
+    }
+    setRenaming(true)
+    try {
+      const response = await fetch(`/api/files/${fileId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: renameValue.trim() }),
+      })
+      if (!response.ok) throw new Error('Failed to rename file')
+      await loadFiles()
+      setRenamingFileId(null)
+    } catch (error) {
+      console.error('Rename error:', error)
+      alert('Failed to rename file')
+    } finally {
+      setRenaming(false)
     }
   }
 
@@ -196,23 +233,64 @@ export default function FileAttachments({ taskId, onUploadComplete }: FileAttach
           {files.map(file => (
             <div
               key={file.id}
-              className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
             >
               <div className="text-2xl flex-shrink-0">
                 {getFileIcon(file.mime_type)}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <button
-                    onClick={() => downloadFile(file.id)}
-                    className="font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 text-sm truncate"
-                  >
-                    {file.name}
-                  </button>
-                  <span className="text-xs text-gray-500 flex-shrink-0">
-                    {formatBytes(file.size_bytes)}
-                  </span>
-                </div>
+                {renamingFileId === file.id ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={renameInputRef}
+                      type="text"
+                      value={renameValue}
+                      onChange={e => setRenameValue(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleRename(file.id)
+                        if (e.key === 'Escape') setRenamingFileId(null)
+                      }}
+                      disabled={renaming}
+                      className="flex-1 text-sm px-2 py-1 rounded border border-blue-400 dark:border-blue-500 bg-white dark:bg-neutral-900 text-gray-900 dark:text-neutral-100 outline-none focus:ring-1 focus:ring-blue-500"
+                      maxLength={200}
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleRename(file.id)}
+                      disabled={renaming}
+                      className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {renaming ? '...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setRenamingFileId(null)}
+                      className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => downloadFile(file.id)}
+                      className="font-medium text-gray-900 dark:text-gray-100 hover:text-blue-600 dark:hover:text-blue-400 text-sm truncate"
+                    >
+                      {file.name}
+                    </button>
+                    <span className="text-xs text-gray-500 flex-shrink-0">
+                      {formatBytes(file.size_bytes)}
+                    </span>
+                    <button
+                      onClick={() => startRename(file)}
+                      className="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                      title="Rename file"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
                 {file.description && (
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                     {file.description}
@@ -220,7 +298,7 @@ export default function FileAttachments({ taskId, onUploadComplete }: FileAttach
                 )}
                 <p className="text-xs text-gray-500 mt-1">
                   {new Date(file.created_at).toLocaleString()}
-                  {file.uploaded_by_agent_id && ' • Created by agent'}
+                  {file.uploaded_by_agent_id && ' - Created by agent'}
                 </p>
               </div>
               <button
