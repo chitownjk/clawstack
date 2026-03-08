@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRealSupabaseClient } from '@/lib/supabase-server';
-import { getComposio, COMPOSIO_TOOLKITS } from '@/lib/composio';
+import { COMPOSIO_TOOLKITS } from '@/lib/composio';
 
 // GET /api/auth/composio/debug?toolkit=linkedin
-// Lists available actions for a toolkit so we can discover correct slug names.
+// Uses the Composio REST API directly to list available actions.
 // TEMPORARY - remove after confirming slugs.
 export async function GET(request: NextRequest) {
   try {
@@ -19,59 +19,75 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: `Unknown toolkit: ${toolkit}` });
     }
 
-    const composio = getComposio();
-    const composioUserId = `tiker_${user.id}`;
+    const apiKey = process.env.COMPOSIO_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: 'COMPOSIO_API_KEY not set' });
+    }
+
+    const results: Record<string, unknown> = { toolkit };
+
+    // Use the Composio REST API to list actions for this app
+    // Docs: https://docs.composio.dev/api-reference/actions/list-actions
     const slugsToTry = [config.toolkit, ...((config as any).toolkitFallbacks || [])];
 
-    const results: Record<string, unknown> = { toolkit, slugsToTry };
-
-    // Try to get tools/actions for each slug variant
-    for (const slug of slugsToTry) {
+    for (const appSlug of slugsToTry) {
       try {
-        // The Composio SDK may expose actions through different methods
-        // Try getTools which is commonly available
-        const tools = await (composio as any).getTools({
-          apps: [slug],
-        });
-        results[`getTools_${slug}`] = tools?.map((t: any) => ({
-          name: t.name,
-          slug: t.slug,
-          description: t.description?.substring(0, 100),
-        }));
+        const res = await fetch(
+          `https://backend.composio.dev/api/v2/actions?apps=${appSlug}&limit=50`,
+          {
+            headers: {
+              'x-api-key': apiKey,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const actions = (data.items || data.actions || data || []);
+          results[`actions_${appSlug}`] = Array.isArray(actions)
+            ? actions.map((a: any) => ({
+                name: a.name,
+                slug: a.slug || a.enum || a.actionName || a.action,
+                displayName: a.displayName || a.display_name,
+                description: (a.description || '').substring(0, 120),
+              }))
+            : data;
+        } else {
+          const text = await res.text();
+          results[`actions_${appSlug}`] = { status: res.status, body: text.substring(0, 500) };
+        }
       } catch (e) {
-        results[`getTools_${slug}`] = { error: (e as Error).message };
-      }
-
-      try {
-        // Also try the actions property if it exists
-        const actions = await (composio as any).actions?.list({
-          apps: [slug],
-        });
-        results[`actions_${slug}`] = actions?.items?.map((a: any) => ({
-          name: a.name,
-          slug: a.slug || a.actionName,
-          description: a.description?.substring(0, 100),
-        }));
-      } catch (e) {
-        results[`actions_${slug}`] = { error: (e as Error).message };
+        results[`actions_${appSlug}`] = { error: (e as Error).message };
       }
     }
 
-    // Also check connections
-    for (const slug of slugsToTry) {
-      try {
-        const conns = await composio.connectedAccounts.list({
-          userIds: [composioUserId],
-          toolkitSlugs: [slug],
-        });
-        results[`connections_${slug}`] = conns?.items?.map((c: any) => ({
-          id: c.id,
-          status: c.status,
-          toolkitSlug: c.toolkitSlug,
-        }));
-      } catch (e) {
-        results[`connections_${slug}`] = { error: (e as Error).message };
+    // Also try v1 endpoint
+    try {
+      const res = await fetch(
+        `https://backend.composio.dev/api/v1/actions?appNames=${config.toolkit}&limit=50`,
+        {
+          headers: {
+            'x-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const actions = (data.items || data.actions || data || []);
+        results[`v1_actions`] = Array.isArray(actions)
+          ? actions.map((a: any) => ({
+              name: a.name,
+              slug: a.slug || a.enum || a.actionName || a.action,
+              displayName: a.displayName || a.display_name,
+              appName: a.appName || a.app_name,
+            }))
+          : data;
+      } else {
+        results[`v1_actions`] = { status: res.status, body: (await res.text()).substring(0, 500) };
       }
+    } catch (e) {
+      results[`v1_actions`] = { error: (e as Error).message };
     }
 
     return NextResponse.json(results);
