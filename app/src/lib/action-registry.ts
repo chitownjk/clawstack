@@ -59,7 +59,7 @@ Write ONLY the post content, nothing else.`,
       { name: 'topic', type: 'textarea', label: "What's on your mind?", placeholder: 'e.g., Lessons from launching our new product...', required: true },
       { name: 'context', type: 'text', label: 'Any extra context?', placeholder: 'Optional: tone, audience, key points...' },
     ],
-    composioActionSlugs: ['LINKEDIN_CREATE_A_LINKEDIN_POST', 'LINKEDIN_CREATE_LINKED_POST', 'LINKEDIN_CREATE_POST', 'LINKEDIN_ADD_POST', 'LINKEDIN_SHARE_POST'],
+    composioActionSlugs: ['LINKEDIN_CREATE_LINKED_IN_POST'],
     sortOrder: 1,
   },
   {
@@ -241,7 +241,7 @@ Format your response as a JSON array of strings, each string being one complete 
       { name: 'startDate', type: 'date', label: 'Start date', required: true },
       { name: 'postTime', type: 'time', label: 'Post time each day', defaultValue: '09:00' },
     ],
-    composioActionSlugs: ['LINKEDIN_CREATE_A_LINKEDIN_POST', 'LINKEDIN_CREATE_LINKED_POST', 'LINKEDIN_CREATE_POST'],
+    composioActionSlugs: ['LINKEDIN_CREATE_LINKED_IN_POST'],
     sortOrder: 1,
     workflowConfig: {
       stepsDescription: 'One post per day',
@@ -310,7 +310,7 @@ Format as JSON:
       { name: 'launchDate', type: 'date', label: 'Launch date', required: true },
       { name: 'launchTime', type: 'time', label: 'Launch time', defaultValue: '09:00' },
     ],
-    composioActionSlugs: ['LINKEDIN_CREATE_A_LINKEDIN_POST', 'TWITTER_CREATION_OF_A_POST'],
+    composioActionSlugs: ['LINKEDIN_CREATE_LINKED_IN_POST', 'TWITTER_CREATION_OF_A_POST'],
     sortOrder: 3,
     workflowConfig: {
       stepsDescription: 'LinkedIn + X posts at launch, then follow-ups 4h later',
