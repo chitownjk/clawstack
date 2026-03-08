@@ -26,7 +26,7 @@ interface EmailBriefingOptions {
   calendarConflicts?: Array<{ event1: string; event2: string; time: string }>
 }
 
-function getTransporter() {
+export function getTransporter() {
   const host = process.env.SMTP_HOST
   const port = parseInt(process.env.SMTP_PORT || '587', 10)
   const user = process.env.SMTP_USER
