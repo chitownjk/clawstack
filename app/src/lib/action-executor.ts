@@ -165,6 +165,8 @@ export function mapFormToComposioParams(
         subject,
         body,
         message_body: body,
+        is_html: false,
+        user_id: 'me',
       };
     }
 

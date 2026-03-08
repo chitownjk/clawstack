@@ -95,7 +95,7 @@ Write ONLY the tweet text, nothing else.`,
       { name: 'channel', type: 'text', label: 'Channel name', placeholder: 'e.g., #general', required: true },
       { name: 'message', type: 'textarea', label: 'Message', placeholder: 'Type your message...', required: true },
     ],
-    composioActionSlugs: ['SLACK_SEND_MESSAGE', 'SLACK_POST_MESSAGE', 'SLACK_CHAT_POST_MESSAGE'],
+    composioActionSlugs: ['SLACK_CHAT_POST_MESSAGE', 'SLACK_SEND_MESSAGE', 'SLACK_POST_MESSAGE'],
     sortOrder: 3,
   },
   {
@@ -118,7 +118,7 @@ Write a clear, concise email. Include a subject line on the first line prefixed 
       { name: 'subject', type: 'text', label: 'What is this about?', placeholder: 'e.g., Follow up on our meeting', required: true },
       { name: 'context', type: 'textarea', label: 'Any details to include?', placeholder: 'Optional: key points, tone, attachments to mention...' },
     ],
-    composioActionSlugs: ['GMAIL_CREATE_DRAFT', 'GMAIL_SEND_EMAIL', 'GMAIL_SEND_MESSAGE'],
+    composioActionSlugs: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_SEND_EMAIL'],
     sortOrder: 4,
   },
   {
@@ -136,7 +136,7 @@ Write a clear, concise email. Include a subject line on the first line prefixed 
       { name: 'endTime', type: 'time', label: 'End time', required: true, defaultValue: '09:30' },
       { name: 'attendees', type: 'text', label: 'Attendees', placeholder: 'Optional: comma-separated emails' },
     ],
-    composioActionSlugs: ['GOOGLECALENDAR_EVENTS_CREATE', 'GOOGLECALENDAR_CREATE_EVENT', 'GOOGLECALENDAR_QUICK_ADD'],
+    composioActionSlugs: ['GOOGLECALENDAR_CREATE_EVENT', 'GOOGLECALENDAR_EVENTS_CREATE', 'GOOGLECALENDAR_QUICK_ADD', 'GOOGLECALENDAR_CREATE_A_NEW_EVENT'],
     sortOrder: 5,
   },
   {
@@ -157,7 +157,7 @@ Write well-structured content using markdown. Include headers, bullet points whe
       { name: 'title', type: 'text', label: 'Page title', placeholder: 'e.g., Meeting Notes - March 8', required: true },
       { name: 'context', type: 'textarea', label: 'What should be on this page?', placeholder: 'Optional: outline, key topics...' },
     ],
-    composioActionSlugs: ['NOTION_CREATE_PAGE', 'NOTION_ADD_PAGE', 'NOTION_CREATE_A_NEW_PAGE'],
+    composioActionSlugs: ['NOTION_CREATE_A_NEW_PAGE', 'NOTION_CREATE_PAGE', 'NOTION_ADD_PAGE'],
     sortOrder: 6,
   },
   {
@@ -178,7 +178,7 @@ Write well-structured content using markdown. Include headers, bullet points whe
         { label: 'Low', value: '4' },
       ]},
     ],
-    composioActionSlugs: ['LINEAR_CREATE_ISSUE', 'LINEAR_CREATE_LINEAR_ISSUE'],
+    composioActionSlugs: ['LINEAR_CREATE_LINEAR_ISSUE', 'LINEAR_CREATE_ISSUE', 'LINEAR_CREATE_AN_ISSUE'],
     sortOrder: 7,
   },
   {
@@ -194,7 +194,7 @@ Write well-structured content using markdown. Include headers, bullet points whe
       { name: 'title', type: 'text', label: 'Issue title', placeholder: 'e.g., Bug: login fails on mobile', required: true },
       { name: 'body', type: 'textarea', label: 'Description', placeholder: 'Describe the issue...' },
     ],
-    composioActionSlugs: ['GITHUB_CREATE_ISSUE', 'GITHUB_CREATE_AN_ISSUE', 'GITHUB_ISSUES_CREATE'],
+    composioActionSlugs: ['GITHUB_CREATE_AN_ISSUE', 'GITHUB_CREATE_ISSUE', 'GITHUB_ISSUES_CREATE'],
     sortOrder: 8,
   },
   {
@@ -210,7 +210,7 @@ Write well-structured content using markdown. Include headers, bullet points whe
       { name: 'summary', type: 'text', label: 'Summary', placeholder: 'e.g., Update onboarding flow', required: true },
       { name: 'description', type: 'textarea', label: 'Description', placeholder: 'Describe the ticket...' },
     ],
-    composioActionSlugs: ['JIRA_CREATE_ISSUE', 'JIRA_CREATE_JIRA_ISSUE'],
+    composioActionSlugs: ['JIRA_CREATE_JIRA_ISSUE', 'JIRA_CREATE_ISSUE', 'JIRA_CREATE_AN_ISSUE'],
     sortOrder: 9,
   },
 ];
