@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { SERVICES, formatPrice } from '@/lib/services'
+import SettingsNav from '@/components/SettingsNav'
 
 interface ServicePurchase {
   id: string
@@ -274,18 +275,23 @@ export default function AdminServicesPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
+        Settings
+      </h1>
+      <SettingsNav />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-semibold text-neutral-900 dark:text-neutral-100">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
             Service Fulfillment
-          </h1>
+          </h2>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">
             Manage service purchases and fulfillment
           </p>
         </div>
-        <Link 
-          href="/command" 
+        <Link
+          href="/command"
           className="text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 transition flex items-center gap-1"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
