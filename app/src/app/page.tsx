@@ -80,6 +80,29 @@ export default async function LandingPage() {
         </>
       ) : (
         <>
+          {/* Navigation */}
+          <nav className="sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md">
+            <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+              <Link href="/" className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                Tiker
+              </Link>
+              <div className="flex items-center gap-6 text-sm">
+                <Link href="/pricing" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
+                  Pricing
+                </Link>
+                <Link href="/blog" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
+                  Blog
+                </Link>
+                <a href="https://github.com/chitownjk/tiker" target="_blank" rel="noopener noreferrer" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
+                  GitHub
+                </a>
+                <Link href="/auth/login" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
+                  Sign In
+                </Link>
+              </div>
+            </div>
+          </nav>
+
           {/* Hero Section */}
           <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-b from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900">
             <div className="max-w-6xl mx-auto px-6 text-center">
@@ -747,6 +770,47 @@ export default async function LandingPage() {
               </div>
             </div>
           </section>
+
+          {/* Footer */}
+          <footer className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+            <div className="max-w-6xl mx-auto px-6 py-12">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div>
+                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Product</h4>
+                  <div className="space-y-2 text-sm">
+                    <Link href="/pricing" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Pricing</Link>
+                    <Link href="/use-cases" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Use Cases</Link>
+                    <Link href="/security" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Security</Link>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Resources</h4>
+                  <div className="space-y-2 text-sm">
+                    <Link href="/blog" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Blog</Link>
+                    <Link href="/docs" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Docs</Link>
+                    <Link href="/faq" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">FAQ</Link>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Company</h4>
+                  <div className="space-y-2 text-sm">
+                    <Link href="/about" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">About</Link>
+                    <a href="https://github.com/chitownjk/tiker" target="_blank" rel="noopener noreferrer" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">GitHub</a>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Legal</h4>
+                  <div className="space-y-2 text-sm">
+                    <Link href="/privacy" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Privacy</Link>
+                    <Link href="/terms" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Terms</Link>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-8 pt-8 border-t border-neutral-200 dark:border-neutral-800 text-sm text-neutral-500 dark:text-neutral-400">
+                <p>&copy; {new Date().getFullYear()} Tiker. All rights reserved.</p>
+              </div>
+            </div>
+          </footer>
         </>
       )}
     </main>
