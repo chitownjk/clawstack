@@ -37,14 +37,14 @@
 
 | # | Feature | Status | Depends On | Files | Notes |
 |---|---------|--------|------------|-------|-------|
-| 19 | Email Action Item Extraction | Not Started | P0 #3 | In email/scan | Already supported (type: "action_item"). Needs UX for task creation. |
-| 20 | Subscription & Trial Tracker | Not Started | P1 #9 | New component | Detect recurring charges, trial expiry. |
+| 19 | Email Action Item Extraction | Done | P0 #3 | `app/src/app/api/email/action-to-task/route.ts` | Converts extracted action_items to tasks. Creates task with encryption, marks item processed. |
+| 20 | Subscription & Trial Tracker | Done | P1 #9 | `app/src/app/api/subscriptions/route.ts` | Groups subscription/bill items by service, calculates monthly total, tracks upcoming renewals and trials. |
 | 21 | Life Admin Research Agent | Not Started | None | New agent type | Web search + checklist generation. |
-| 22 | Contextual Smart Lists | Not Started | None | `SmartListView.tsx` | Shopping, errands, packing. Calendar-aware. |
-| 23 | Proactive Suggestions Engine | Not Started | P0 #2, P1 #9-12 | `app/src/app/api/suggestions/route.ts` | Pattern analysis across all data. |
+| 22 | Contextual Smart Lists | Done | None | `app/src/app/api/smart-lists/route.ts`, `supabase/migrations/021-smart-lists.sql` | CRUD with AI auto-generation. Types: shopping, errands, packing, prep, custom. |
+| 23 | Proactive Suggestions Engine | Done | P0 #2, P1 #9-12 | `app/src/app/api/suggestions/route.ts` | Analyzes tasks, activities, extracted items, reminders. AI generates 3-5 actionable suggestions. |
 | 24 | Integration Passive Value | Not Started | P0/P1 | Per-integration | Each integration auto-surfaces insights. |
-| 25 | Push Notifications (Web) | Not Started | P1 #14 | Service worker | Permission flow. Briefing + reminder delivery. |
-| 26 | Mobile-First Briefing View | Not Started | P0 #5 | DailyBriefing.tsx | Swipeable cards. Touch-optimized. |
+| 25 | Push Notifications (Web) | Done | P1 #14 | `app/public/sw.js`, `app/src/app/api/push/subscribe/route.ts` | Service worker with push events, notification click handlers, snooze/complete actions. Subscribe/unsubscribe API. |
+| 26 | Mobile-First Briefing View | Done | P0 #5 | `app/src/components/DailyBriefing.tsx` | Mobile-responsive padding, stacked action buttons on small screens, touch-manipulation, line-clamp. |
 
 ## P3: Autonomy (Weeks 11-20)
 

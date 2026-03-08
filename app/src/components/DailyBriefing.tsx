@@ -206,8 +206,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
   });
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
-      <div className="max-w-4xl w-full mx-auto px-4 py-6 space-y-6">
+    <div className="flex flex-col h-full overflow-y-auto scroll-smooth">
+      <div className="max-w-4xl w-full mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
         {/* Header + AI Summary */}
         <div>
@@ -517,20 +517,36 @@ function ExtractedItemRow({ item, onAction }: {
   const action = calendarTypes.includes(item.type) ? 'create_event' : 'acknowledge';
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
-      <span className={`text-xs font-medium px-2 py-1 rounded-full ${config.color}`}>
+    <div className="flex items-start sm:items-center gap-3 p-3 sm:p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50">
+      <span className={`text-xs font-medium px-2 py-1 rounded-full ${config.color} flex-shrink-0`}>
         {config.icon} {item.type}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-neutral-900 dark:text-neutral-100 truncate">{item.title}</p>
+        <p className="text-sm text-neutral-900 dark:text-neutral-100 line-clamp-2 sm:truncate">{item.title}</p>
         {item.data?.date && (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.data.date}</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{item.data.date}</p>
         )}
         {item.data?.amount && (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">${item.data.amount}</p>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">${item.data.amount}</p>
         )}
+        {/* Mobile: action buttons below text */}
+        <div className="flex gap-2 mt-2 sm:hidden">
+          <button
+            onClick={() => onAction(item.id, action)}
+            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors touch-manipulation"
+          >
+            {config.actionLabel}
+          </button>
+          <button
+            onClick={() => onAction(item.id, 'dismiss')}
+            className="text-xs px-3 py-1.5 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-md transition-colors touch-manipulation"
+          >
+            Dismiss
+          </button>
+        </div>
       </div>
-      <div className="flex gap-1.5 flex-shrink-0">
+      {/* Desktop: action buttons to the right */}
+      <div className="hidden sm:flex gap-1.5 flex-shrink-0">
         <button
           onClick={() => onAction(item.id, action)}
           className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
