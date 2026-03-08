@@ -446,7 +446,7 @@ export default function MissionControlClient() {
                       : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
                   }`}
                 >
-                  Files
+                  Library
                 </button>
               </div>
 

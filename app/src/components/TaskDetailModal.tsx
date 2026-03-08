@@ -8,6 +8,7 @@ import SimpleMarkdown from '@/components/SimpleMarkdown'
 import MentionInput from '@/components/MentionInput'
 import CommentContent from '@/components/CommentContent'
 import FileAttachments from '@/components/FileAttachments'
+import SaveResponseModal from '@/components/SaveResponseModal'
 import { RecurrenceRule } from '@/types/views'
 
 interface TaskDetailModalProps {
@@ -48,6 +49,10 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
   // Agent assignment state
   const [showAgentPicker, setShowAgentPicker] = useState(false)
   const [assigningAgent, setAssigningAgent] = useState(false)
+
+  // Save response state
+  const [saveModalComment, setSaveModalComment] = useState<Comment | null>(null)
+  const [savedCommentIds, setSavedCommentIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadComments()
@@ -551,7 +556,7 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
             ) : comments.length > 0 ? (
               <div className="space-y-4">
                 {comments.map(comment => (
-                  <div key={comment.id} className="flex gap-3">
+                  <div key={comment.id} className="flex gap-3 group">
                     <div className="flex-shrink-0">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-900/40 dark:to-orange-800/40 flex items-center justify-center">
                         {comment.agent?.emoji}
@@ -565,6 +570,28 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
                         <span className="text-xs text-gray-500 dark:text-neutral-500">
                           {new Date(comment.created_at).toLocaleString()}
                         </span>
+                        {/* Save button -- only on agent comments (not user "You" comments) */}
+                        {comment.agent_id && comment.agent?.name !== 'You' && (
+                          savedCommentIds.has(comment.id) ? (
+                            <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Saved
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => setSaveModalComment(comment)}
+                              className="text-xs text-gray-400 dark:text-neutral-500 hover:text-blue-600 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
+                              title="Save this response to Library"
+                            >
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                              </svg>
+                              Save
+                            </button>
+                          )
+                        )}
                       </div>
                       <p className="text-gray-700 dark:text-neutral-300 text-sm">
                         <CommentContent content={comment.content} />
@@ -613,6 +640,20 @@ export default function TaskDetailModal({ task, agents, onClose, onDelete, onMar
           </div>
         </div>
       </div>
+
+      {/* Save Response Modal */}
+      {saveModalComment && (
+        <SaveResponseModal
+          taskId={task.id}
+          commentId={saveModalComment.id}
+          taskTitle={task.title}
+          onClose={() => setSaveModalComment(null)}
+          onSaved={(fileId) => {
+            setSavedCommentIds(prev => { const next = new Set(Array.from(prev)); next.add(saveModalComment.id); return next })
+            setSaveModalComment(null)
+          }}
+        />
+      )}
     </div>
   )
 }
