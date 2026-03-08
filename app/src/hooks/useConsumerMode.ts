@@ -14,13 +14,31 @@ interface ConsumerModeState {
   updateProfile: (updates: { first_name?: string; use_case?: string; default_view?: string }) => Promise<void>
 }
 
+// Helper to call the server-side preferences API
+async function patchPreferences(updates: Record<string, any>): Promise<{ success: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/account/preferences', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      return { success: false, error: data.error || `HTTP ${res.status}` }
+    }
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Network error' }
+  }
+}
+
 export function useConsumerMode(): ConsumerModeState {
   const [isAdvanced, setIsAdvanced] = useState(false)
   const [firstName, setFirstName] = useState<string | null>(null)
   const [useCase, setUseCase] = useState<string | null>(null)
   const [defaultView, setDefaultView] = useState('briefing')
   const [loading, setLoading] = useState(true)
-  const accountIdRef = useRef<string | null>(null)
   const supabaseRef = useRef(createClient())
 
   useEffect(() => {
@@ -33,6 +51,7 @@ export function useConsumerMode(): ConsumerModeState {
           return
         }
 
+        // SELECT is fine with RLS, only UPDATE triggers the users table issue
         const { data: account, error } = await supabase
           .from('accounts')
           .select('*')
@@ -44,7 +63,6 @@ export function useConsumerMode(): ConsumerModeState {
         }
 
         if (account) {
-          accountIdRef.current = account.id
           setIsAdvanced(account.is_advanced_mode || false)
           setFirstName(account.first_name || null)
           setUseCase(account.use_case || null)
@@ -61,47 +79,25 @@ export function useConsumerMode(): ConsumerModeState {
   }, [])
 
   const toggleMode = useCallback(async () => {
-    const accountId = accountIdRef.current
-    if (!accountId) return
-
     const newMode = !isAdvanced
-    setIsAdvanced(newMode)
+    setIsAdvanced(newMode) // optimistic
 
-    try {
-      const { error } = await supabaseRef.current
-        .from('accounts')
-        .update({ is_advanced_mode: newMode })
-        .eq('id', accountId)
-
-      if (error) {
-        console.error('Failed to toggle mode:', error.message)
-        setIsAdvanced(!newMode) // revert on failure
-      }
-    } catch (err) {
-      console.error('Failed to toggle mode:', err)
-      setIsAdvanced(!newMode) // revert on failure
+    const result = await patchPreferences({ is_advanced_mode: newMode })
+    if (!result.success) {
+      console.error('Failed to toggle mode:', result.error)
+      setIsAdvanced(!newMode) // revert
     }
   }, [isAdvanced])
 
   const updateProfile = useCallback(async (updates: { first_name?: string; use_case?: string; default_view?: string }) => {
-    const accountId = accountIdRef.current
-    if (!accountId) return
-
+    // Optimistic local updates
     if (updates.first_name !== undefined) setFirstName(updates.first_name)
     if (updates.use_case !== undefined) setUseCase(updates.use_case)
     if (updates.default_view !== undefined) setDefaultView(updates.default_view)
 
-    try {
-      const { error } = await supabaseRef.current
-        .from('accounts')
-        .update(updates)
-        .eq('id', accountId)
-
-      if (error) {
-        console.error('Failed to update profile:', error.message)
-      }
-    } catch (err) {
-      console.error('Failed to update profile:', err)
+    const result = await patchPreferences(updates)
+    if (!result.success) {
+      console.error('Failed to update profile:', result.error)
     }
   }, [])
 
