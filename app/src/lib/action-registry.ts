@@ -27,10 +27,12 @@ export interface ActionDefinition {
   formFields: ActionFormField[];
   composioActionSlugs: string[]; // Composio action slugs with fallbacks
   sortOrder: number;
+  consumer: boolean;        // true = show in consumer mode
 }
 
 export interface WorkflowDefinition extends ActionDefinition {
   category: 'workflow';
+  consumer: boolean;
   workflowConfig: {
     stepsDescription: string;
     defaultStepCount: number;
@@ -61,6 +63,7 @@ Write ONLY the post content, nothing else.`,
     ],
     composioActionSlugs: ['LINKEDIN_CREATE_LINKED_IN_POST'],
     sortOrder: 1,
+    consumer: true,
   },
   {
     id: 'tweet',
@@ -82,6 +85,7 @@ Write ONLY the tweet text, nothing else.`,
     ],
     composioActionSlugs: ['TWITTER_CREATION_OF_A_POST', 'TWITTER_CREATE_A_TWEET', 'TWITTER_CREATE_TWEET', 'TWITTER_POST_TWEET'],
     sortOrder: 2,
+    consumer: true,
   },
   {
     id: 'slack-message',
@@ -97,6 +101,7 @@ Write ONLY the tweet text, nothing else.`,
     ],
     composioActionSlugs: ['SLACK_CHAT_POST_MESSAGE', 'SLACK_SEND_MESSAGE', 'SLACK_POST_MESSAGE'],
     sortOrder: 3,
+    consumer: true,
   },
   {
     id: 'email-draft',
@@ -120,6 +125,7 @@ Write a clear, concise email. Include a subject line on the first line prefixed 
     ],
     composioActionSlugs: ['GMAIL_CREATE_EMAIL_DRAFT', 'GMAIL_SEND_EMAIL'],
     sortOrder: 4,
+    consumer: true,
   },
   {
     id: 'calendar-event',
@@ -138,6 +144,7 @@ Write a clear, concise email. Include a subject line on the first line prefixed 
     ],
     composioActionSlugs: ['GOOGLECALENDAR_CREATE_EVENT', 'GOOGLECALENDAR_EVENTS_CREATE', 'GOOGLECALENDAR_QUICK_ADD', 'GOOGLECALENDAR_CREATE_A_NEW_EVENT'],
     sortOrder: 5,
+    consumer: true,
   },
   {
     id: 'notion-page',
@@ -159,6 +166,7 @@ Write well-structured content using markdown. Include headers, bullet points whe
     ],
     composioActionSlugs: ['NOTION_CREATE_A_NEW_PAGE', 'NOTION_CREATE_PAGE', 'NOTION_ADD_PAGE'],
     sortOrder: 6,
+    consumer: true,
   },
   {
     id: 'linear-issue',
@@ -180,6 +188,7 @@ Write well-structured content using markdown. Include headers, bullet points whe
     ],
     composioActionSlugs: ['LINEAR_CREATE_LINEAR_ISSUE', 'LINEAR_CREATE_ISSUE', 'LINEAR_CREATE_AN_ISSUE'],
     sortOrder: 7,
+    consumer: false,
   },
   {
     id: 'github-issue',
@@ -196,6 +205,7 @@ Write well-structured content using markdown. Include headers, bullet points whe
     ],
     composioActionSlugs: ['GITHUB_CREATE_AN_ISSUE', 'GITHUB_CREATE_ISSUE', 'GITHUB_ISSUES_CREATE'],
     sortOrder: 8,
+    consumer: false,
   },
   {
     id: 'jira-ticket',
@@ -212,6 +222,96 @@ Write well-structured content using markdown. Include headers, bullet points whe
     ],
     composioActionSlugs: ['JIRA_CREATE_JIRA_ISSUE', 'JIRA_CREATE_ISSUE', 'JIRA_CREATE_AN_ISSUE'],
     sortOrder: 9,
+    consumer: false,
+  },
+  // ─── Consumer-First Quick Actions (no external service needed) ──
+  {
+    id: 'grocery-list',
+    name: 'Grocery List',
+    description: 'AI helps build a grocery list from a meal plan or recipe',
+    icon: '🛒',
+    service: '_internal',
+    category: 'quick',
+    aiDraft: true,
+    aiPromptTemplate: `Create a organized grocery list based on the following:
+
+{{description}}
+
+Organize by store section (Produce, Dairy, Meat, Pantry, Frozen, etc.). Include approximate quantities. Format as a clean checklist.`,
+    formFields: [
+      { name: 'description', type: 'textarea', label: 'What are you shopping for?', placeholder: "e.g., 'Meals for the week: tacos, pasta, stir fry' or 'Birthday party for 12 kids'", required: true },
+    ],
+    composioActionSlugs: [],
+    sortOrder: 10,
+    consumer: true,
+  },
+  {
+    id: 'plan-event',
+    name: 'Plan an Event',
+    description: 'AI creates a detailed event plan with timeline and checklist',
+    icon: '🎉',
+    service: '_internal',
+    category: 'quick',
+    aiDraft: true,
+    aiPromptTemplate: `Create a detailed event plan for the following:
+
+Event: {{description}}
+{{#date}}Date: {{date}}{{/date}}
+{{#budget}}Budget: {{budget}}{{/budget}}
+
+Include: timeline, checklist of things to prepare, supply list, and any helpful tips. Be specific and actionable.`,
+    formFields: [
+      { name: 'description', type: 'textarea', label: 'What event are you planning?', placeholder: "e.g., 'Jake's 7th birthday party at the park' or 'Dinner party for 8 adults'", required: true },
+      { name: 'date', type: 'date', label: 'When is it?' },
+      { name: 'budget', type: 'text', label: 'Budget (optional)', placeholder: 'e.g., $200' },
+    ],
+    composioActionSlugs: [],
+    sortOrder: 11,
+    consumer: true,
+  },
+  {
+    id: 'research-topic',
+    name: 'Research',
+    description: 'AI researches a topic and gives you a summary',
+    icon: '🔍',
+    service: '_internal',
+    category: 'quick',
+    aiDraft: true,
+    aiPromptTemplate: `Research the following topic thoroughly and provide a clear, actionable summary:
+
+Topic: {{description}}
+
+Include key findings, pros/cons if applicable, and specific recommendations. Cite sources where possible. Keep it practical and easy to act on.`,
+    formFields: [
+      { name: 'description', type: 'textarea', label: 'What do you want to know?', placeholder: "e.g., 'Best swim lessons for 5 year olds near Austin TX' or 'How to start a small Etsy business'", required: true },
+    ],
+    composioActionSlugs: [],
+    sortOrder: 12,
+    consumer: true,
+  },
+  {
+    id: 'meal-plan',
+    name: 'Meal Plan',
+    description: 'AI creates a weekly meal plan with recipes',
+    icon: '🍽️',
+    service: '_internal',
+    category: 'quick',
+    aiDraft: true,
+    aiPromptTemplate: `Create a weekly meal plan based on:
+
+Preferences: {{description}}
+{{#restrictions}}Dietary restrictions: {{restrictions}}{{/restrictions}}
+{{#servings}}Servings: {{servings}}{{/servings}}
+
+Include breakfast, lunch, dinner for 7 days. Keep meals practical for busy families. Include a consolidated grocery list at the end.`,
+    formFields: [
+      { name: 'description', type: 'textarea', label: 'What does your family like to eat?', placeholder: "e.g., 'Quick weeknight meals, kid-friendly, we love Mexican and Italian food'", required: true },
+      { name: 'restrictions', type: 'text', label: 'Any dietary restrictions?', placeholder: 'e.g., nut allergy, vegetarian, gluten-free' },
+      { name: 'servings', type: 'text', label: 'Family size', placeholder: 'e.g., 2 adults, 2 kids' },
+    ],
+    composioActionSlugs: [],
+    sortOrder: 13,
+    consumer: true,
   },
 ];
 
@@ -243,6 +343,7 @@ Format your response as a JSON array of strings, each string being one complete 
     ],
     composioActionSlugs: ['LINKEDIN_CREATE_LINKED_IN_POST'],
     sortOrder: 1,
+    consumer: true,
     workflowConfig: {
       stepsDescription: 'One post per day',
       defaultStepCount: 5,
@@ -272,6 +373,7 @@ Format your response as a JSON array of strings. Example:
     ],
     composioActionSlugs: ['TWITTER_CREATION_OF_A_POST', 'TWITTER_CREATE_A_TWEET', 'TWITTER_CREATE_TWEET', 'TWITTER_POST_TWEET'],
     sortOrder: 2,
+    consumer: true,
     workflowConfig: {
       stepsDescription: 'One tweet every 2 minutes',
       defaultStepCount: 5,
@@ -312,6 +414,7 @@ Format as JSON:
     ],
     composioActionSlugs: ['LINKEDIN_CREATE_LINKED_IN_POST', 'TWITTER_CREATION_OF_A_POST'],
     sortOrder: 3,
+    consumer: false,
     workflowConfig: {
       stepsDescription: 'LinkedIn + X posts at launch, then follow-ups 4h later',
       defaultStepCount: 4,
@@ -335,22 +438,34 @@ export function getActionsForService(service: string): ActionDefinition[] {
 }
 
 export function getAvailableActions(
-  connectedServices: string[]
+  connectedServices: string[],
+  isConsumer: boolean = false
 ): { available: ActionDefinition[]; suggested: ActionDefinition[] } {
-  const all = getAllActions();
-  const available = all.filter(a => connectedServices.includes(a.service));
-  const suggested = all.filter(a => !connectedServices.includes(a.service));
+  let all = getAllActions();
+  if (isConsumer) {
+    all = all.filter(a => a.consumer);
+  }
+  const available = all.filter(a => connectedServices.includes(a.service) || a.service === '_internal');
+  const suggested = all.filter(a => !connectedServices.includes(a.service) && a.service !== '_internal');
   return { available, suggested };
 }
 
-export function getQuickActions(connectedServices: string[]): ActionDefinition[] {
-  return QUICK_ACTIONS
-    .filter(a => connectedServices.includes(a.service))
+export function getQuickActions(connectedServices: string[], isConsumer: boolean = false): ActionDefinition[] {
+  let actions = QUICK_ACTIONS;
+  if (isConsumer) {
+    actions = actions.filter(a => a.consumer);
+  }
+  return actions
+    .filter(a => connectedServices.includes(a.service) || a.service === '_internal')
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
-export function getWorkflowTemplates(connectedServices: string[]): WorkflowDefinition[] {
-  return WORKFLOW_TEMPLATES
+export function getWorkflowTemplates(connectedServices: string[], isConsumer: boolean = false): WorkflowDefinition[] {
+  let templates = WORKFLOW_TEMPLATES;
+  if (isConsumer) {
+    templates = templates.filter(t => t.consumer);
+  }
+  return templates
     .filter(t => connectedServices.includes(t.service))
     .sort((a, b) => a.sortOrder - b.sortOrder);
 }

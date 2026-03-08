@@ -9,6 +9,7 @@ interface SimpleCreateTaskModalProps {
   onClose: () => void;
   onTaskCreated: () => void;
   initialDate?: string; // YYYY-MM-DD format
+  isConsumer?: boolean;
 }
 
 type RecurrenceFreq = RecurrenceRule['freq'];
@@ -20,11 +21,13 @@ export default function SimpleCreateTaskModal({
   onClose,
   onTaskCreated,
   initialDate,
+  isConsumer = false,
 }: SimpleCreateTaskModalProps) {
   const [description, setDescription] = useState('');
   const [when, setWhen] = useState<'now' | 'today' | 'this_week' | 'later' | 'pick'>('later');
   const [customDate, setCustomDate] = useState('');
-  const [needHelp, setNeedHelp] = useState<boolean | null>(null);
+  // In consumer mode, default to AI help enabled
+  const [needHelp, setNeedHelp] = useState<boolean | null>(isConsumer ? true : null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -118,7 +121,7 @@ export default function SimpleCreateTaskModal({
     setDescription('');
     setWhen('later');
     setCustomDate('');
-    setNeedHelp(null);
+    setNeedHelp(isConsumer ? true : null);
     setRecurrenceEnabled(false);
     setRecurrenceFreq('weekly');
     setWeeklyDays([]);
@@ -130,7 +133,7 @@ export default function SimpleCreateTaskModal({
       return;
     }
 
-    if (needHelp === null) {
+    if (needHelp === null && !isConsumer) {
       setError('Please let us know if you need help');
       return;
     }
@@ -207,7 +210,7 @@ export default function SimpleCreateTaskModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-neutral-900 rounded-xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">New task</h2>
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{isConsumer ? 'What do you need?' : 'New task'}</h2>
           <button
             onClick={() => { resetForm(); onClose(); }}
             className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 text-2xl leading-none"
@@ -410,7 +413,7 @@ export default function SimpleCreateTaskModal({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading || !description.trim() || needHelp === null}
+            disabled={loading || !description.trim() || (!isConsumer && needHelp === null)}
             className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading && (
@@ -419,7 +422,7 @@ export default function SimpleCreateTaskModal({
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
               </svg>
             )}
-            {loading ? 'Creating...' : 'Create Task'}
+            {loading ? 'Creating...' : isConsumer ? 'Add' : 'Create Task'}
           </button>
         </div>
       </div>

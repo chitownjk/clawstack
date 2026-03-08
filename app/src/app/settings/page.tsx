@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import TwoFactorSetup from '@/components/TwoFactorSetup'
 import SettingsNav from '@/components/SettingsNav'
+import { useConsumerMode } from '@/hooks/useConsumerMode'
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   
   const supabase = createClient()
   const router = useRouter()
+  const { isConsumer, isAdvanced, toggleMode, loading: modeLoading } = useConsumerMode()
 
   useEffect(() => {
     async function loadUser() {
@@ -209,12 +211,53 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Mode Toggle */}
+        <section className="card p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+                Mode
+              </h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                {isConsumer
+                  ? 'Simple mode keeps things clean and easy. Switch to Advanced for full control.'
+                  : 'Advanced mode shows all features. Switch to Simple for a cleaner experience.'}
+              </p>
+            </div>
+            <button
+              onClick={toggleMode}
+              disabled={modeLoading}
+              className={`relative inline-flex h-8 w-[140px] items-center rounded-full transition-colors ${
+                isAdvanced
+                  ? 'bg-purple-600'
+                  : 'bg-blue-600'
+              }`}
+            >
+              <span className={`absolute left-2 text-xs font-medium transition-opacity ${
+                isConsumer ? 'text-white opacity-100' : 'text-blue-200 opacity-50'
+              }`}>
+                Simple
+              </span>
+              <span className={`absolute right-2 text-xs font-medium transition-opacity ${
+                isAdvanced ? 'text-white opacity-100' : 'text-purple-200 opacity-50'
+              }`}>
+                Advanced
+              </span>
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                  isAdvanced ? 'translate-x-[108px]' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+        </section>
+
         {/* Preferences */}
         <section className="card p-6 mb-8">
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
             Preferences
           </h2>
-          
+
           <div className="space-y-4">
             <label className="flex items-start gap-3 cursor-pointer">
               <input
@@ -225,65 +268,73 @@ export default function SettingsPage() {
               />
               <div>
                 <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  Go to Command on login
+                  {isConsumer ? 'Go to Home on login' : 'Go to Command on login'}
                 </p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Skip the landing page and go straight to MC when you're logged in
-                </p>
-              </div>
-            </label>
-            
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={contributionEnabled}
-                onChange={(e) => setContributionEnabled(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 text-blue-600 mt-0.5"
-              />
-              <div>
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  Enable pattern contribution suggestions
-                </p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Agents will suggest sharing valuable patterns back to the Tiker Hub after completing tasks. You review and approve each suggestion.
+                  {isConsumer
+                    ? 'Skip the landing page and go straight to your dashboard when you log in'
+                    : 'Skip the landing page and go straight to MC when you\'re logged in'}
                 </p>
               </div>
             </label>
 
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={manualAgentSelection}
-                onChange={(e) => setManualAgentSelection(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 text-blue-600 mt-0.5"
-              />
-              <div>
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  Manual agent selection
-                </p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  Show the "+ Add Agent" button in Command and choose which agent skill handles each task. When off, tagging "AI help needed" auto-selects the best agent.
-                </p>
-              </div>
-            </label>
-
-            <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
-              <label className="block">
-                <p className="font-medium text-neutral-900 dark:text-neutral-100 mb-2">
-                  Email Signature
-                </p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-                  This signature will be appended to all emails sent by your agents via Gmail. Recipients will know it was sent by your AI assistant.
-                </p>
-                <textarea
-                  value={emailSignature}
-                  onChange={(e) => setEmailSignature(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                  placeholder="---&#10;Sent by my Tiker assistant"
+            {isAdvanced && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={contributionEnabled}
+                  onChange={(e) => setContributionEnabled(e.target.checked)}
+                  className="w-5 h-5 rounded border-neutral-300 text-blue-600 mt-0.5"
                 />
+                <div>
+                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                    Enable pattern contribution suggestions
+                  </p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    Agents will suggest sharing valuable patterns back to the Tiker Hub after completing tasks. You review and approve each suggestion.
+                  </p>
+                </div>
               </label>
-            </div>
+            )}
+
+            {isAdvanced && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={manualAgentSelection}
+                  onChange={(e) => setManualAgentSelection(e.target.checked)}
+                  className="w-5 h-5 rounded border-neutral-300 text-blue-600 mt-0.5"
+                />
+                <div>
+                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                    Manual agent selection
+                  </p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    Show the "+ Add Agent" button in Command and choose which agent skill handles each task. When off, tagging "AI help needed" auto-selects the best agent.
+                  </p>
+                </div>
+              </label>
+            )}
+
+            {isAdvanced && (
+              <div className="pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                <label className="block">
+                  <p className="font-medium text-neutral-900 dark:text-neutral-100 mb-2">
+                    Email Signature
+                  </p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
+                    This signature will be appended to all emails sent by your agents via Gmail. Recipients will know it was sent by your AI assistant.
+                  </p>
+                  <textarea
+                    value={emailSignature}
+                    onChange={(e) => setEmailSignature(e.target.value)}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                    placeholder="---&#10;Sent by my Tiker assistant"
+                  />
+                </label>
+              </div>
+            )}
           </div>
           
           {message && (
@@ -305,51 +356,53 @@ export default function SettingsPage() {
           </button>
         </section>
 
-        {/* Security / 2FA */}
-        <section className="card p-6 mb-8">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
-            Security
-          </h2>
-          
-          {account?.two_factor_enabled ? (
-            <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
-              <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <div>
-                <p className="font-medium text-green-800 dark:text-green-200">
-                  Two-factor authentication enabled
-                </p>
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  Write access is protected by your authenticator app
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg mb-6">
-                <svg className="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        {/* Security / 2FA - Advanced only */}
+        {isAdvanced && (
+          <section className="card p-6 mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
+              Security
+            </h2>
+
+            {account?.two_factor_enabled ? (
+              <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-950/30 rounded-lg">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
                 <div>
-                  <p className="font-medium text-amber-800 dark:text-amber-200">
-                    Two-factor authentication not enabled
+                  <p className="font-medium text-green-800 dark:text-green-200">
+                    Two-factor authentication enabled
                   </p>
-                  <p className="text-sm text-amber-700 dark:text-amber-300">
-                    Enable 2FA to unlock write access in Command. Until then, you're in read-only mode.
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    Write access is protected by your authenticator app
                   </p>
                 </div>
               </div>
-              
-              <TwoFactorSetup 
-                onComplete={() => {
-                  // Refresh account data
-                  window.location.reload()
-                }}
-              />
-            </div>
-          )}
-        </section>
+            ) : (
+              <div>
+                <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg mb-6">
+                  <svg className="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div>
+                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                      Two-factor authentication not enabled
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      Enable 2FA to unlock write access in Command. Until then, you're in read-only mode.
+                    </p>
+                  </div>
+                </div>
+
+                <TwoFactorSetup
+                  onComplete={() => {
+                    // Refresh account data
+                    window.location.reload()
+                  }}
+                />
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Danger Zone */}
         <section className="card p-6 border-red-200 dark:border-red-900">
@@ -427,7 +480,7 @@ export default function SettingsPage() {
         {/* Back link */}
         <div className="mt-8">
           <Link href="/command" className="text-blue-600 dark:text-blue-400 hover:underline">
-            ← Back to Command
+            {isConsumer ? '← Back to Home' : '← Back to Command'}
           </Link>
         </div>
       </div>

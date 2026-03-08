@@ -63,13 +63,15 @@ interface DailyBriefingProps {
   activities: Activity[];
   onTaskClick: (task: Task) => void;
   onOpenChat?: () => void;
+  isConsumer?: boolean;
+  firstName?: string | null;
 }
 
 function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function DailyBriefing({ tasks, agents, activities, onTaskClick, onOpenChat }: DailyBriefingProps) {
+export default function DailyBriefing({ tasks, agents, activities, onTaskClick, onOpenChat, isConsumer = false, firstName }: DailyBriefingProps) {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
@@ -237,7 +239,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
 
   // Greeting
   const hour = now.getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greetingBase = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const greeting = firstName ? `${greetingBase}, ${firstName}!` : greetingBase;
 
   const dateDisplay = now.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -282,10 +285,10 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
 
         {/* Quick Stats Row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="Active Tasks" value={activeTasks.length} color="blue" />
-          <StatCard label="Needs Review" value={reviewTasks.length} color={reviewTasks.length > 0 ? 'amber' : 'gray'} pulse={reviewTasks.length > 0} />
-          <StatCard label="Blocked" value={blockedTasks.length} color={blockedTasks.length > 0 ? 'red' : 'gray'} />
-          <StatCard label="Done Today" value={completedToday.length} color="green" />
+          <StatCard label={isConsumer ? 'To Do' : 'Active Tasks'} value={activeTasks.length} color="blue" />
+          <StatCard label={isConsumer ? 'Ready for You' : 'Needs Review'} value={reviewTasks.length} color={reviewTasks.length > 0 ? 'amber' : 'gray'} pulse={reviewTasks.length > 0} />
+          <StatCard label={isConsumer ? 'Needs Attention' : 'Blocked'} value={blockedTasks.length} color={blockedTasks.length > 0 ? 'red' : 'gray'} />
+          <StatCard label={isConsumer ? 'Done Today' : 'Done Today'} value={completedToday.length} color="green" />
         </div>
 
         {/* Attention Items (from AI briefing) */}
@@ -316,23 +319,23 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
           (urgentTasks.length > 0 || reviewTasks.length > 0 || blockedTasks.length > 0) && (
           <section>
             <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
-              Needs Your Attention
+              {isConsumer ? 'What Needs Your Attention' : 'Needs Your Attention'}
             </h2>
             <div className="space-y-2">
               {reviewTasks.map(task => (
-                <BriefingTaskRow key={task.id} task={task} agents={agents} badge="Review"
+                <BriefingTaskRow key={task.id} task={task} agents={agents} badge={isConsumer ? 'Ready for you' : 'Review'}
                   badgeColor="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                  onClick={() => onTaskClick(task)} />
+                  onClick={() => onTaskClick(task)} isConsumer={isConsumer} />
               ))}
               {urgentTasks.filter(t => t.status !== 'review').map(task => (
                 <BriefingTaskRow key={task.id} task={task} agents={agents} badge="Urgent"
                   badgeColor="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                  onClick={() => onTaskClick(task)} />
+                  onClick={() => onTaskClick(task)} isConsumer={isConsumer} />
               ))}
               {blockedTasks.map(task => (
-                <BriefingTaskRow key={task.id} task={task} agents={agents} badge="Blocked"
+                <BriefingTaskRow key={task.id} task={task} agents={agents} badge={isConsumer ? 'Needs attention' : 'Blocked'}
                   badgeColor="bg-neutral-200 text-neutral-700 dark:bg-neutral-700 dark:text-neutral-300"
-                  onClick={() => onTaskClick(task)} />
+                  onClick={() => onTaskClick(task)} isConsumer={isConsumer} />
               ))}
             </div>
           </section>
@@ -455,8 +458,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
           </section>
         )}
 
-        {/* AI Activity */}
-        {recentActivities.length > 0 && (
+        {/* AI Activity - hidden in consumer mode */}
+        {!isConsumer && recentActivities.length > 0 && (
           <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
             <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
               AI Activity
@@ -490,7 +493,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
               onClick={onOpenChat}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
             >
-              <span>Ask your team anything</span>
+              <span>{isConsumer ? 'Ask me anything' : 'Ask your team anything'}</span>
             </button>
           </div>
         )}
@@ -521,8 +524,8 @@ function StatCard({ label, value, color, pulse }: {
   );
 }
 
-function BriefingTaskRow({ task, agents, badge, badgeColor, onClick }: {
-  task: Task; agents: Agent[]; badge?: string; badgeColor?: string; onClick: () => void;
+function BriefingTaskRow({ task, agents, badge, badgeColor, onClick, isConsumer }: {
+  task: Task; agents: Agent[]; badge?: string; badgeColor?: string; onClick: () => void; isConsumer?: boolean;
 }) {
   const assignedAgents = agents.filter(a => task.assigned_agent_ids?.includes(a.id));
 
@@ -536,9 +539,14 @@ function BriefingTaskRow({ task, agents, badge, badgeColor, onClick }: {
         <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate group-hover:text-blue-800 dark:group-hover:text-blue-300">
           {task.title}
         </p>
-        {assignedAgents.length > 0 && (
+        {!isConsumer && assignedAgents.length > 0 && (
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
             {assignedAgents.map(a => `${a.emoji} ${a.name}`).join(', ')}
+          </p>
+        )}
+        {isConsumer && assignedAgents.length > 0 && (
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+            AI is working on this
           </p>
         )}
       </div>

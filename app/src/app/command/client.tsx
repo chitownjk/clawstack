@@ -18,6 +18,8 @@ import ActionBar from '@/components/ActionBar'
 import ActionSheet from '@/components/ActionSheet'
 import ActionCenter from '@/components/ActionCenter'
 import { ViewType } from '@/types/views'
+import { useConsumerMode } from '@/hooks/useConsumerMode'
+import { getStatusLabel } from '@/lib/consumer-labels'
 import { ActionDefinition, WorkflowDefinition } from '@/lib/action-registry'
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors, closestCenter, DragOverlay, DragStartEvent } from '@dnd-kit/core'
 import { createClient } from '@/lib/supabase'
@@ -52,6 +54,9 @@ export default function MissionControlClient() {
   const [chatTask, setChatTask] = useState<Task | null>(null)
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
   const [createTaskDate, setCreateTaskDate] = useState<string | null>(null)
+
+  // Consumer mode
+  const { isConsumer, firstName } = useConsumerMode()
 
   // Action system state
   const [actionBarActions, setActionBarActions] = useState<ActionDefinition[]>([])
@@ -109,9 +114,11 @@ export default function MissionControlClient() {
   useEffect(() => {
     const reviewCount = tasks.filter(t => t.status === 'review').length
     if (reviewCount > 0) {
-      document.title = `(${reviewCount}) Command - Needs Review`
+      document.title = isConsumer
+        ? `(${reviewCount}) Tiker - Ready for you`
+        : `(${reviewCount}) Command - Needs Review`
     } else {
-      document.title = 'Command - Tiker'
+      document.title = isConsumer ? 'Tiker' : 'Command - Tiker'
     }
   }, [tasks])
 
@@ -312,21 +319,25 @@ export default function MissionControlClient() {
         <div className="max-w-[1800px] mx-auto px-6 py-3">
           {/* Top row: title + stats */}
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">Command</h1>
+            <h1 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 tracking-tight">
+              {isConsumer ? (firstName ? `Hi, ${firstName}` : 'Home') : 'Command'}
+            </h1>
 
             <div className="flex items-center gap-5">
               {/* Stat pills */}
               <div className="flex items-center gap-3">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                  <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{totalAgents}</span> agents
-                </span>
+                {!isConsumer && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                    <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{totalAgents}</span> agents
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                   <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{tasksInQueue}</span> tasks
                 </span>
                 {reviewCount > 0 && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-xs font-medium text-orange-700 dark:text-orange-300">
                     <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
-                    <span className="font-semibold">{reviewCount}</span> review
+                    <span className="font-semibold">{reviewCount}</span> {isConsumer ? 'ready for you' : 'review'}
                   </span>
                 )}
               </div>
@@ -361,56 +372,58 @@ export default function MissionControlClient() {
           {/* Controls row */}
           <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-100 dark:border-neutral-800">
             <div className="flex items-center gap-3">
-              {/* Agent filter dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setAgentDropdownOpen(!agentDropdownOpen)}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-                >
-                  {selectedAgent ? (
+              {/* Agent filter dropdown - advanced only */}
+              {!isConsumer && (
+                <div className="relative">
+                  <button
+                    onClick={() => setAgentDropdownOpen(!agentDropdownOpen)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                  >
+                    {selectedAgent ? (
+                      <>
+                        <span>{agents.find(a => a.name === selectedAgent)?.emoji || '👤'}</span>
+                        <span>{selectedAgent}</span>
+                      </>
+                    ) : (
+                      <span>All agents</span>
+                    )}
+                    <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {agentDropdownOpen && (
                     <>
-                      <span>{agents.find(a => a.name === selectedAgent)?.emoji || '👤'}</span>
-                      <span>{selectedAgent}</span>
-                    </>
-                  ) : (
-                    <span>All agents</span>
-                  )}
-                  <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {agentDropdownOpen && (
-                  <>
-                    <div className="fixed inset-0 z-20" onClick={() => setAgentDropdownOpen(false)} />
-                    <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-30 py-1">
-                      <button
-                        onClick={() => { setSelectedAgent(null); setAgentDropdownOpen(false); }}
-                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                          selectedAgent === null
-                            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
-                            : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
-                        }`}
-                      >
-                        All agents
-                      </button>
-                      {agents.map(agent => (
+                      <div className="fixed inset-0 z-20" onClick={() => setAgentDropdownOpen(false)} />
+                      <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg z-30 py-1">
                         <button
-                          key={agent.id}
-                          onClick={() => { setSelectedAgent(agent.name); setAgentDropdownOpen(false); }}
-                          className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2 ${
-                            selectedAgent === agent.name
+                          onClick={() => { setSelectedAgent(null); setAgentDropdownOpen(false); }}
+                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                            selectedAgent === null
                               ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
                               : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
                           }`}
                         >
-                          <span>{agent.emoji}</span>
-                          <span>{agent.name}</span>
+                          All agents
                         </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+                        {agents.map(agent => (
+                          <button
+                            key={agent.id}
+                            onClick={() => { setSelectedAgent(agent.name); setAgentDropdownOpen(false); }}
+                            className={`w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2 ${
+                              selectedAgent === agent.name
+                                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-medium'
+                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                            }`}
+                          >
+                            <span>{agent.emoji}</span>
+                            <span>{agent.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* Hide Done toggle */}
               <button
@@ -426,29 +439,31 @@ export default function MissionControlClient() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Board / Files toggle */}
-              <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-0.5">
-                <button
-                  onClick={() => setView('board')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    view === 'board'
-                      ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-                  }`}
-                >
-                  Board
-                </button>
-                <button
-                  onClick={() => setView('files')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    view === 'files'
-                      ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
-                      : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
-                  }`}
-                >
-                  Library
-                </button>
-              </div>
+              {/* Board / Files toggle - advanced only */}
+              {!isConsumer && (
+                <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-0.5">
+                  <button
+                    onClick={() => setView('board')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      view === 'board'
+                        ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                    }`}
+                  >
+                    Board
+                  </button>
+                  <button
+                    onClick={() => setView('files')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      view === 'files'
+                        ? 'bg-white dark:bg-neutral-700 text-neutral-900 dark:text-neutral-100 shadow-sm'
+                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300'
+                    }`}
+                  >
+                    Library
+                  </button>
+                </div>
+              )}
 
               <button
                 onClick={() => { setChatTask(null); setChatOpen(true); }}
@@ -461,7 +476,7 @@ export default function MissionControlClient() {
                 onClick={() => setShowCreateTask(true)}
                 className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
               >
-                + New Task
+                {isConsumer ? '+ Add' : '+ New Task'}
               </button>
             </div>
           </div>
@@ -483,20 +498,30 @@ export default function MissionControlClient() {
         {/* Empty State - New User */}
         {hasNoData && (
           <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-12 text-center mb-8">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">Welcome to Command</h2>
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
+              {isConsumer ? `Welcome${firstName ? `, ${firstName}` : ''}!` : 'Welcome to Command'}
+            </h2>
             <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md mx-auto">
-              Start by adding an agent to your team. Agents help you automate tasks, manage workflows, and get things done.
+              {isConsumer
+                ? "Let's get started! Add your first task and let AI help you get things done."
+                : 'Start by adding an agent to your team. Agents help you automate tasks, manage workflows, and get things done.'}
             </p>
             <div className="flex items-center justify-center gap-4">
-              <Link
-                href="/hub?type=agents"
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Browse Agents
-              </Link>
+              {!isConsumer && (
+                <Link
+                  href="/hub?type=agents"
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Browse Agents
+                </Link>
+              )}
               <button
                 onClick={() => setShowCreateTask(true)}
-                className="px-6 py-3 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors font-medium"
+                className={`px-6 py-3 rounded-lg transition-colors font-medium ${
+                  isConsumer
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                }`}
               >
                 Create your first task
               </button>
@@ -508,7 +533,7 @@ export default function MissionControlClient() {
         {view === 'board' && (
           <>
         {/* View Switcher */}
-        <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} />
+        <ViewSwitcher currentView={currentView} onViewChange={setCurrentView} isConsumer={isConsumer} />
 
         {/* Kanban/List/Time Views - Conditional Rendering */}
         {currentView === 'kanban' && (
@@ -598,6 +623,8 @@ export default function MissionControlClient() {
             activities={activities}
             onTaskClick={setSelectedTask}
             onOpenChat={() => { setChatTask(null); setChatOpen(true); }}
+            isConsumer={isConsumer}
+            firstName={firstName}
           />
         )}
 
@@ -682,6 +709,7 @@ export default function MissionControlClient() {
           onClose={() => { setShowCreateTask(false); setCreateTaskDate(null); }}
           onTaskCreated={loadData}
           initialDate={createTaskDate || undefined}
+          isConsumer={isConsumer}
         />
       )}
 

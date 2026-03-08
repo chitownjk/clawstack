@@ -13,15 +13,23 @@ export async function GET() {
 
     const composioUserId = `tiker_${session.user.id}`;
 
+    // Check consumer mode
+    const { data: account } = await supabase
+      .from('accounts')
+      .select('is_advanced_mode')
+      .eq('auth_uid', session.user.id)
+      .single();
+    const isConsumer = !(account?.is_advanced_mode);
+
     // Get connection statuses
     const statuses = await getComposioConnectionStatuses(composioUserId);
     const connectedServices = Object.entries(statuses)
       .filter(([_, s]) => s.connected)
       .map(([key]) => key);
 
-    // Get available actions (only for connected services)
-    const quickActions = getQuickActions(connectedServices);
-    const workflows = getWorkflowTemplates(connectedServices);
+    // Get available actions (only for connected services, filtered by mode)
+    const quickActions = getQuickActions(connectedServices, isConsumer);
+    const workflows = getWorkflowTemplates(connectedServices, isConsumer);
 
     // Get suggested actions (for unconnected services)
     const suggestedQuick = QUICK_ACTIONS
