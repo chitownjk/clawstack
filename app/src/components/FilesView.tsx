@@ -81,19 +81,8 @@ export default function FilesView({ onFileClick }: FilesViewProps) {
     }
   }
 
-  async function downloadFile(fileId: string) {
-    try {
-      const response = await fetch(`/api/files/${fileId}`)
-      if (!response.ok) throw new Error('Failed to get download URL')
-
-      const data = await response.json()
-      if (data.url) {
-        window.open(data.url, '_blank')
-      }
-    } catch (error) {
-      console.error('Download error:', error)
-      alert('Failed to download file')
-    }
+  function openFile(fileId: string) {
+    window.open(`/files/${fileId}`, '_blank')
   }
 
   async function deleteFile(fileId: string, fileName: string) {
@@ -263,7 +252,7 @@ export default function FilesView({ onFileClick }: FilesViewProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        downloadFile(file.id)
+                        openFile(file.id)
                       }}
                       className="font-medium text-gray-900 dark:text-neutral-100 hover:text-blue-600 dark:hover:text-blue-400 text-sm truncate"
                     >
