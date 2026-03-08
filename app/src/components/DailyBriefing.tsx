@@ -100,15 +100,14 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
   }, [todayStr]);
 
   // Generate or fetch briefing
-  useEffect(() => {
-    async function fetchBriefing() {
+  const loadBriefing = useCallback(async (forceRefresh = false) => {
       setBriefingLoading(true);
       try {
         const res = await fetch('/api/briefing/generate', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
+          body: JSON.stringify({ force: forceRefresh }),
         });
         if (res.ok) {
           const data = await res.json();
@@ -127,6 +126,22 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
             if (!raw.content && raw.summary) {
               sections = raw;
             }
+            // If summary contains raw JSON (from a bad cached briefing), try to parse it
+            if (sections.summary && typeof sections.summary === 'string') {
+              const s = sections.summary.trim();
+              // Detect JSON blob in summary (starts with { or ```)
+              if (s.startsWith('{') || s.startsWith('```')) {
+                try {
+                  const cleaned = s.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+                  const parsed = JSON.parse(cleaned);
+                  if (parsed && typeof parsed === 'object' && parsed.summary) {
+                    sections = parsed;
+                  }
+                } catch {
+                  // Not parseable, leave as is
+                }
+              }
+            }
             setBriefing({
               content: raw.content || {
                 greeting: '',
@@ -143,9 +158,11 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
       } finally {
         setBriefingLoading(false);
       }
-    }
-    fetchBriefing();
   }, []);
+
+  useEffect(() => {
+    loadBriefing();
+  }, [loadBriefing]);
 
   // Scan email for extracted items
   const scanEmail = useCallback(async () => {
@@ -235,8 +252,20 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
 
         {/* Header + AI Summary */}
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{greeting}</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{dateDisplay}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{greeting}</h1>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{dateDisplay}</p>
+            </div>
+            <button
+              onClick={() => loadBriefing(true)}
+              disabled={briefingLoading}
+              className="text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 disabled:opacity-50 transition-colors"
+              title="Refresh briefing"
+            >
+              {briefingLoading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
 
           {/* AI-generated summary */}
           {briefing?.sections?.summary && (
