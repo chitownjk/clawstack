@@ -39,10 +39,10 @@
 |---|---------|--------|------------|-------|-------|
 | 19 | Email Action Item Extraction | Done | P0 #3 | `app/src/app/api/email/action-to-task/route.ts` | Converts extracted action_items to tasks. Creates task with encryption, marks item processed. |
 | 20 | Subscription & Trial Tracker | Done | P1 #9 | `app/src/app/api/subscriptions/route.ts` | Groups subscription/bill items by service, calculates monthly total, tracks upcoming renewals and trials. |
-| 21 | Life Admin Research Agent | Not Started | None | New agent type | Web search + checklist generation. |
+| 21 | Life Admin Research Agent | Done | None | `app/src/app/api/agents/research/route.ts` | POST endpoint. AI generates structured research, auto-creates task + smart list. |
 | 22 | Contextual Smart Lists | Done | None | `app/src/app/api/smart-lists/route.ts`, `supabase/migrations/021-smart-lists.sql` | CRUD with AI auto-generation. Types: shopping, errands, packing, prep, custom. |
 | 23 | Proactive Suggestions Engine | Done | P0 #2, P1 #9-12 | `app/src/app/api/suggestions/route.ts` | Analyzes tasks, activities, extracted items, reminders. AI generates 3-5 actionable suggestions. |
-| 24 | Integration Passive Value | Not Started | P0/P1 | Per-integration | Each integration auto-surfaces insights. |
+| 24 | Integration Passive Value | Done | P0/P1 | `app/src/app/api/insights/route.ts` | Unified insights from calendar, tasks, email, reminders. Busy day, back-to-back, overdue, escalated. |
 | 25 | Push Notifications (Web) | Done | P1 #14 | `app/public/sw.js`, `app/src/app/api/push/subscribe/route.ts` | Service worker with push events, notification click handlers, snooze/complete actions. Subscribe/unsubscribe API. |
 | 26 | Mobile-First Briefing View | Done | P0 #5 | `app/src/components/DailyBriefing.tsx` | Mobile-responsive padding, stacked action buttons on small screens, touch-manipulation, line-clamp. |
 
