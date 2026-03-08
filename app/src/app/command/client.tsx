@@ -56,7 +56,14 @@ export default function MissionControlClient() {
   const [createTaskDate, setCreateTaskDate] = useState<string | null>(null)
 
   // Consumer mode
-  const { isConsumer, firstName } = useConsumerMode()
+  const { isConsumer, firstName, defaultView } = useConsumerMode()
+
+  // Set default view from user preferences once loaded
+  useEffect(() => {
+    if (defaultView) {
+      setCurrentView(defaultView as ViewType)
+    }
+  }, [defaultView])
 
   // Action system state
   const [actionBarActions, setActionBarActions] = useState<ActionDefinition[]>([])

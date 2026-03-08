@@ -7,6 +7,7 @@ import Link from 'next/link'
 import TwoFactorSetup from '@/components/TwoFactorSetup'
 import SettingsNav from '@/components/SettingsNav'
 import { useConsumerMode } from '@/hooks/useConsumerMode'
+import { AVAILABLE_VIEWS, getViewsForMode, getViewDisplayName } from '@/types/views'
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
@@ -24,7 +25,7 @@ export default function SettingsPage() {
   
   const supabase = createClient()
   const router = useRouter()
-  const { isConsumer, isAdvanced, toggleMode, loading: modeLoading } = useConsumerMode()
+  const { isConsumer, isAdvanced, defaultView, toggleMode, updateProfile, loading: modeLoading } = useConsumerMode()
 
   useEffect(() => {
     async function loadUser() {
@@ -277,6 +278,38 @@ export default function SettingsPage() {
                 </p>
               </div>
             </label>
+
+            {/* Default View */}
+            <div className="flex items-start gap-3">
+              <div className="w-5 flex-shrink-0" /> {/* spacer to align with checkboxes */}
+              <div className="flex-1">
+                <p className="font-medium text-neutral-900 dark:text-neutral-100 mb-1">
+                  Default view
+                </p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-2">
+                  Which view to show when you open {isConsumer ? 'Home' : 'Command'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {getViewsForMode(isConsumer).map((view) => {
+                    const displayName = getViewDisplayName(view, isConsumer)
+                    const isSelected = defaultView === view.id
+                    return (
+                      <button
+                        key={view.id}
+                        onClick={() => updateProfile({ default_view: view.id })}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                        }`}
+                      >
+                        {displayName}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
 
             {isAdvanced && (
               <label className="flex items-start gap-3 cursor-pointer">
