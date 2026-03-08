@@ -28,6 +28,8 @@ export async function POST(request: NextRequest) {
     const { origin } = new URL(request.url);
     const callbackUrl = `${origin}/api/auth/composio/callback?toolkit=${toolkit}`;
 
+    console.log(`[Composio] Initiating connection for toolkit=${toolkit}, user=${composioUserId}, callback=${callbackUrl}`);
+
     const { redirectUrl, connectionRequestId } = await initiateComposioConnection(
       composioUserId,
       toolkit,
@@ -35,14 +37,25 @@ export async function POST(request: NextRequest) {
       authConfigId
     );
 
+    console.log(`[Composio] Got redirectUrl=${redirectUrl}, connectionRequestId=${connectionRequestId}`);
+
+    if (!redirectUrl) {
+      return NextResponse.json(
+        { error: `No OAuth redirect URL returned for ${toolkit}. This service may require API credentials to be configured in Composio first.` },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json({
       redirectUrl,
       connectionRequestId,
     });
   } catch (error) {
     console.error('Composio initiate error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to initiate connection';
+    console.error('Composio initiate full error:', JSON.stringify(error, null, 2));
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to initiate connection' },
+      { error: message },
       { status: 500 }
     );
   }

@@ -221,15 +221,20 @@ export async function initiateComposioConnection(
   }
 
   // Initiate connection with our callback URL so the user comes back to Tiker
+  console.log(`[Composio] Calling connectedAccounts.initiate(userId=${userId}, authConfigId=${authConfigId}, callbackUrl=${callbackUrl})`);
   const connectionRequest = await composio.connectedAccounts.initiate(
     userId,
     authConfigId,
     { callbackUrl, allowMultiple: true } as any
   );
 
+  const requestJson = connectionRequest.toJSON();
+  console.log(`[Composio] Connection request response:`, JSON.stringify(requestJson, null, 2));
+  console.log(`[Composio] redirectUrl:`, connectionRequest.redirectUrl);
+
   return {
     redirectUrl: connectionRequest.redirectUrl || '',
-    connectionRequestId: connectionRequest.toJSON().id || '',
+    connectionRequestId: requestJson.id || '',
   };
 }
 
