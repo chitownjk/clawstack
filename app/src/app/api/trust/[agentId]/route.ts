@@ -15,10 +15,10 @@ function isValidAgentName(str: string): boolean {
 
 export async function GET(
   request: Request,
-  { params }: { params: { agentId: string } }
+  { params }: { params: Promise<{ agentId: string }> }
 ) {
+  const { agentId } = await params;
   const supabase = await createRealSupabaseClient();
-  const { agentId } = params;
 
   // Validate input to prevent query injection
   if (!isValidUUID(agentId) && !isValidAgentName(agentId)) {

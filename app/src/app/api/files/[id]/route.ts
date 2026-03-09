@@ -6,23 +6,24 @@ const BUCKET_NAME = 'mc-files'
 // GET /api/files/[id] - Get file metadata and signed download URL
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createRealSupabaseClient()
     const { data: { session } } = await supabase.auth.getSession()
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const adminClient = createAdminClient()
-    
+
     // Get file metadata
     const { data: file, error } = await adminClient
       .from('mc_files')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error || !file) {
@@ -69,9 +70,10 @@ export async function GET(
 // PATCH /api/files/[id] - Rename a file
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createRealSupabaseClient()
     const { data: { session } } = await supabase.auth.getSession()
 
@@ -90,7 +92,7 @@ export async function PATCH(
     const { data: file, error } = await adminClient
       .from('mc_files')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error || !file) {
@@ -120,7 +122,7 @@ export async function PATCH(
     const { data: updated, error: updateError } = await adminClient
       .from('mc_files')
       .update({ name: newName })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -142,23 +144,24 @@ export async function PATCH(
 // DELETE /api/files/[id] - Delete file and metadata
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createRealSupabaseClient()
     const { data: { session } } = await supabase.auth.getSession()
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const adminClient = createAdminClient()
-    
+
     // Get file metadata
     const { data: file, error } = await adminClient
       .from('mc_files')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error || !file) {
@@ -190,7 +193,7 @@ export async function DELETE(
     const { error: dbError } = await adminClient
       .from('mc_files')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (dbError) {
       console.error('[Files/Delete] DB error:', dbError)

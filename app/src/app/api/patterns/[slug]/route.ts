@@ -4,8 +4,9 @@ import { NextResponse } from 'next/server'
 // GET /api/patterns/[slug] - Get a single pattern
 export async function GET(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   const adminClient = createAdminClient()
 
   const { data: pattern, error } = await adminClient
@@ -15,7 +16,7 @@ export async function GET(
       author_bot:bots(id, name, trust_tier),
       author_account:accounts(id, email)
     `)
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single()
 
   if (error || !pattern) {

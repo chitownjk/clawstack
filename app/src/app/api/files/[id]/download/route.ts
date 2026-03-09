@@ -3,17 +3,16 @@ import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: fileId } = await params
     const supabase = await createRealSupabaseClient()
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const fileId = params.id
     const { searchParams } = new URL(request.url)
     const forceDownload = searchParams.get('attachment') === 'true'
 

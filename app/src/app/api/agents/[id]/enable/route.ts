@@ -4,10 +4,10 @@ import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-serv
 // POST /api/agents/[id]/enable - Enable an agent
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const agentId = params.id;
+    const { id: agentId } = await params;
     const supabase = await createRealSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -91,10 +91,10 @@ export async function POST(
 // DELETE /api/agents/[id]/enable - Disable an agent
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const agentId = params.id;
+    const { id: agentId } = await params;
     const supabase = await createRealSupabaseClient();
     const { data: { user } } = await supabase.auth.getUser();
 

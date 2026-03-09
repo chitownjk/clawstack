@@ -46,7 +46,7 @@ async function verifyAdmin(request: Request) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   // Verify admin access
   const adminAuth = await verifyAdmin(request)
@@ -57,6 +57,7 @@ export async function PATCH(
     )
   }
 
+  const { slug } = await params
   const adminClient = createAdminClient()
 
   try {
@@ -64,7 +65,7 @@ export async function PATCH(
     const { data: pattern, error: patternError } = await adminClient
       .from('patterns')
       .select('*')
-      .eq('slug', params.slug)
+      .eq('slug', slug)
       .single()
 
     if (patternError || !pattern) {
