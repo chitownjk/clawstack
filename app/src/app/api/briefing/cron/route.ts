@@ -29,8 +29,7 @@ export async function GET(request: Request) {
 
     const adminClient = createAdminClient()
 
-    // Get all accounts that have briefing preferences
-    // Default: generate for all accounts with active subscriptions
+    // Get ALL accounts -- briefing is the core value prop, no tier gate
     const { data: accounts, error: accountsError } = await adminClient
       .from('accounts')
       .select(`
@@ -38,7 +37,6 @@ export async function GET(request: Request) {
         auth_uid,
         plan_tier
       `)
-      .neq('plan_tier', 'free')
 
     if (accountsError || !accounts) {
       console.error('[Cron] Failed to fetch accounts:', accountsError)
@@ -118,8 +116,9 @@ export async function GET(request: Request) {
 
           results.push({ account_id: account.id, status: 'generated' })
 
-          // P1 #15: Send briefing email if enabled
-          if (prefs?.briefing_email) {
+          // Send briefing email -- default to ON unless user explicitly disabled
+          const emailEnabled = prefs?.briefing_email !== false
+          if (emailEnabled) {
             try {
               // Get user email from Supabase auth
               const { data: authData } = await adminClient.auth.admin.getUserById(account.auth_uid)
@@ -254,13 +253,40 @@ async function generateBriefingForAccount(
       ? `EXTRACTED: ${extractedItems.map((e: any) => `[${e.type}] ${e.title}`).join(', ')}`
       : ''
 
-    const prompt = `Generate a daily briefing for ${dateStr}.\n${calSection}\n${taskSection}\n${extractSection}\n\nOutput JSON: { "summary": "...", "schedule": [...], "attention_items": [...], "tasks_summary": {...}, "suggestions": [...] }`
+    const prompt = `Generate a daily briefing for ${dateStr}.
+
+${calSection}
+
+${taskSection}
+
+${extractSection}
+
+Output JSON:
+{
+  "summary": "2-3 sentence overview. Lead with the most important thing: an upcoming flight, a bill due today, a packed schedule, or a calm day. Be specific and actionable, not generic. Mention people and events by name.",
+  "schedule": [{ "time": "9:00 AM", "title": "...", "type": "meeting|event|task|travel|personal", "note": "optional 1-line context" }],
+  "attention_items": [{ "text": "specific actionable item", "priority": "high|medium|low" }],
+  "tasks_summary": "1 sentence on task load",
+  "suggestions": ["1-3 short, specific suggestions based on the day's context"]
+}`
 
     const anthropic = new Anthropic()
     const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1500,
-      system: 'You are Tiker, a personal life operator. Generate a concise daily briefing as JSON.',
+      system: `You are Tiker, a personal life operator for busy people managing family, work, and everything in between.
+
+Your briefing should feel like a smart friend who already read your email and calendar. Be warm but concise.
+
+Rules:
+- Lead with what matters most today (travel, deadlines, school events, bills due)
+- If there's a flight or trip coming up, mention it prominently with confirmation details
+- Flag logistics conflicts ("soccer pickup is 15 min after your meeting ends")
+- Bills and payments due within 3 days are always high-priority attention items
+- Deliveries expected today go in the schedule
+- Be specific: "Your Southwest flight to Denver departs at 2:15 PM" not "You have travel today"
+- Keep suggestions actionable and contextual, not generic productivity advice
+- If the day looks light, say so -- "clear afternoon" is useful info`,
       messages: [{ role: 'user', content: prompt }],
     })
 

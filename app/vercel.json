@@ -4,8 +4,16 @@
   "framework": "nextjs",
   "crons": [
     {
+      "path": "/api/email/scan/cron",
+      "schedule": "30 9 * * *"
+    },
+    {
       "path": "/api/briefing/cron",
       "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/briefing/weekly/cron",
+      "schedule": "0 20 * * 0"
     }
   ]
 }

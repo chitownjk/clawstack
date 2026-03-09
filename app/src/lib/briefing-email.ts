@@ -54,7 +54,7 @@ export async function sendBriefingEmail(options: EmailBriefingOptions): Promise<
     await transporter.sendMail({
       from: `Tiker <${from}>`,
       to: options.to,
-      subject: `Your Daily Briefing - ${options.date}`,
+      subject: buildSubjectLine(options),
       html,
     })
 
@@ -64,6 +64,24 @@ export async function sendBriefingEmail(options: EmailBriefingOptions): Promise<
     console.error('[BriefingEmail] Send failed:', error)
     return false
   }
+}
+
+function buildSubjectLine(options: EmailBriefingOptions): string {
+  const { extractedItems, briefing } = options
+  // Make the subject line pop with the most important item
+  const flight = extractedItems?.find(i => i.type === 'flight')
+  if (flight) return `Your ${flight.title} + today's plan`
+
+  const bill = extractedItems?.find(i => i.type === 'bill')
+  if (bill) return `Bill due: ${bill.title} + your day`
+
+  const delivery = extractedItems?.find(i => i.type === 'delivery')
+  if (delivery) return `Package arriving + today's schedule`
+
+  const events = briefing?.schedule?.length || 0
+  if (events > 3) return `Busy day ahead: ${events} things on your plate`
+
+  return `Your day at a glance`
 }
 
 function buildBriefingHtml(options: EmailBriefingOptions): string {
