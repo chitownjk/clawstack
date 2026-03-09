@@ -21,42 +21,42 @@ export default function OnboardingPage() {
       return;
     }
 
-    const { data: account } = await supabase
-      .from('accounts')
-      .select('onboarding_completed')
-      .eq('auth_uid', user.id)
-      .single();
-
-    if (account?.onboarding_completed) {
-      router.push('/dashboard');
-      return;
+    // Use API route to check onboarding status (avoids RLS issues)
+    const res = await fetch('/api/account/me');
+    if (res.ok) {
+      const account = await res.json();
+      if (account?.onboarding_completed) {
+        router.push('/command');
+        return;
+      }
     }
 
     setLoading(false);
   }
 
-  async function selectPlan(tier: 'free' | 'pro') {
+  async function selectPlan(tier: 'free' | 'solo') {
     setSelecting(tier);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       if (tier === 'free') {
-        // Free tier -- task board with no AI
-        await supabase
-          .from('accounts')
-          .update({
-            plan_tier: 'free',
-            execution_mode: 'cloud-our-keys',
-            onboarding_completed: true,
-          })
-          .eq('auth_uid', user.id);
+        // Use server-side API route to bypass RLS
+        const res = await fetch('/api/account/select-plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: 'free' }),
+        });
 
-        router.push('/command');
+        if (res.ok) {
+          router.push('/command');
+        } else {
+          const err = await res.json();
+          console.error('Plan selection failed:', err);
+          alert('Something went wrong. Please try again.');
+          setSelecting(null);
+        }
       } else {
-        // Pro -- redirect to Stripe checkout with 7-day trial
-        const response = await fetch('/api/stripe/checkout?plan=pro');
+        // Solo -- redirect to Stripe checkout with 7-day trial
+        const response = await fetch('/api/stripe/checkout?plan=solo');
         const { url } = await response.json();
 
         if (url) {
@@ -89,7 +89,7 @@ export default function OnboardingPage() {
             Welcome to Tiker!
           </h1>
           <p className="text-lg text-neutral-600 dark:text-neutral-400">
-            Your AI-powered task board. Start free or unlock AI agents with Pro.
+            Your AI life operator. Start free or unlock everything with Solo.
           </p>
         </div>
 
@@ -98,7 +98,7 @@ export default function OnboardingPage() {
           <div className="p-8 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-xl flex flex-col">
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Free</h3>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-              A simple, powerful task board
+              Organize without AI
             </p>
             <div className="mb-6">
               <span className="text-4xl font-bold">$0</span>
@@ -106,20 +106,24 @@ export default function OnboardingPage() {
             </div>
             <ul className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400 mb-8 flex-1">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                Unlimited tasks
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
+                Unlimited manual tasks
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
                 Kanban, list, and calendar views
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                Organize and track your work
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
+                Comments and attachments
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-neutral-400 mt-0.5">—</span>
-                <span className="text-neutral-400">No AI agents</span>
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
+                100MB file storage
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-neutral-400 mt-0.5">-</span>
+                <span className="text-neutral-400">No AI features</span>
               </li>
             </ul>
             <button
@@ -131,50 +135,54 @@ export default function OnboardingPage() {
             </button>
           </div>
 
-          {/* Pro */}
+          {/* Solo */}
           <div className="p-8 bg-white dark:bg-neutral-900 border-2 border-blue-500 dark:border-blue-400 rounded-xl flex flex-col relative">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-blue-500 text-white text-xs font-medium rounded-full">
               7-DAY FREE TRIAL
             </div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Pro</h3>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-              AI agents that work for you
+              Your AI life operator
             </p>
             <div className="mb-6">
-              <span className="text-4xl font-bold">$29</span>
+              <span className="text-4xl font-bold">$19</span>
               <span className="text-neutral-500">/month</span>
             </div>
             <ul className="space-y-3 text-sm text-neutral-600 dark:text-neutral-400 mb-8 flex-1">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
+                Daily AI briefings
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
+                Email intelligence (flights, bills, invites)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
+                Meeting prep with attendee research
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
                 200 AI tasks/month
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                All AI models and integrations
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                API access and webhooks
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-600 mt-0.5">✓</span>
-                2 GB file storage
+                <span className="text-green-600 mt-0.5">&#x2713;</span>
+                Gmail and Calendar integration
               </li>
             </ul>
             <button
-              onClick={() => selectPlan('pro')}
+              onClick={() => selectPlan('solo')}
               disabled={selecting !== null}
               className="block w-full text-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
             >
-              {selecting === 'pro' ? 'Redirecting...' : 'Start Free Trial'}
+              {selecting === 'solo' ? 'Redirecting...' : 'Start Free Trial'}
             </button>
           </div>
         </div>
 
         <div className="text-center">
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Need a team plan? <a href="/pricing" className="text-blue-600 dark:text-blue-400 hover:underline">See all plans</a>
+            Need a team plan? <a href="/#pricing" className="text-blue-600 dark:text-blue-400 hover:underline">See all plans</a>
           </p>
         </div>
       </div>

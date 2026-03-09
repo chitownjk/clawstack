@@ -18,12 +18,16 @@ export function NavBar() {
       setUser(user)
 
       if (user) {
-        const { data: accountData } = await supabase
-          .from('accounts')
-          .select('execution_mode, plan_tier, is_advanced_mode, first_name')
-          .eq('auth_uid', user.id)
-          .single()
-        setAccount(accountData)
+        // Use API route to bypass RLS
+        try {
+          const res = await fetch('/api/account/me')
+          if (res.ok) {
+            const accountData = await res.json()
+            setAccount(accountData)
+          }
+        } catch (e) {
+          console.error('Failed to fetch account:', e)
+        }
       }
 
       setLoading(false)

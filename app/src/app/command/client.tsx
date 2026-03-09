@@ -141,17 +141,16 @@ export default function MissionControlClient() {
       setActivities(activitiesData)
 
       // Get execution mode to determine if user is cloud or self-hosted
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: account } = await supabase
-          .from('accounts')
-          .select('execution_mode')
-          .eq('auth_uid', user.id)
-          .single()
-        if (account) {
-          setExecutionMode(account.execution_mode)
+      try {
+        const accountRes = await fetch('/api/account/me')
+        if (accountRes.ok) {
+          const accountData = await accountRes.json()
+          if (accountData?.execution_mode) {
+            setExecutionMode(accountData.execution_mode)
+          }
         }
+      } catch (e) {
+        console.error('Failed to fetch account:', e)
       }
 
       // Load manual agent selection preference

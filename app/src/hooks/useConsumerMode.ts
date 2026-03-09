@@ -51,18 +51,10 @@ export function useConsumerMode(): ConsumerModeState {
           return
         }
 
-        // SELECT is fine with RLS, only UPDATE triggers the users table issue
-        const { data: account, error } = await supabase
-          .from('accounts')
-          .select('*')
-          .eq('auth_uid', user.id)
-          .single()
-
-        if (error) {
-          console.error('Failed to load account:', error.message)
-        }
-
-        if (account) {
+        // Use API route to bypass RLS
+        const res = await fetch('/api/account/me')
+        if (res.ok) {
+          const account = await res.json()
           setIsAdvanced(account.is_advanced_mode || false)
           setFirstName(account.first_name || null)
           setUseCase(account.use_case || null)
