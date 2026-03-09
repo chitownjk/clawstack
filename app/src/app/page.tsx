@@ -712,46 +712,7 @@ export default async function LandingPage() {
             </div>
           </section>
 
-          {/* Footer */}
-          <footer className="border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-            <div className="max-w-6xl mx-auto px-6 py-12">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                <div>
-                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Product</h4>
-                  <div className="space-y-2 text-sm">
-                    <Link href="/pricing" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Pricing</Link>
-                    <Link href="/use-cases" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Use Cases</Link>
-                    <Link href="/security" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Security</Link>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Resources</h4>
-                  <div className="space-y-2 text-sm">
-                    <Link href="/blog" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Blog</Link>
-                    <Link href="/docs" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Docs</Link>
-                    <Link href="/faq" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">FAQ</Link>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Company</h4>
-                  <div className="space-y-2 text-sm">
-                    <Link href="/about" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">About</Link>
-                    <a href="https://github.com/chitownjk/tiker" target="_blank" rel="noopener noreferrer" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">GitHub</a>
-                  </div>
-                </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4">Legal</h4>
-                  <div className="space-y-2 text-sm">
-                    <Link href="/privacy" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Privacy</Link>
-                    <Link href="/terms" className="block text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">Terms</Link>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-8 pt-8 border-t border-neutral-200 dark:border-neutral-800 text-sm text-neutral-500 dark:text-neutral-400">
-                <p>&copy; {new Date().getFullYear()} Tiker. All rights reserved.</p>
-              </div>
-            </div>
-          </footer>
+          {/* Footer is rendered by the layout.tsx Footer component */}
         </>
     </main>
   )
