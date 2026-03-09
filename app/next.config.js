@@ -1,3 +1,4 @@
+// Tiker - Next.js 15 config
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Allow images from Supabase and OAuth providers
