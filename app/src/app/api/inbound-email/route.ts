@@ -61,8 +61,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. Webhook signature verification
+    // 2. Webhook signature verification + replay protection
     const signature = req.headers.get('X-Webhook-Signature');
+    const timestamp = req.headers.get('X-Webhook-Timestamp');
     const body = await req.text();
     const webhookSecret = process.env.CLOUDFLARE_WEBHOOK_SECRET;
     
@@ -74,6 +75,19 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Reject requests older than 5 minutes to prevent replay attacks
+    if (timestamp) {
+      const ts = parseInt(timestamp, 10)
+      const age = Math.abs(Date.now() - ts)
+      if (isNaN(ts) || age > 5 * 60 * 1000) {
+        console.warn('[inbound-email] Stale webhook timestamp:', { ip, age })
+        return NextResponse.json(
+          { error: 'Request expired' },
+          { status: 401 }
+        )
+      }
+    }
+
     if (!verifyWebhookSignature(body, signature, webhookSecret)) {
       console.warn('[inbound-email] Invalid webhook signature:', ip);
       return NextResponse.json(
@@ -130,7 +144,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[inbound-email] Processing email:', { taskId, from, subject });
+    console.log('[inbound-email] Processing email for task:', taskId);
 
     // 6. Create Supabase client
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
@@ -182,11 +196,7 @@ export async function POST(req: NextRequest) {
     const senderName = parsed.from?.text || from;
     const senderEmail = extractEmail(from);
 
-    console.log('[inbound-email] Parsed email:', {
-      senderEmail,
-      senderName,
-      bodyLength: emailBody.length,
-    });
+    console.log('[inbound-email] Parsed email, body length:', emailBody.length);
 
     // 11. Create comment
     const { data: comment, error: commentError } = await supabase

@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
+
+// Rate limiter: 3 delete attempts per hour per user
+const ratelimit = process.env.UPSTASH_REDIS_REST_URL
+  ? new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(3, '1 h'),
+      prefix: 'ratelimit:delete-account',
+    })
+  : null
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -14,11 +25,22 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Require confirmation in request body
+    // Rate limit
+    if (ratelimit) {
+      const { success } = await ratelimit.limit(user.id)
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Too many delete attempts. Try again later.' },
+          { status: 429 }
+        )
+      }
+    }
+
+    // Require confirmation with email match
     const body = await request.json().catch(() => ({}))
-    if (body.confirm !== 'DELETE') {
+    if (body.confirm !== 'DELETE' || body.email !== user.email) {
       return NextResponse.json(
-        { error: 'Confirmation required. Send { "confirm": "DELETE" }' },
+        { error: 'Confirmation required. Send { "confirm": "DELETE", "email": "your@email.com" }' },
         { status: 400 }
       )
     }
@@ -28,7 +50,7 @@ export async function DELETE(request: NextRequest) {
     // Get account
     const { data: account } = await adminClient
       .from('accounts')
-      .select('id')
+      .select('id, deleted_at')
       .eq('auth_uid', user.id)
       .single()
 
@@ -39,58 +61,52 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Delete in order (respecting foreign keys)
-    // Activities and comments first (they reference tasks/agents)
-    await adminClient
-      .from('mc_activities')
-      .delete()
-      .eq('account_id', account.id)
+    // Soft-delete: mark for deletion, actual purge after 24 hours
+    // If already marked, check if 24h have passed
+    if (account.deleted_at) {
+      const deletedAt = new Date(account.deleted_at)
+      const hoursSince = (Date.now() - deletedAt.getTime()) / (1000 * 60 * 60)
 
-    await adminClient
-      .from('mc_comments')
-      .delete()
-      .eq('account_id', account.id)
+      if (hoursSince < 24) {
+        const hoursLeft = Math.ceil(24 - hoursSince)
+        return NextResponse.json({
+          success: true,
+          message: `Account scheduled for deletion. ${hoursLeft} hours remaining. Log in to cancel.`,
+          scheduled_deletion: account.deleted_at,
+        })
+      }
 
-    // Tasks (may be referenced by agents via current_task_id)
-    await adminClient
-      .from('mc_tasks')
-      .delete()
-      .eq('account_id', account.id)
+      // 24h passed -- proceed with hard delete
+      // Delete in order (respecting foreign keys)
+      await adminClient.from('mc_activities').delete().eq('account_id', account.id)
+      await adminClient.from('mc_comments').delete().eq('account_id', account.id)
+      await adminClient.from('mc_tasks').delete().eq('account_id', account.id)
+      await adminClient.from('mc_agents').delete().eq('account_id', account.id)
+      await adminClient.from('bots').delete().eq('account_id', account.id)
+      try {
+        await adminClient.from('service_purchases').delete().eq('account_id', account.id)
+      } catch { /* table may not exist */ }
+      await adminClient.from('accounts').delete().eq('id', account.id)
+      await supabase.auth.signOut()
 
-    // Agents
-    await adminClient
-      .from('mc_agents')
-      .delete()
-      .eq('account_id', account.id)
-
-    // Bots (if they exist)
-    await adminClient
-      .from('bots')
-      .delete()
-      .eq('account_id', account.id)
-
-    // Service purchases (if they exist)
-    try {
-      await adminClient
-        .from('service_purchases')
-        .delete()
-        .eq('account_id', account.id)
-    } catch {
-      // Table may not exist
+      return NextResponse.json({
+        success: true,
+        message: 'Account and all data permanently deleted.',
+      })
     }
 
-    // Finally, delete the account
+    // First request: mark for deletion (soft-delete)
     await adminClient
       .from('accounts')
-      .delete()
+      .update({ deleted_at: new Date().toISOString() })
       .eq('id', account.id)
 
-    // Sign out the user from Supabase Auth
+    // Sign out immediately
     await supabase.auth.signOut()
 
     return NextResponse.json({
       success: true,
-      message: 'Account and all data deleted'
+      message: 'Account scheduled for deletion in 24 hours. Log back in within 24 hours to cancel.',
     })
   } catch (error) {
     console.error('Delete account error:', error)

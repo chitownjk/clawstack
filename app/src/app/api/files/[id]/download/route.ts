@@ -53,14 +53,23 @@ export async function GET(
     // Convert blob to buffer
     const buffer = await fileData.arrayBuffer()
 
-    // Return file with appropriate headers
+    // Whitelist safe MIME types for inline display; force download for everything else
+    const SAFE_INLINE_TYPES = new Set([
+      'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml',
+      'application/pdf', 'text/plain', 'text/csv',
+    ])
+    const mimeType = file.mime_type || 'application/octet-stream'
+    const safeForInline = SAFE_INLINE_TYPES.has(mimeType)
+    const safeName = file.name.replace(/[^\w.\-]/g, '_')
+
     return new NextResponse(buffer, {
       headers: {
-        'Content-Type': file.mime_type || 'application/octet-stream',
-        'Content-Disposition': forceDownload
-          ? `attachment; filename="${file.name}"`
-          : `inline; filename="${file.name}"`,
+        'Content-Type': safeForInline ? mimeType : 'application/octet-stream',
+        'Content-Disposition': (forceDownload || !safeForInline)
+          ? `attachment; filename="${safeName}"`
+          : `inline; filename="${safeName}"`,
         'Content-Length': file.size_bytes.toString(),
+        'X-Content-Type-Options': 'nosniff',
       },
     })
   } catch (error) {

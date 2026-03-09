@@ -41,8 +41,16 @@ export async function POST(request: Request) {
 
     const { title, description, assigned_agent_ids, tags, priority } = await request.json()
 
-    if (!title) {
+    if (!title || typeof title !== 'string') {
       return NextResponse.json({ error: 'Title required' }, { status: 400 })
+    }
+
+    if (title.length > 500) {
+      return NextResponse.json({ error: 'Title too long (max 500 characters)' }, { status: 400 })
+    }
+
+    if (description && typeof description === 'string' && description.length > 10000) {
+      return NextResponse.json({ error: 'Description too long (max 10,000 characters)' }, { status: 400 })
     }
 
     const adminClient = createAdminClient()

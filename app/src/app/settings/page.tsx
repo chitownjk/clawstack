@@ -10,8 +10,8 @@ import { useConsumerMode } from '@/hooks/useConsumerMode'
 import { AVAILABLE_VIEWS, getViewsForMode, getViewDisplayName } from '@/types/views'
 
 export default function SettingsPage() {
-  const [user, setUser] = useState<any>(null)
-  const [account, setAccount] = useState<any>(null)
+  const [user, setUser] = useState<{ id: string; email?: string; user_metadata?: Record<string, string> } | null>(null)
+  const [account, setAccount] = useState<{ id: string; plan_tier?: string; email_signature?: string; two_factor_enabled?: boolean } | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -131,7 +131,7 @@ export default function SettingsPage() {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ confirm: 'DELETE' })
+        body: JSON.stringify({ confirm: 'DELETE', email: user?.email })
       })
       if (!response.ok) {
         throw new Error('Delete failed')
@@ -337,6 +337,7 @@ export default function SettingsPage() {
                     value={emailSignature}
                     onChange={(e) => setEmailSignature(e.target.value)}
                     rows={3}
+                    maxLength={500}
                     className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                     placeholder="---&#10;Sent by my Tiker assistant"
                   />

@@ -40,13 +40,12 @@ export async function PATCH(request: Request) {
 
     if (error) {
       console.error('Failed to update account preferences:', error.message)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to update preferences' }, { status: 500 })
     }
 
     return NextResponse.json({ account: data })
   } catch (err: unknown) {
     console.error('Preferences update error:', err)
-    const message = err instanceof Error ? err.message : 'Failed to update preferences'
-    return NextResponse.json({ error: message }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update preferences' }, { status: 500 })
   }
 }

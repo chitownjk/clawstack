@@ -221,7 +221,7 @@ export async function initiateComposioConnection(
   }
 
   // Initiate connection with our callback URL so the user comes back to Tiker
-  console.log(`[Composio] Calling connectedAccounts.initiate(userId=${userId}, authConfigId=${authConfigId}, callbackUrl=${callbackUrl})`);
+  console.log(`[Composio] Initiating connection for authConfigId=${authConfigId}`);
   const connectionRequest = await composio.connectedAccounts.initiate(
     userId,
     authConfigId,

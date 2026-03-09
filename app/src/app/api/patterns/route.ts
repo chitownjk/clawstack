@@ -76,36 +76,22 @@ async function authenticateAgent(request: Request) {
 }
 
 // Verify session and return account + user info
-async function authenticateSession(request: Request) {
+async function authenticateSession() {
   try {
-    // For API routes, we need to manually handle cookies
-    // The createRealSupabaseClient expects cookies from next/headers
-    // So we'll use a workaround for API routes
-    const cookieHeader = request.headers.get('cookie') || ''
-    
-    // Create admin client and validate session manually
-    const adminClient = createAdminClient()
-    
-    // Extract the access token from cookies if present
-    const accessTokenMatch = cookieHeader.match(/sb-access-token=([^;]+)/)
-    if (!accessTokenMatch) return null
-    
-    const accessToken = decodeURIComponent(accessTokenMatch[1])
-    
-    // Verify the token
-    const { data: { user }, error } = await adminClient.auth.getUser(accessToken)
-    
+    const supabase = await createRealSupabaseClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
     if (error || !user) return null
-    
-    // Get account
+
+    const adminClient = createAdminClient()
     const { data: account } = await adminClient
       .from('accounts')
       .select('*')
       .eq('auth_uid', user.id)
       .single()
-    
+
     if (!account) return null
-    
+
     return { user, account }
   } catch (e) {
     console.error('Session auth error:', e)
@@ -151,7 +137,11 @@ export async function GET(request: Request) {
   }
 
   if (query) {
-    dbQuery = dbQuery.or(`title.ilike.%${query}%,problem.ilike.%${query}%`)
+    // Sanitize: strip Supabase filter metacharacters to prevent injection
+    const sanitized = query.replace(/[%_\\(),.]/g, '').slice(0, 100)
+    if (sanitized.length > 0) {
+      dbQuery = dbQuery.or(`title.ilike.%${sanitized}%,problem.ilike.%${sanitized}%`)
+    }
   }
 
   const { data: patterns, error } = await dbQuery
@@ -172,7 +162,7 @@ export async function GET(request: Request) {
 // Creates pending pattern + Command task for admin review
 export async function POST(request: Request) {
   // Try session auth first (web UI), then API key auth (agent)
-  const sessionAuth = await authenticateSession(request)
+  const sessionAuth = await authenticateSession()
   const botAuth = await authenticateAgent(request)
   
   const adminClient = createAdminClient()
@@ -270,6 +260,17 @@ export async function POST(request: Request) {
       }, { status: 400 })
     }
 
+    // Input length validation
+    if (typeof title !== 'string' || title.length > 300) {
+      return NextResponse.json({ error: 'Title must be a string under 300 characters' }, { status: 400 })
+    }
+    if (typeof problem !== 'string' || problem.length > 5000) {
+      return NextResponse.json({ error: 'Problem must be under 5000 characters' }, { status: 400 })
+    }
+    if (typeof solution !== 'string' || solution.length > 10000) {
+      return NextResponse.json({ error: 'Solution must be under 10000 characters' }, { status: 400 })
+    }
+
     const validCategories = ['security', 'coordination', 'memory', 'skills', 'orchestration']
     if (!validCategories.includes(category)) {
       return NextResponse.json({
@@ -303,7 +304,7 @@ export async function POST(request: Request) {
     // Create pattern
     const content = `# ${title}\n\n## Problem\n${problem}\n\n## Solution\n${solution}`
     
-    const patternData: any = {
+    const patternData: Record<string, string | null> = {
       slug,
       title,
       category,

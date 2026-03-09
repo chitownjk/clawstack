@@ -66,10 +66,14 @@ CREATE POLICY "Admins can update purchases"
     )
   );
 
--- Service can insert purchases (for checkout route)
-CREATE POLICY "Service can insert purchases"
+-- Users can insert purchases for their own account
+CREATE POLICY "Users can insert own purchases"
   ON service_purchases FOR INSERT
-  WITH CHECK (true); -- Controlled by API route auth
+  WITH CHECK (
+    account_id IN (
+      SELECT id FROM accounts WHERE auth_uid = auth.uid()
+    )
+  );
 
 -- Grant access to authenticated users
 GRANT SELECT ON service_purchases TO authenticated;

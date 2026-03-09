@@ -126,7 +126,7 @@ async function lookupAttendees(
           profile = { ...profile, ...linkedinProfile, source: 'composio' }
         }
       } catch (err) {
-        console.log(`[MeetingPrep] LinkedIn lookup failed for ${attendee.email}:`, err)
+        console.log('[MeetingPrep] LinkedIn lookup failed for attendee:', err instanceof Error ? err.message : 'Unknown error')
       }
     }
 

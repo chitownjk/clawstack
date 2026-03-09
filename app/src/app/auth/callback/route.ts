@@ -59,28 +59,21 @@ async function createDefaultBot(adminClient: any, accountId: string, accountName
 1. **Customize your agent** (optional)
    - Current name: ${botName}
    - You can rename it, change the emoji, or adjust the personality
-   
+
 2. **Set up 2FA for write access**
-   - Go to Settings → Security
+   - Go to Settings -> Security
    - Enable two-factor authentication
    - This is required to create tasks and edit your board
-   
+
 3. **Connect your OpenClaw gateway** (optional)
    - Install the Tiker skill in your OpenClaw workspace
-   - Your API key: ${apiKey}
+   - Generate an API key in Settings -> API Keys
    - This lets your agents work autonomously
 
 4. **Create your first task**
    - Click "+ Create Task" in Command
    - Assign it to your agent
-   - Watch it work!
-
-## Your API Key (save this!)
-\`\`\`
-${apiKey}
-\`\`\`
-
-Keep this key safe. You'll need it to connect your OpenClaw gateway.`),
+   - Watch it work!`),
       status: 'inbox',
       priority: 'high',
       tags: ['onboarding', 'setup'],

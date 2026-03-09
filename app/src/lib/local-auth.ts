@@ -23,7 +23,11 @@ export function isLocalAuthEnabled(): boolean {
 }
 
 const LOCAL_SESSION_COOKIE = 'tiker_local_session'
-const SESSION_SECRET = process.env.NEXTAUTH_SECRET || 'local-dev-secret'
+const SESSION_SECRET = process.env.NEXTAUTH_SECRET
+if (!SESSION_SECRET && process.env.AUTH_MODE === 'password') {
+  console.error('NEXTAUTH_SECRET is required for password auth mode')
+}
+const EFFECTIVE_SECRET = SESSION_SECRET || 'local-dev-only-not-for-production'
 
 /**
  * Generate a session token
@@ -31,7 +35,7 @@ const SESSION_SECRET = process.env.NEXTAUTH_SECRET || 'local-dev-secret'
 function generateSessionToken(): string {
   const token = crypto.randomBytes(32).toString('hex')
   const signature = crypto
-    .createHmac('sha256', SESSION_SECRET)
+    .createHmac('sha256', EFFECTIVE_SECRET)
     .update(token)
     .digest('hex')
   return `${token}.${signature}`
@@ -45,11 +49,15 @@ function verifySessionToken(sessionToken: string): boolean {
   if (!token || !signature) return false
   
   const expectedSignature = crypto
-    .createHmac('sha256', SESSION_SECRET)
+    .createHmac('sha256', EFFECTIVE_SECRET)
     .update(token)
     .digest('hex')
   
-  return signature === expectedSignature
+  try {
+    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))
+  } catch {
+    return false
+  }
 }
 
 /**

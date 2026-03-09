@@ -1,7 +1,18 @@
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
 import { NextRequest, NextResponse } from 'next/server'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
 
 const BUCKET_NAME = 'mc-files'
+
+// Rate limiter: 10 uploads per minute per user
+const ratelimit = process.env.UPSTASH_REDIS_REST_URL
+  ? new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(10, '1 m'),
+      prefix: 'ratelimit:upload',
+    })
+  : null
 
 // File size limits by tier (bytes)
 const SIZE_LIMITS = {
@@ -18,6 +29,17 @@ export async function POST(request: NextRequest) {
     
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limit by user ID
+    if (ratelimit) {
+      const { success } = await ratelimit.limit(session.user.id)
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Upload rate limit exceeded. Try again in a minute.', code: 'RATE_LIMITED' },
+          { status: 429 }
+        )
+      }
     }
 
     // Get account
@@ -96,10 +118,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error('[Files/Upload] Storage error:', uploadError)
-      return NextResponse.json({ 
-        error: 'Failed to upload file',
-        details: uploadError.message 
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
     }
 
     // Insert metadata into mc_files
@@ -122,10 +141,7 @@ export async function POST(request: NextRequest) {
       console.error('[Files/Upload] DB error:', dbError)
       // Clean up uploaded file
       await supabase.storage.from(BUCKET_NAME).remove([storagePath])
-      return NextResponse.json({ 
-        error: 'Failed to save file metadata',
-        details: dbError.message 
-      }, { status: 500 })
+      return NextResponse.json({ error: 'Failed to save file metadata' }, { status: 500 })
     }
 
     // Get signed URL for immediate access
@@ -139,9 +155,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[Files/Upload] Error:', error)
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : String(error)
-    }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
