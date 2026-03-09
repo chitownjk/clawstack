@@ -57,22 +57,27 @@ export function encrypt(plaintext: string): string {
  */
 export function decrypt(ciphertext: string): string {
   if (!ciphertext) return ciphertext
-  
+
+  // If the value isn't encrypted (e.g. legacy plaintext), return as-is
+  if (!isEncrypted(ciphertext)) {
+    return ciphertext
+  }
+
   try {
     const key = getKey()
     const combined = Buffer.from(ciphertext, 'base64')
-    
+
     // Extract: IV (16) + AuthTag (16) + Ciphertext
     const iv = combined.subarray(0, IV_LENGTH)
     const authTag = combined.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH)
     const encrypted = combined.subarray(IV_LENGTH + AUTH_TAG_LENGTH)
-    
+
     const decipher = createDecipheriv(ALGORITHM, key, iv)
     decipher.setAuthTag(authTag)
-    
+
     let decrypted = decipher.update(encrypted)
     decrypted = Buffer.concat([decrypted, decipher.final()])
-    
+
     return decrypted.toString('utf8')
   } catch (error) {
     // Decryption failed - do not return raw ciphertext as it could leak encrypted data
@@ -83,12 +88,17 @@ export function decrypt(ciphertext: string): string {
 
 /**
  * Check if a value appears to be encrypted
- * Encrypted values are base64 and at least IV + AuthTag length
+ * Encrypted values are strict base64, round-trip cleanly, and are
+ * at least IV + AuthTag + 1 byte long when decoded.
  */
 export function isEncrypted(value: string): boolean {
   if (!value) return false
   try {
+    // Strict base64: only valid chars, no whitespace, proper padding
+    if (!/^[A-Za-z0-9+/]+=*$/.test(value)) return false
     const decoded = Buffer.from(value, 'base64')
+    // Round-trip must match (filters out plaintext that Buffer.from tolerates)
+    if (decoded.toString('base64') !== value) return false
     // Must be at least IV + AuthTag + 1 byte of data
     return decoded.length > IV_LENGTH + AUTH_TAG_LENGTH
   } catch {
