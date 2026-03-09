@@ -3,6 +3,10 @@ import { NextResponse } from 'next/server'
 import { getComposio } from '@/lib/composio'
 import Anthropic from '@anthropic-ai/sdk'
 import { sendBriefingEmail } from '@/lib/briefing-email'
+import { sendSmsBriefing } from '@/lib/sms-briefing'
+import { generateVoiceBriefing } from '@/lib/voice-briefing'
+import { decrypt } from '@/lib/crypto'
+import { isPlaidConfigured, syncRecurringToExtractedItems } from '@/lib/plaid'
 
 // GET /api/briefing/cron
 // Vercel Cron handler: generates daily briefings for all users.
@@ -35,7 +39,8 @@ export async function GET(request: Request) {
       .select(`
         id,
         auth_uid,
-        plan_tier
+        plan_tier,
+        plaid_access_token
       `)
 
     if (accountsError || !accounts) {
@@ -46,7 +51,7 @@ export async function GET(request: Request) {
     // Get user preferences for briefing settings
     const { data: preferences } = await adminClient
       .from('mc_user_preferences')
-      .select('account_id, briefing_time, briefing_email, briefing_sections, timezone')
+      .select('account_id, briefing_time, briefing_email, briefing_sms, briefing_voice, briefing_phone, briefing_sections, timezone')
 
     const prefMap = new Map(
       (preferences || []).map(p => [p.account_id, p])
@@ -75,7 +80,18 @@ export async function GET(request: Request) {
           continue
         }
 
-        // Generate briefing via internal API call
+        // Sync Plaid recurring transactions if connected
+        if (account.plaid_access_token && isPlaidConfigured()) {
+          try {
+            const accessToken = decrypt(account.plaid_access_token)
+            const synced = await syncRecurringToExtractedItems(adminClient, account.id, accessToken)
+            if (synced > 0) console.log(`[Cron] Plaid synced ${synced} items for ${account.id}`)
+          } catch (plaidErr) {
+            console.error(`[Cron] Plaid sync failed for ${account.id}:`, plaidErr)
+          }
+        }
+
+        // Generate briefing
         const todayStr = userTime.toISOString().split('T')[0]
 
         // Check if briefing already exists for today
@@ -153,6 +169,81 @@ export async function GET(request: Request) {
               }
             } catch (emailError) {
               console.error(`[Cron] Email send failed for ${account.id}:`, emailError)
+            }
+          }
+
+          // SMS briefing -- send if user has a phone number configured
+          if (prefs?.briefing_sms !== false && prefs?.briefing_phone) {
+            try {
+              let smsExtractedItems: any[] = []
+              try {
+                const { data: items } = await adminClient
+                  .from('extracted_items')
+                  .select('type, title, data')
+                  .eq('account_id', account.id)
+                  .eq('dismissed', false)
+                  .eq('processed', false)
+                  .limit(5)
+                smsExtractedItems = items || []
+              } catch { /* table may not exist */ }
+
+              const { data: authData2 } = await adminClient.auth.admin.getUserById(account.auth_uid)
+              const smsUserName = authData2?.user?.user_metadata?.full_name || 'there'
+
+              await sendSmsBriefing({
+                to: prefs.briefing_phone,
+                userName: smsUserName,
+                briefing: briefingData.sections as any,
+                extractedItems: smsExtractedItems,
+              })
+            } catch (smsError) {
+              console.error(`[Cron] SMS send failed for ${account.id}:`, smsError)
+            }
+          }
+
+          // Voice briefing -- generate audio and store URL
+          if (prefs?.briefing_voice === true) {
+            try {
+              let voiceExtractedItems: any[] = []
+              try {
+                const { data: items } = await adminClient
+                  .from('extracted_items')
+                  .select('type, title, data')
+                  .eq('account_id', account.id)
+                  .eq('dismissed', false)
+                  .eq('processed', false)
+                  .limit(5)
+                voiceExtractedItems = items || []
+              } catch { /* table may not exist */ }
+
+              const { data: authData3 } = await adminClient.auth.admin.getUserById(account.auth_uid)
+              const voiceUserName = authData3?.user?.user_metadata?.full_name || 'there'
+
+              const voiceResult = await generateVoiceBriefing({
+                userName: voiceUserName,
+                briefing: briefingData.sections as any,
+                extractedItems: voiceExtractedItems,
+              })
+
+              if (voiceResult) {
+                // Store audio as base64 in the briefing metadata for playback
+                await adminClient
+                  .from('briefings')
+                  .update({
+                    metadata: {
+                      ...briefingData.metadata,
+                      voice_audio_size: voiceResult.audio.length,
+                      voice_script: voiceResult.script,
+                      has_voice: true,
+                    },
+                  })
+                  .eq('account_id', account.id)
+                  .eq('date', todayStr)
+
+                console.log(`[Cron] Voice briefing generated for ${account.id}`)
+              }
+            } catch (voiceError) {
+              console.error(`[Cron] Voice generation failed for ${account.id}:`, voiceError)
             }
           }
         } else {
