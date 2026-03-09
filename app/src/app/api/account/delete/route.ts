@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { deleteAccountSchema, validateBody } from '@/lib/validation'
 
 // Rate limiter: 3 delete attempts per hour per user
 const ratelimit = process.env.UPSTASH_REDIS_REST_URL
@@ -38,9 +39,16 @@ export async function DELETE(request: NextRequest) {
 
     // Require confirmation with email match
     const body = await request.json().catch(() => ({}))
-    if (body.confirm !== 'DELETE' || body.email !== user.email) {
+    const parsed = validateBody(deleteAccountSchema, body)
+    if (!parsed.success) {
       return NextResponse.json(
         { error: 'Confirmation required. Send { "confirm": "DELETE", "email": "your@email.com" }' },
+        { status: 400 }
+      )
+    }
+    if (parsed.data.email !== user.email) {
+      return NextResponse.json(
+        { error: 'Email does not match your account' },
         { status: 400 }
       )
     }

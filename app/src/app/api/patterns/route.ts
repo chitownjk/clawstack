@@ -2,54 +2,42 @@ import { createAdminClient, createRealSupabaseClient } from '@/lib/supabase-serv
 import { NextResponse } from 'next/server'
 import { createHash } from 'crypto'
 import { encrypt } from '@/lib/crypto'
+import { Ratelimit } from '@upstash/ratelimit'
+import { Redis } from '@upstash/redis'
+import { createPatternSchema, validateBody } from '@/lib/validation'
 
 /**
  * Rate limiting prevents bot spam attacks. Manual approval during seed stage ensures quality. Scale removes friction.
- * 
+ *
  * Rate Limiting: Max 3 pattern submissions per account per day
- * - Tracks submissions by account_id with daily reset
+ * - Tracks submissions by account_id via Upstash Redis
  * - Returns 429 if limit exceeded
- * 
+ *
  * Manual Approval: All patterns start as 'pending_review'
  * - Creates Command task for admin review
  * - Only becomes 'validated' after admin approval
  * - Rejected patterns stay 'rejected'
  */
 
-// In-memory rate limit store: account_id -> { count: number, date: string }
-const rateLimitStore = new Map<string, { count: number; date: string }>()
-
 const MAX_PATTERNS_PER_DAY = 3
 
-// Check rate limit for account
-function checkRateLimit(accountId: string): { allowed: boolean; remaining: number; resetDate: string } {
-  const today = new Date().toISOString().split('T')[0]
-  const record = rateLimitStore.get(accountId)
-  
-  // Reset if it's a new day
-  if (!record || record.date !== today) {
-    rateLimitStore.set(accountId, { count: 0, date: today })
-    return { allowed: true, remaining: MAX_PATTERNS_PER_DAY, resetDate: today }
-  }
-  
-  const remaining = Math.max(0, MAX_PATTERNS_PER_DAY - record.count)
-  return { 
-    allowed: record.count < MAX_PATTERNS_PER_DAY,
-    remaining,
-    resetDate: today
-  }
-}
+// Distributed rate limiter via Upstash Redis (persists across deploys)
+const patternRatelimit = process.env.UPSTASH_REDIS_REST_URL
+  ? new Ratelimit({
+      redis: Redis.fromEnv(),
+      limiter: Ratelimit.slidingWindow(MAX_PATTERNS_PER_DAY, '1 d'),
+      prefix: 'ratelimit:pattern',
+    })
+  : null
 
-// Increment rate limit counter
-function incrementRateLimit(accountId: string): void {
-  const today = new Date().toISOString().split('T')[0]
-  const record = rateLimitStore.get(accountId)
-  
-  if (!record || record.date !== today) {
-    rateLimitStore.set(accountId, { count: 1, date: today })
-  } else {
-    record.count += 1
+// Check + consume rate limit for account
+async function checkAndConsumeRateLimit(accountId: string): Promise<{ allowed: boolean; remaining: number }> {
+  if (!patternRatelimit) {
+    // Fallback: no rate limiting if Redis not configured
+    return { allowed: true, remaining: MAX_PATTERNS_PER_DAY }
   }
+  const { success, remaining } = await patternRatelimit.limit(accountId)
+  return { allowed: success, remaining }
 }
 
 // Verify API key and return bot
@@ -240,43 +228,24 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
-  const rateLimit = checkRateLimit(accountId)
+  const rateLimit = await checkAndConsumeRateLimit(accountId)
   if (!rateLimit.allowed) {
     return NextResponse.json({
       error: 'Rate limit exceeded - max 3 patterns per day',
       limit: MAX_PATTERNS_PER_DAY,
       remaining: 0,
-      resetDate: rateLimit.resetDate,
     }, { status: 429 })
   }
 
   try {
     const body = await request.json()
-    const { title, category, problem, solution, implementation, validation, edge_cases } = body
 
-    if (!title || !category || !problem || !solution) {
-      return NextResponse.json({
-        error: 'Missing required fields: title, category, problem, solution',
-      }, { status: 400 })
+    const parsed = validateBody(createPatternSchema, body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
 
-    // Input length validation
-    if (typeof title !== 'string' || title.length > 300) {
-      return NextResponse.json({ error: 'Title must be a string under 300 characters' }, { status: 400 })
-    }
-    if (typeof problem !== 'string' || problem.length > 5000) {
-      return NextResponse.json({ error: 'Problem must be under 5000 characters' }, { status: 400 })
-    }
-    if (typeof solution !== 'string' || solution.length > 10000) {
-      return NextResponse.json({ error: 'Solution must be under 10000 characters' }, { status: 400 })
-    }
-
-    const validCategories = ['security', 'coordination', 'memory', 'skills', 'orchestration']
-    if (!validCategories.includes(category)) {
-      return NextResponse.json({
-        error: `Invalid category. Must be one of: ${validCategories.join(', ')}`,
-      }, { status: 400 })
-    }
+    const { title, category, problem, solution, implementation, validation, edge_cases } = parsed.data
 
     // Generate slug
     const slug = title
@@ -331,9 +300,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to create pattern' }, { status: 500 })
     }
 
-    // Increment rate limit counter on successful submission
-    incrementRateLimit(accountId)
-    const newRateLimit = checkRateLimit(accountId)
+    // Rate limit already consumed by checkAndConsumeRateLimit above
 
     // Token handling differs by auth type
     if (isApiKeyAuth) {
@@ -430,8 +397,7 @@ ${implementation ? `**Implementation:**\n${implementation}\n\n` : ''}${validatio
       },
       rate_limit: {
         limit: MAX_PATTERNS_PER_DAY,
-        remaining: newRateLimit.remaining,
-        resetDate: newRateLimit.resetDate,
+        remaining: Math.max(0, rateLimit.remaining - 1),
       },
       tokens: isApiKeyAuth ? {
         spent: 5,

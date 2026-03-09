@@ -1,28 +1,16 @@
-import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
+import { getAuthenticatedAdmin } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { decrypt } from '@/lib/crypto'
 
 // GET /api/command/tasks - Get tasks for current user (decrypted)
 export async function GET() {
   try {
-    const supabase = await createRealSupabaseClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    
-    if (!session?.user) {
+    const auth = await getAuthenticatedAdmin()
+    if (!auth) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get account ID
-    const adminClient = createAdminClient()
-    const { data: account } = await adminClient
-      .from('accounts')
-      .select('id')
-      .eq('auth_uid', session.user.id)
-      .single()
-
-    if (!account) {
-      return NextResponse.json({ error: 'Account not found' }, { status: 404 })
-    }
+    const { adminClient, account } = auth
 
     // Get tasks for this account
     const { data: tasks, error } = await adminClient

@@ -91,9 +91,6 @@ export async function createRealSupabaseClient() {
   const cookieStore = await cookies()
   const allCookies = cookieStore.getAll()
   
-  // Log cookie names (not values for security)
-  console.log('[Supabase] createRealSupabaseClient cookies:', allCookies.map(c => c.name))
-
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -114,6 +111,37 @@ export async function createRealSupabaseClient() {
       },
     }
   )
+}
+
+/**
+ * Authenticate user and return both the admin client and verified account.
+ * Use this instead of separate createRealSupabaseClient() + createAdminClient() calls.
+ * Guarantees that the admin client is only used after successful authentication.
+ */
+export async function getAuthenticatedAdmin(): Promise<{
+  adminClient: ReturnType<typeof createAdminClient>
+  user: { id: string; email?: string }
+  account: { id: string; [key: string]: unknown }
+} | null> {
+  try {
+    const supabase = await createRealSupabaseClient()
+    const { data: { user }, error } = await supabase.auth.getUser()
+
+    if (error || !user) return null
+
+    const adminClient = createAdminClient()
+    const { data: account } = await adminClient
+      .from('accounts')
+      .select('*')
+      .eq('auth_uid', user.id)
+      .single()
+
+    if (!account) return null
+
+    return { adminClient, user, account }
+  } catch {
+    return null
+  }
 }
 
 // Admin client with service role (use sparingly, server-side only)

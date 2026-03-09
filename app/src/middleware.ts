@@ -1,17 +1,43 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
+const ALLOWED_ORIGINS = new Set([
+  process.env.NEXT_PUBLIC_APP_URL || 'https://tiker.com',
+  'https://tiker.com',
+  'https://www.tiker.com',
+])
+
+// Methods that modify state and need CSRF protection
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
 /**
- * Centralized route protection middleware.
- *
- * Protects admin routes and ensures cancelled/deleted accounts
- * cannot access the app.
+ * Centralized middleware:
+ * 1. CSRF protection via Origin header on mutating API requests
+ * 2. Admin route authentication
  */
 export async function middleware(request: NextRequest) {
   const res = NextResponse.next()
   const pathname = request.nextUrl.pathname
 
-  // Admin routes require authentication + admin role
+  // --- CSRF: Origin header validation on mutating API requests ---
+  if (pathname.startsWith('/api/') && MUTATING_METHODS.has(request.method)) {
+    const origin = request.headers.get('origin')
+    // Allow requests with API key auth (external agents) -- they don't send Origin
+    const hasApiKey = request.headers.get('authorization')?.startsWith('Bearer sk_') ||
+                      request.headers.get('x-api-key')?.startsWith('sk_')
+
+    if (!hasApiKey) {
+      // Browser requests must have a valid Origin header
+      if (origin && !ALLOWED_ORIGINS.has(origin)) {
+        return NextResponse.json(
+          { error: 'Forbidden: invalid origin' },
+          { status: 403 }
+        )
+      }
+    }
+  }
+
+  // --- Admin routes require authentication ---
   if (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) {
     try {
       const supabase = createServerClient(
@@ -49,6 +75,6 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*',
-    '/api/admin/:path*',
+    '/api/:path*',
   ],
 }

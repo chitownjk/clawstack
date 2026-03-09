@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     }
 
     // Verify state cookie
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const savedState = cookieStore.get('github_oauth_state')?.value
 
     if (!savedState || savedState !== state) {
