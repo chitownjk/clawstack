@@ -21,29 +21,6 @@ export default async function LandingPage() {
   return (
     <main className="min-h-screen">
       <>
-          {/* Navigation */}
-          <nav className="sticky top-0 z-50 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-md">
-            <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-              <Link href="/" className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                Tiker
-              </Link>
-              <div className="flex items-center gap-6 text-sm">
-                <Link href="/pricing" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
-                  Pricing
-                </Link>
-                <Link href="/blog" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
-                  Blog
-                </Link>
-                <a href="https://github.com/chitownjk/tiker" target="_blank" rel="noopener noreferrer" className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
-                  GitHub
-                </a>
-                <Link href="/auth/login" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition text-sm">
-                  Sign In
-                </Link>
-              </div>
-            </div>
-          </nav>
-
           {/* Hero Section */}
           <section className="py-24 md:py-32 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-b from-white to-neutral-50 dark:from-neutral-950 dark:to-neutral-900">
             <div className="max-w-6xl mx-auto px-6 text-center">

@@ -27,7 +27,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Account not found' }, { status: 404 })
     }
 
-    // Get activities for this account
+    // Get recent activities for this account (last 7 days only)
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
     const { data: activities, error } = await adminClient
       .from('mc_activities')
       .select(`
@@ -36,6 +39,7 @@ export async function GET(request: Request) {
         task:mc_tasks(title)
       `)
       .eq('account_id', account.id)
+      .gte('created_at', sevenDaysAgo.toISOString())
       .order('created_at', { ascending: false })
       .limit(limit)
 
