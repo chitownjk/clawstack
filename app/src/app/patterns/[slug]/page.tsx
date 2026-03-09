@@ -9,10 +9,11 @@ export const dynamic = 'force-dynamic'
 export default async function PatternPage({
   params,
 }: {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }) {
+  const { slug } = await params
   const supabase = createAdminClient()
-  
+
   const { data: pattern, error } = await supabase
     .from('patterns')
     .select(`
@@ -20,7 +21,7 @@ export default async function PatternPage({
       author_bot:bots(id, name, trust_tier, account_id),
       author_account:accounts(id, email)
     `)
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single()
 
   if (error || !pattern) {

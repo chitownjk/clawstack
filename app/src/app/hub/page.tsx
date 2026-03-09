@@ -15,12 +15,13 @@ export const metadata = {
 export default async function HubPage({
   searchParams,
 }: {
-  searchParams: { type?: string; category?: string }
+  searchParams: Promise<{ type?: string; category?: string }>
 }) {
   // Use admin client to bypass RLS for public patterns
   const supabase = createAdminClient()
-  const selectedType = searchParams.type || 'all'
-  const selectedCategory = searchParams.category || 'all'
+  const resolvedParams = await searchParams
+  const selectedType = resolvedParams.type || 'all'
+  const selectedCategory = resolvedParams.category || 'all'
   
   // Check if user should be redirected to /agents (cloud users)
   const authSupabase = await createRealSupabaseClient()
