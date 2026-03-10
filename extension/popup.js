@@ -99,10 +99,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const payload = {
         title,
-        due_date: taskDate.value || null,
         tags: aiEnabled ? ['extension', 'ai-handle'] : ['extension'],
-        status: 'inbox',
-        priority: aiEnabled ? 'soon' : undefined,
+        priority: aiEnabled ? 'high' : 'normal',
       };
 
       const result = await bgFetch('/api/command/tasks/create', {
@@ -140,11 +138,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     noContext.classList.add('hidden');
     contextCard.classList.remove('hidden');
 
-    // Pre-fill task input with the suggested task
-    contextAddBtn.onclick = () => {
-      taskInput.value = suggestion.taskTitle;
-      taskInput.focus();
-      taskInput.scrollIntoView({ behavior: 'smooth' });
+    // Actually create the task when clicking "Add to Tiker"
+    contextAddBtn.onclick = async () => {
+      contextAddBtn.disabled = true;
+      contextAddBtn.textContent = 'Adding...';
+
+      try {
+        const result = await bgFetch('/api/command/tasks/create', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: suggestion.taskTitle,
+            description: `Detected from: ${ctx.context?.url || ''}\n${suggestion.headline}`,
+            tags: ['extension', 'ai-handle', classification.type],
+            priority: 'high',
+          }),
+        });
+
+        if (result && !result.error) {
+          contextAddBtn.textContent = 'Added!';
+          contextAddBtn.style.background = '#22c55e';
+          chrome.runtime.sendMessage({ type: 'refreshBadge' });
+          setTimeout(() => {
+            contextCard.classList.add('hidden');
+            taskSuccess.classList.remove('hidden');
+            setTimeout(() => taskSuccess.classList.add('hidden'), 2000);
+          }, 800);
+        } else {
+          contextAddBtn.textContent = 'Failed';
+          contextAddBtn.disabled = false;
+          setTimeout(() => { contextAddBtn.textContent = 'Add to Tiker'; }, 2000);
+          console.error('[Tiker] Task create failed:', result);
+        }
+      } catch (err) {
+        contextAddBtn.textContent = 'Error';
+        contextAddBtn.disabled = false;
+        setTimeout(() => { contextAddBtn.textContent = 'Add to Tiker'; }, 2000);
+        console.error('[Tiker] Task create error:', err);
+      }
     };
   }
 
