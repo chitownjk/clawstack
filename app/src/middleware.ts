@@ -65,7 +65,9 @@ export async function middleware(request: NextRequest) {
   const res = NextResponse.next()
 
   // --- CSRF: Origin header validation on mutating API requests ---
-  if (pathname.startsWith('/api/') && MUTATING_METHODS.has(request.method)) {
+  // Skip for extension requests -- they authenticate via cookie session, and
+  // their Origin header (chrome-extension://...) will never be in ALLOWED_ORIGINS.
+  if (!extRequest && pathname.startsWith('/api/') && MUTATING_METHODS.has(request.method)) {
     const origin = request.headers.get('origin')
     // Allow requests with API key auth (external agents) -- they don't send Origin
     const hasApiKey = request.headers.get('authorization')?.startsWith('Bearer sk_') ||

@@ -32,7 +32,7 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-API-Key',
+            value: 'Content-Type, Authorization, X-API-Key, X-Tiker-Extension, X-Extension-Cookies',
           },
         ],
       },
