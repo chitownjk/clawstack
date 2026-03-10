@@ -1,3 +1,5 @@
+const API_BASE = 'https://www.tiker.com';
+
 document.addEventListener('DOMContentLoaded', async () => {
   const loadingEl = document.getElementById('loading');
   const authEl = document.getElementById('auth-screen');
@@ -9,21 +11,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const taskSuccess = document.getElementById('task-success');
   const briefingContent = document.getElementById('briefing-content');
 
-  // Check auth (with timeout in case service worker is slow to wake)
-  let authResult;
+  // Check auth directly from popup (service worker can't reliably send cookies)
+  let user = null;
   try {
-    authResult = await Promise.race([
-      sendMessage({ type: 'checkAuth' }),
-      new Promise((resolve) => setTimeout(() => resolve(null), 5000)),
-    ]);
+    const res = await fetch(`${API_BASE}/api/account/me`, {
+      credentials: 'include',
+    });
+    if (res.ok) {
+      user = await res.json();
+    }
   } catch (e) {
     console.error('[Tiker Popup] Auth check failed:', e);
-    authResult = null;
   }
 
   loadingEl.classList.add('hidden');
 
-  if (!authResult?.authenticated) {
+  if (!user) {
     authEl.classList.remove('hidden');
     return;
   }
@@ -31,19 +34,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   mainEl.classList.remove('hidden');
 
   // Set greeting
-  const user = authResult.user;
   const hour = new Date().getHours();
   const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  greetingEl.textContent = user?.first_name
+  greetingEl.textContent = user.first_name
     ? `${timeGreeting}, ${user.first_name}`
     : timeGreeting;
 
-  // Set default date to today
+  // Set default date
   const today = new Date().toISOString().split('T')[0];
   taskDate.value = '';
   taskDate.min = today;
 
-  // Load briefing
+  // Load briefing directly
   loadBriefing();
 
   // Task form submission
@@ -51,6 +53,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   taskInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitTask();
   });
+
+  // Focus the input
+  taskInput.focus();
 
   async function submitTask() {
     const title = taskInput.value.trim();
@@ -62,39 +67,73 @@ document.addEventListener('DOMContentLoaded', async () => {
     taskSubmit.disabled = true;
     taskSubmit.textContent = '...';
 
-    const result = await sendMessage({
-      type: 'createTask',
-      data: {
-        title,
-        dueDate: taskDate.value || null,
-      },
-    });
+    try {
+      const res = await fetch(`${API_BASE}/api/command/tasks/create`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          due_date: taskDate.value || null,
+          tags: ['extension'],
+          status: 'inbox',
+        }),
+      });
 
-    taskSubmit.disabled = false;
-    taskSubmit.textContent = 'Add';
+      taskSubmit.disabled = false;
+      taskSubmit.textContent = 'Add';
 
-    if (result?.success) {
-      taskInput.value = '';
-      taskDate.value = '';
-      taskSuccess.classList.remove('hidden');
-      setTimeout(() => taskSuccess.classList.add('hidden'), 2000);
-    } else {
-      alert('Failed to add task: ' + (result?.error || 'Unknown error'));
+      if (res.ok) {
+        taskInput.value = '';
+        taskDate.value = '';
+        taskSuccess.classList.remove('hidden');
+        setTimeout(() => taskSuccess.classList.add('hidden'), 2000);
+        // Tell background to refresh badge
+        chrome.runtime.sendMessage({ type: 'refreshBadge' });
+      } else {
+        alert('Failed to add task. Please try again.');
+      }
+    } catch (err) {
+      taskSubmit.disabled = false;
+      taskSubmit.textContent = 'Add';
+      alert('Network error. Check your connection.');
     }
   }
 
   async function loadBriefing() {
-    const result = await sendMessage({ type: 'getBriefing' });
-    const briefing = result?.briefing;
+    try {
+      // First try cached briefing from background
+      const cached = await chrome.storage.local.get(['cachedBriefing']);
+      if (cached.cachedBriefing) {
+        renderBriefing(cached.cachedBriefing);
+      }
 
-    if (!briefing) {
-      briefingContent.innerHTML = '<div class="empty-state">No briefing yet. Open Tiker to generate one.</div>';
-      return;
+      // Then fetch fresh
+      const res = await fetch(`${API_BASE}/api/briefing/generate`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force: false }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.briefing) {
+          renderBriefing(data.briefing);
+          chrome.storage.local.set({ cachedBriefing: data.briefing, lastRefresh: Date.now() });
+        }
+      }
+    } catch (e) {
+      console.error('[Tiker Popup] Briefing load failed:', e);
+      if (!briefingContent.querySelector('.attention-item')) {
+        briefingContent.innerHTML = '<div class="empty-state">Could not load briefing.</div>';
+      }
     }
+  }
 
+  function renderBriefing(briefing) {
     let html = '';
 
-    // Summary
     const sections = typeof briefing.sections === 'string'
       ? tryParse(briefing.sections)
       : briefing.sections;
@@ -104,7 +143,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       html += `<div class="briefing-summary">${escapeHtml(summary)}</div>`;
     }
 
-    // Attention items
     const items = sections?.attention_items || briefing.attention_items || [];
     if (items.length > 0) {
       const shown = items.slice(0, 3);
@@ -131,12 +169,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     briefingContent.innerHTML = html;
   }
 });
-
-function sendMessage(msg) {
-  return new Promise((resolve) => {
-    chrome.runtime.sendMessage(msg, resolve);
-  });
-}
 
 function tryParse(str) {
   try { return JSON.parse(str); } catch { return null; }

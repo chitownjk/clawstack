@@ -1,24 +1,4 @@
-const API_BASE = 'https://tiker.com';
-
-// ---- Authenticated fetch helper ----
-// MV3 service workers don't reliably send cookies with credentials: 'include'.
-// We manually read cookies via the cookies API and pass them as a header.
-
-async function authFetch(path, options = {}) {
-  const cookies = await chrome.cookies.getAll({ domain: 'tiker.com' });
-  const cookieStr = cookies.map(c => `${c.name}=${c.value}`).join('; ');
-
-  const headers = { ...(options.headers || {}) };
-  if (cookieStr) {
-    headers['Cookie'] = cookieStr;
-  }
-
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers,
-  });
-}
+const API_BASE = 'https://www.tiker.com';
 
 // ---- Context Menu ----
 
@@ -50,8 +30,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     : '';
 
   try {
-    const res = await authFetch('/api/command/tasks/create', {
+    const res = await fetch(`${API_BASE}/api/command/tasks/create`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title,
@@ -62,12 +43,10 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     });
 
     if (res.ok) {
-      // Show success badge briefly
       chrome.action.setBadgeText({ text: '\u2713' });
       chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
       setTimeout(() => refreshBadge(), 2000);
     } else if (res.status === 401) {
-      // Not logged in - open Tiker login
       chrome.tabs.create({ url: `${API_BASE}/auth/login` });
     }
   } catch (err) {
@@ -79,8 +58,9 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 async function refreshBadge() {
   try {
-    const res = await authFetch('/api/briefing/generate', {
+    const res = await fetch(`${API_BASE}/api/briefing/generate`, {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ force: false }),
     });
@@ -93,7 +73,6 @@ async function refreshBadge() {
     const data = await res.json();
     const briefing = data.briefing;
 
-    // Count attention items
     let count = 0;
     if (briefing?.sections?.attention_items) {
       count = briefing.sections.attention_items.length;
@@ -108,7 +87,6 @@ async function refreshBadge() {
       chrome.action.setBadgeText({ text: '' });
     }
 
-    // Cache briefing for popup
     chrome.storage.local.set({ cachedBriefing: briefing, lastRefresh: Date.now() });
   } catch {
     chrome.action.setBadgeText({ text: '' });
@@ -124,69 +102,8 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 // ---- Message handler for popup ----
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === 'createTask') {
-    createTask(msg.data).then(sendResponse);
-    return true; // async
-  }
-  if (msg.type === 'getBriefing') {
-    getCachedBriefing().then(sendResponse);
-    return true;
-  }
-  if (msg.type === 'checkAuth') {
-    checkAuth().then(sendResponse);
-    return true;
-  }
   if (msg.type === 'refreshBadge') {
     refreshBadge().then(() => sendResponse({ ok: true }));
     return true;
   }
 });
-
-async function createTask(data) {
-  try {
-    const res = await authFetch('/api/command/tasks/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: data.title,
-        due_date: data.dueDate || null,
-        tags: ['extension'],
-        status: 'inbox',
-      }),
-    });
-
-    if (res.ok) {
-      refreshBadge();
-      return { success: true };
-    }
-    return { success: false, error: `HTTP ${res.status}` };
-  } catch (err) {
-    return { success: false, error: err.message };
-  }
-}
-
-async function getCachedBriefing() {
-  const stored = await chrome.storage.local.get(['cachedBriefing', 'lastRefresh']);
-  const age = Date.now() - (stored.lastRefresh || 0);
-
-  // If cache is older than 15 min, refresh in background
-  if (age > 15 * 60 * 1000) {
-    refreshBadge(); // fire and forget
-  }
-
-  return { briefing: stored.cachedBriefing || null };
-}
-
-async function checkAuth() {
-  try {
-    const res = await authFetch('/api/account/me');
-    if (res.ok) {
-      const data = await res.json();
-      return { authenticated: true, user: data };
-    }
-    return { authenticated: false };
-  } catch (err) {
-    console.error('[Tiker] Auth check error:', err);
-    return { authenticated: false };
-  }
-}
