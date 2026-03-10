@@ -14,7 +14,7 @@ export async function GET() {
     const adminClient = createAdminClient()
     const { data: account, error } = await adminClient
       .from('accounts')
-      .select('id, execution_mode, plan_tier, is_advanced_mode, first_name, onboarding_completed, role, email_signature, use_case, default_view')
+      .select('id, execution_mode, plan_tier, is_advanced_mode, first_name, onboarding_completed, role, email_signature, use_case, default_view, created_at')
       .eq('auth_uid', session.user.id)
       .single()
 

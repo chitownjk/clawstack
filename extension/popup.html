@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=360">
+  <link rel="stylesheet" href="popup.css">
+  <title>Tiker</title>
+</head>
+<body>
+  <div id="app">
+    <!-- Loading state -->
+    <div id="loading" class="screen">
+      <div class="loader"></div>
+    </div>
+
+    <!-- Auth required -->
+    <div id="auth-screen" class="screen hidden">
+      <div class="auth-content">
+        <div class="logo">T</div>
+        <h2>Sign in to Tiker</h2>
+        <p>Log in at tiker.com to use the extension.</p>
+        <a href="https://tiker.com/auth/login" target="_blank" class="btn btn-primary">Sign in</a>
+      </div>
+    </div>
+
+    <!-- Main screen -->
+    <div id="main-screen" class="screen hidden">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-left">
+          <span class="logo-small">T</span>
+          <span class="greeting" id="greeting">Tiker</span>
+        </div>
+        <a href="https://tiker.com/command" target="_blank" class="btn-icon" title="Open Tiker">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+            <polyline points="15 3 21 3 21 9"/>
+            <line x1="10" y1="14" x2="21" y2="3"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Quick task form -->
+      <div class="task-form">
+        <input type="text" id="task-input" placeholder="Add a task..." autocomplete="off">
+        <div class="task-form-row">
+          <input type="date" id="task-date" class="date-input">
+          <button id="task-submit" class="btn btn-primary btn-sm">Add</button>
+        </div>
+      </div>
+
+      <!-- Success message -->
+      <div id="task-success" class="success hidden">
+        <span class="check">&#10003;</span> Task added!
+      </div>
+
+      <!-- Briefing summary -->
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Today's Briefing</span>
+        </div>
+        <div id="briefing-content">
+          <div class="empty-state">Loading briefing...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

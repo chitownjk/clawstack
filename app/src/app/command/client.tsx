@@ -47,6 +47,7 @@ export default function MissionControlClient() {
   const [hideDone, setHideDone] = useState(true) // Hide completed by default
   const [deleteModal, setDeleteModal] = useState<{ task: Task; commentCount: number } | null>(null)
   const [executionMode, setExecutionMode] = useState<string | null>(null)
+  const [accountCreatedAt, setAccountCreatedAt] = useState<string | null>(null)
   const [currentView, setCurrentView] = useState<ViewType>('briefing') // Default to daily briefing
   const [view, setView] = useState<'board' | 'files'>('board')
   const [manualAgentSelection, setManualAgentSelection] = useState(false)
@@ -147,6 +148,9 @@ export default function MissionControlClient() {
           const accountData = await accountRes.json()
           if (accountData?.execution_mode) {
             setExecutionMode(accountData.execution_mode)
+          }
+          if (accountData?.created_at) {
+            setAccountCreatedAt(accountData.created_at)
           }
         }
       } catch (e) {
@@ -631,6 +635,7 @@ export default function MissionControlClient() {
             onOpenChat={() => { setChatTask(null); setChatOpen(true); }}
             isConsumer={isConsumer}
             firstName={firstName}
+            accountCreatedAt={accountCreatedAt}
           />
         )}
 

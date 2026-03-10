@@ -1,5 +1,6 @@
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function POST(request: Request) {
   try {
@@ -32,6 +33,30 @@ export async function POST(request: Request) {
         console.error('[Select Plan] Update error:', error)
         return NextResponse.json({ error: 'Failed to update plan' }, { status: 500 })
       }
+
+      // Fire background jobs for instant first-run experience (fire-and-forget)
+      const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://tiker.com'
+      const cookieHeader = (await cookies()).getAll().map(c => `${c.name}=${c.value}`).join('; ')
+
+      // Scan last 14 days of email for a richer first briefing
+      fetch(`${origin}/api/email/scan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
+        },
+        body: JSON.stringify({ firstRun: true, limit: 30 }),
+      }).catch(err => console.error('[Select Plan] Background email scan failed:', err))
+
+      // Generate initial briefing
+      fetch(`${origin}/api/briefing/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': cookieHeader,
+        },
+        body: JSON.stringify({ force: true }),
+      }).catch(err => console.error('[Select Plan] Background briefing generation failed:', err))
 
       return NextResponse.json({ success: true, redirect: '/command' })
     }

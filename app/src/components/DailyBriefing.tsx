@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task } from '@/types/views';
 import { Agent, Activity } from '@/lib/mission-control';
 import MeetingPrepCard from '@/components/MeetingPrepCard';
+import FirstRunWelcome from '@/components/FirstRunWelcome';
 
 interface CalendarEvent {
   id: string;
@@ -65,22 +66,36 @@ interface DailyBriefingProps {
   onOpenChat?: () => void;
   isConsumer?: boolean;
   firstName?: string | null;
+  accountCreatedAt?: string | null;
 }
 
 function dateKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export default function DailyBriefing({ tasks, agents, activities, onTaskClick, onOpenChat, isConsumer = false, firstName }: DailyBriefingProps) {
+export default function DailyBriefing({ tasks, agents, activities, onTaskClick, onOpenChat, isConsumer = false, firstName, accountCreatedAt }: DailyBriefingProps) {
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [calendarConnected, setCalendarConnected] = useState<boolean | null>(null);
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [briefingLoading, setBriefingLoading] = useState(false);
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
   const [scanningEmail, setScanningEmail] = useState(false);
+  const [showFirstRun, setShowFirstRun] = useState(false);
 
   const now = useMemo(() => new Date(), []);
   const todayStr = dateKey(now);
+
+  // Detect first-run: account created < 1 hour ago and no briefing yet
+  useEffect(() => {
+    if (accountCreatedAt) {
+      const created = new Date(accountCreatedAt);
+      const ageMs = Date.now() - created.getTime();
+      const oneHour = 60 * 60 * 1000;
+      if (ageMs < oneHour) {
+        setShowFirstRun(true);
+      }
+    }
+  }, [accountCreatedAt]);
 
   // Fetch calendar events
   useEffect(() => {
@@ -248,6 +263,19 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
     day: 'numeric',
     year: 'numeric',
   });
+
+  // Show first-run welcome if account is new and no briefing loaded yet
+  if (showFirstRun && !briefing) {
+    return (
+      <FirstRunWelcome
+        firstName={firstName}
+        onBriefingReady={() => {
+          setShowFirstRun(false);
+          loadBriefing(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-y-auto scroll-smooth">

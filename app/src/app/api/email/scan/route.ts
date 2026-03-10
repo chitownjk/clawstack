@@ -30,6 +30,7 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => ({}))
     const maxMessages = Math.min(body.limit || 20, 50)
+    const isFirstRun = body.firstRun === true
 
     // Check Gmail connection via Composio
     const composio = getComposio()
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
     }
 
     // Step 1: List recent messages
-    const messages = await fetchGmailMessages(composio, userId, maxMessages)
+    const messages = await fetchGmailMessages(composio, userId, maxMessages, isFirstRun)
 
     if (messages.length === 0) {
       return NextResponse.json({
@@ -134,7 +135,8 @@ export async function POST(request: Request) {
 async function fetchGmailMessages(
   composio: any,
   userId: string,
-  maxResults: number
+  maxResults: number,
+  firstRun: boolean = false
 ): Promise<Array<{ id: string; threadId?: string }>> {
   const TOOL_SLUGS = [
     'GMAIL_LIST_MESSAGES',
@@ -149,8 +151,8 @@ async function fetchGmailMessages(
         dangerouslySkipVersionCheck: true,
         arguments: {
           maxResults,
-          // Only scan last 3 days of inbox
-          q: 'in:inbox newer_than:3d',
+          // First run scans 14 days for richer initial data, otherwise 3 days
+          q: `in:inbox newer_than:${firstRun ? '14d' : '3d'}`,
           labelIds: ['INBOX'],
         },
       })
