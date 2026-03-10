@@ -9,8 +9,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const taskSuccess = document.getElementById('task-success');
   const briefingContent = document.getElementById('briefing-content');
 
-  // Check auth
-  const authResult = await sendMessage({ type: 'checkAuth' });
+  // Check auth (with timeout in case service worker is slow to wake)
+  let authResult;
+  try {
+    authResult = await Promise.race([
+      sendMessage({ type: 'checkAuth' }),
+      new Promise((resolve) => setTimeout(() => resolve(null), 5000)),
+    ]);
+  } catch (e) {
+    console.error('[Tiker Popup] Auth check failed:', e);
+    authResult = null;
+  }
 
   loadingEl.classList.add('hidden');
 

@@ -6,7 +6,8 @@
   "permissions": [
     "storage",
     "contextMenus",
-    "alarms"
+    "alarms",
+    "cookies"
   ],
   "host_permissions": [
     "https://tiker.com/*",

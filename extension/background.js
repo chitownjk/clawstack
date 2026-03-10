@@ -1,5 +1,25 @@
 const API_BASE = 'https://tiker.com';
 
+// ---- Authenticated fetch helper ----
+// MV3 service workers don't reliably send cookies with credentials: 'include'.
+// We manually read cookies via the cookies API and pass them as a header.
+
+async function authFetch(path, options = {}) {
+  const cookies = await chrome.cookies.getAll({ domain: 'tiker.com' });
+  const cookieStr = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+
+  const headers = { ...(options.headers || {}) };
+  if (cookieStr) {
+    headers['Cookie'] = cookieStr;
+  }
+
+  return fetch(`${API_BASE}${path}`, {
+    ...options,
+    credentials: 'include',
+    headers,
+  });
+}
+
 // ---- Context Menu ----
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -30,9 +50,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     : '';
 
   try {
-    const res = await fetch(`${API_BASE}/api/command/tasks/create`, {
+    const res = await authFetch('/api/command/tasks/create', {
       method: 'POST',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title,
@@ -44,7 +63,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
     if (res.ok) {
       // Show success badge briefly
-      chrome.action.setBadgeText({ text: '✓' });
+      chrome.action.setBadgeText({ text: '\u2713' });
       chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
       setTimeout(() => refreshBadge(), 2000);
     } else if (res.status === 401) {
@@ -60,9 +79,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
 async function refreshBadge() {
   try {
-    const res = await fetch(`${API_BASE}/api/briefing/generate`, {
+    const res = await authFetch('/api/briefing/generate', {
       method: 'POST',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ force: false }),
     });
@@ -126,9 +144,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 async function createTask(data) {
   try {
-    const res = await fetch(`${API_BASE}/api/command/tasks/create`, {
+    const res = await authFetch('/api/command/tasks/create', {
       method: 'POST',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: data.title,
@@ -162,15 +179,14 @@ async function getCachedBriefing() {
 
 async function checkAuth() {
   try {
-    const res = await fetch(`${API_BASE}/api/account/me`, {
-      credentials: 'include',
-    });
+    const res = await authFetch('/api/account/me');
     if (res.ok) {
       const data = await res.json();
       return { authenticated: true, user: data };
     }
     return { authenticated: false };
-  } catch {
+  } catch (err) {
+    console.error('[Tiker] Auth check error:', err);
     return { authenticated: false };
   }
 }
