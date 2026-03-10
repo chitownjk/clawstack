@@ -118,11 +118,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(() => taskSuccess.classList.add('hidden'), 2000);
         chrome.runtime.sendMessage({ type: 'refreshBadge' });
       } else {
-        showError('Failed to add task');
+        const msg = result?.error || 'Failed to add task';
+        console.error('[Tiker] Task create failed:', msg, result);
+        showError(msg);
       }
     } catch (err) {
       taskSubmit.disabled = false;
       taskSubmit.textContent = 'Add';
+      console.error('[Tiker] Task create error:', err);
       showError('Network error');
     }
   }
@@ -164,10 +167,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => taskSuccess.classList.add('hidden'), 2000);
           }, 800);
         } else {
-          contextAddBtn.textContent = 'Failed';
+          const msg = result?.error || 'Failed';
+          contextAddBtn.textContent = msg.length > 20 ? 'Failed' : msg;
           contextAddBtn.disabled = false;
-          setTimeout(() => { contextAddBtn.textContent = 'Add to Tiker'; }, 2000);
-          console.error('[Tiker] Task create failed:', result);
+          setTimeout(() => { contextAddBtn.textContent = 'Add to Tiker'; }, 3000);
+          console.error('[Tiker] Task create failed:', msg, result);
         }
       } catch (err) {
         contextAddBtn.textContent = 'Error';

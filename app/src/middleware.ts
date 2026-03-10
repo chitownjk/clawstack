@@ -40,8 +40,9 @@ export async function middleware(request: NextRequest) {
     if (extCookies) {
       const requestHeaders = new Headers(request.headers)
       requestHeaders.set('cookie', extCookies)
-      // Remove the forwarding headers so they don't leak
-      requestHeaders.delete('x-extension-cookies')
+      // Keep x-extension-cookies available as fallback for route handlers
+      // where cookies() from next/headers may not see the injected Cookie header.
+      // Only remove x-tiker-extension since it's just a boolean flag.
       requestHeaders.delete('x-tiker-extension')
 
       const res = NextResponse.next({

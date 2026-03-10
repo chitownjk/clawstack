@@ -65,7 +65,12 @@ async function authenticatedFetch(path, options = {}) {
     body: options.body || undefined,
   });
 
-  if (!res.ok) return { error: `HTTP ${res.status}`, status: res.status };
+  if (!res.ok) {
+    let detail = '';
+    try { const body = await res.json(); detail = body?.error || body?.message || ''; } catch {}
+    console.error(`[Tiker] API error: ${res.status} ${detail} (${path})`);
+    return { error: detail || `HTTP ${res.status}`, status: res.status };
+  }
   try { return await res.json(); }
   catch { return { error: 'Parse error', status: res.status }; }
 }

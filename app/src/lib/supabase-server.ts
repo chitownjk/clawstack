@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { getAuthMode, hasLocalSession, getLocalUser, getLocalAccountId } from '@/lib/local-auth'
 
 type CookieToSet = {
@@ -89,8 +89,26 @@ function createLocalMockClient() {
  */
 export async function createRealSupabaseClient() {
   const cookieStore = await cookies()
-  const allCookies = cookieStore.getAll()
-  
+  let allCookies = cookieStore.getAll()
+
+  // Fallback for Chrome extension requests: NextResponse.next({ request: { headers } })
+  // in middleware may not reliably propagate the injected Cookie header to cookies()
+  // from next/headers. Check the x-extension-cookies header as a direct fallback.
+  if (allCookies.length === 0) {
+    try {
+      const headerStore = await headers()
+      const extCookies = headerStore.get('x-extension-cookies')
+      if (extCookies) {
+        allCookies = extCookies.split('; ').map(pair => {
+          const [name, ...rest] = pair.split('=')
+          return { name: name.trim(), value: rest.join('=') }
+        }).filter(c => c.name && c.value)
+      }
+    } catch {
+      // headers() not available in this context - ignore
+    }
+  }
+
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
