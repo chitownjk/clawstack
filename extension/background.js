@@ -30,10 +30,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     : '';
 
   try {
-    const res = await fetch(`${API_BASE}/api/command/tasks/create`, {
+    const result = await authenticatedFetch('/api/command/tasks/create', {
       method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title,
         description,
@@ -42,11 +40,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       }),
     });
 
-    if (res.ok) {
+    if (result && !result.error) {
       chrome.action.setBadgeText({ text: '\u2713' });
       chrome.action.setBadgeBackgroundColor({ color: '#22c55e' });
       setTimeout(() => refreshBadge(), 2000);
-    } else if (res.status === 401) {
+    } else if (result?.status === 401) {
       chrome.tabs.create({ url: `${API_BASE}/auth/login` });
     }
   } catch (err) {
@@ -54,24 +52,44 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
+// ---- Authenticated fetch helper ----
+// Background service worker can send cookies via credentials:'include'
+// for domains listed in host_permissions.
+
+async function authenticatedFetch(path, options = {}) {
+  const url = `${API_BASE}${path}`;
+
+  const res = await fetch(url, {
+    method: options.method || 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+    body: options.body || undefined,
+  });
+
+  if (!res.ok) {
+    return { error: `HTTP ${res.status}`, status: res.status };
+  }
+
+  try {
+    return await res.json();
+  } catch {
+    return { error: 'Parse error', status: res.status };
+  }
+}
+
 // ---- Badge (attention item count) ----
 
 async function refreshBadge() {
   try {
-    const res = await fetch(`${API_BASE}/api/briefing/generate`, {
+    const data = await authenticatedFetch('/api/briefing/generate', {
       method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ force: false }),
     });
 
-    if (!res.ok) {
-      chrome.action.setBadgeText({ text: '' });
-      return;
-    }
-
-    const data = await res.json();
-    const briefing = data.briefing;
+    const briefing = data?.briefing;
 
     let count = 0;
     if (briefing?.sections?.attention_items) {
@@ -87,7 +105,9 @@ async function refreshBadge() {
       chrome.action.setBadgeText({ text: '' });
     }
 
-    chrome.storage.local.set({ cachedBriefing: briefing, lastRefresh: Date.now() });
+    if (briefing) {
+      chrome.storage.local.set({ cachedBriefing: briefing, lastRefresh: Date.now() });
+    }
   } catch {
     chrome.action.setBadgeText({ text: '' });
   }
@@ -105,5 +125,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'refreshBadge') {
     refreshBadge().then(() => sendResponse({ ok: true }));
     return true;
+  }
+
+  if (msg.type === 'apiFetch') {
+    authenticatedFetch(msg.path, msg.options || {})
+      .then((data) => sendResponse(data))
+      .catch(() => sendResponse({ error: 'Background fetch failed' }));
+    return true; // Keep message channel open for async response
   }
 });

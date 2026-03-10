@@ -40,11 +40,27 @@
         </a>
       </div>
 
+      <!-- Context detection card -->
+      <div id="context-card" class="context-card hidden">
+        <div class="context-header">
+          <span id="context-icon" class="context-icon"></span>
+          <span id="context-label" class="context-label"></span>
+        </div>
+        <div id="context-action" class="context-action"></div>
+        <button id="context-add" class="btn btn-outline btn-sm">Add to Tiker</button>
+      </div>
+
       <!-- Quick task form -->
       <div class="task-form">
         <input type="text" id="task-input" placeholder="Add a task..." autocomplete="off">
         <div class="task-form-row">
-          <input type="date" id="task-date" class="date-input">
+          <div class="task-form-left">
+            <input type="date" id="task-date" class="date-input">
+            <label class="ai-toggle-wrap">
+              <input type="checkbox" id="ai-toggle" checked>
+              <span id="ai-toggle-label" class="ai-toggle-text">AI will handle</span>
+            </label>
+          </div>
           <button id="task-submit" class="btn btn-primary btn-sm">Add</button>
         </div>
       </div>
