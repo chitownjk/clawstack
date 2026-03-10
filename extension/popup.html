@@ -40,28 +40,43 @@
         </a>
       </div>
 
-      <!-- Context detection card -->
+      <!-- Context detection card (primary - shown first when detected) -->
       <div id="context-card" class="context-card hidden">
-        <div class="context-header">
+        <div class="context-header-row">
           <span id="context-icon" class="context-icon"></span>
-          <span id="context-label" class="context-label"></span>
+          <span id="context-type" class="context-type"></span>
         </div>
-        <div id="context-action" class="context-action"></div>
-        <button id="context-add" class="btn btn-outline btn-sm">Add to Tiker</button>
+        <div id="context-headline" class="context-headline"></div>
+        <div id="context-suggestion" class="context-suggestion"></div>
+        <div class="context-actions">
+          <button id="context-add" class="btn btn-primary btn-sm">Add to Tiker</button>
+          <button id="context-dismiss" class="btn btn-ghost btn-sm">Dismiss</button>
+        </div>
+      </div>
+
+      <!-- No context detected (subtle prompt) -->
+      <div id="no-context" class="no-context hidden">
+        <span class="no-context-icon">&#128065;</span>
+        <span class="no-context-text">Watching this page. I'll light up when I can help.</span>
       </div>
 
       <!-- Quick task form -->
-      <div class="task-form">
-        <input type="text" id="task-input" placeholder="Add a task..." autocomplete="off">
-        <div class="task-form-row">
-          <div class="task-form-left">
-            <input type="date" id="task-date" class="date-input">
-            <label class="ai-toggle-wrap">
-              <input type="checkbox" id="ai-toggle" checked>
-              <span id="ai-toggle-label" class="ai-toggle-text">AI will handle</span>
-            </label>
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Quick Add</span>
+        </div>
+        <div class="task-form">
+          <input type="text" id="task-input" placeholder="What do you need to do?" autocomplete="off">
+          <div class="task-form-row">
+            <div class="task-form-left">
+              <input type="date" id="task-date" class="date-input">
+              <label class="ai-toggle-wrap">
+                <input type="checkbox" id="ai-toggle" checked>
+                <span id="ai-toggle-label" class="ai-toggle-text">AI handles it</span>
+              </label>
+            </div>
+            <button id="task-submit" class="btn btn-primary btn-sm">Add</button>
           </div>
-          <button id="task-submit" class="btn btn-primary btn-sm">Add</button>
         </div>
       </div>
 

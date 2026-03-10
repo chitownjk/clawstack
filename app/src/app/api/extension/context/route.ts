@@ -141,7 +141,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { url, title, snippet } = body
+    const { url, title, snippet, structuredData } = body
 
     if (!url) {
       return NextResponse.json({ error: 'URL required' }, { status: 400, headers: CORS_HEADERS })
@@ -157,8 +157,10 @@ export async function POST(request: Request) {
       }, { headers: CORS_HEADERS })
     }
 
-    // If we have a snippet, try AI classification (costs credits, so only when we have content)
-    if (snippet && snippet.length > 20) {
+    // If we have a snippet or structured data, try AI classification
+    const hasContent = (snippet && snippet.length > 20) ||
+      (structuredData && (structuredData.prices?.length > 0 || structuredData.dates?.length > 0 || structuredData.locations?.length > 0))
+    if (hasContent) {
       try {
         const anthropic = new Anthropic()
         const response = await anthropic.messages.create({
@@ -167,7 +169,7 @@ export async function POST(request: Request) {
           system: `You detect what a user is doing on a web page and suggest how a personal life manager AI can help. You are looking for actionable life tasks: travel, shopping, bills, appointments, events, school, family, home maintenance, etc. Output JSON only. If the page is not actionable (news, social media browsing, entertainment), return {"detected": false}.`,
           messages: [{
             role: 'user',
-            content: `URL: ${url}\nTitle: ${title || 'Unknown'}\nPage content: ${snippet.slice(0, 500)}\n\nIf this page represents an actionable life task, return:\n{"detected": true, "type": "travel|shopping|finance|health|family|food|event|home|other", "label": "Short label", "suggestedTask": "What Tiker should do", "confidence": "high|medium|low"}\n\nIf not actionable, return: {"detected": false}`,
+            content: `URL: ${url}\nTitle: ${title || 'Unknown'}\nPage content: ${(snippet || '').slice(0, 500)}${structuredData ? `\nStructured data: ${JSON.stringify(structuredData)}` : ''}\n\nIf this page represents an actionable life task, return:\n{"detected": true, "type": "travel|shopping|finance|health|family|food|event|home|other", "label": "Short label", "suggestedTask": "Specific actionable description of what to do", "confidence": "high|medium|low"}\n\nBe specific in suggestedTask. Use the structured data (prices, dates, locations, products) when available. For example: "Book flight SFO to LAX on Mar 22 ($347)" not "Research flight options".\n\nIf not actionable (news, social media, entertainment), return: {"detected": false}`,
           }],
         })
 
