@@ -180,22 +180,30 @@ function generateSuggestion(classification, context) {
     case 'travel': {
       let msg = 'Looks like you\'re planning travel.';
       if (flightInfo?.from && flightInfo?.to) {
-        msg = `Looking at flights from ${flightInfo.from} to ${flightInfo.to}.`;
+        msg = `Flights from ${flightInfo.from} to ${flightInfo.to}`;
       } else if (locations.length >= 2) {
-        msg = `Looking at travel: ${locations.slice(0, 2).join(' to ')}.`;
+        msg = `${locations[0]} to ${locations[1]}`;
       } else if (locations.length === 1) {
-        msg = `Looking at travel to ${locations[0]}.`;
+        msg = `Travel to ${locations[0]}`;
       }
-      if (prices.length > 0) msg += ` Prices from ${prices[0]}.`;
-      if (dates.length > 0) msg += ` Dates: ${dates[0]}.`;
+      // Add price and date on separate lines for readability
+      const details = [];
+      if (prices.length > 0) details.push(`From ${prices[0]}`);
+      if (dates.length > 0) details.push(dates[0]);
+      if (details.length > 0) msg += ` \u2022 ${details.join(' \u2022 ')}`;
+
+      const taskRoute = flightInfo?.from && flightInfo?.to
+        ? `${flightInfo.from} to ${flightInfo.to}`
+        : locations.length >= 2
+          ? `${locations[0]} to ${locations[1]}`
+          : locations.length === 1
+            ? locations[0]
+            : (h1 || title);
+
       return {
         headline: msg,
         suggestion: 'Want me to track this trip? I can compare options, watch for price drops, and add it to your calendar.',
-        taskTitle: flightInfo?.from && flightInfo?.to
-          ? `Book flight: ${flightInfo.from} to ${flightInfo.to}`
-          : locations.length > 0
-            ? `Book travel: ${locations[0]}`
-            : `Book travel: ${h1 || title}`,
+        taskTitle: `Book travel: ${taskRoute}`,
       };
     }
     case 'shopping': {

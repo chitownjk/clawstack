@@ -53,14 +53,31 @@
       '[class*="date"], [class*="depart"], [class*="arrive"], [class*="check"], time, [datetime], input[type="date"]'
     );
     dateEls.forEach(el => {
+      // Prefer structured attributes over text content
       const val = el.getAttribute('datetime') ||
                   el.getAttribute('value') ||
                   el.textContent?.trim();
-      if (val && val.length < 60 && dates.length < 5) {
-        dates.push(val);
+      if (!val || val.length > 60) return;
+      // Clean up: strip common label prefixes that get included in textContent
+      let cleaned = val
+        .replace(/^(Date|Dates|Depart|Arrive|Check.in|Check.out|Return|Departure|Arrival)\s*/i, '')
+        .replace(/Change\s*date\s*/gi, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      if (cleaned && cleaned.length > 2 && dates.length < 5 && !dates.includes(cleaned)) {
+        dates.push(cleaned);
       }
     });
     return dates;
+  }
+
+  function cleanLocationText(text) {
+    if (!text) return '';
+    return text
+      // Strip common label prefixes (From, To, Origin, Destination, etc.)
+      .replace(/^(From|To|Origin|Destination|Depart|Arrive|Departing|Arriving|Pick.up|Drop.off|Location|Address)\s*:?\s*/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
   }
 
   function extractLocations() {
@@ -69,8 +86,9 @@
       '[class*="city"], [class*="airport"], [class*="origin"], [class*="destination"], [class*="location"], [class*="address"]'
     );
     locEls.forEach(el => {
-      const text = el.textContent?.trim();
-      if (text && text.length > 1 && text.length < 80 && locations.length < 5) {
+      const raw = el.textContent?.trim();
+      const text = cleanLocationText(raw);
+      if (text && text.length > 1 && text.length < 80 && locations.length < 5 && !locations.includes(text)) {
         locations.push(text);
       }
     });
