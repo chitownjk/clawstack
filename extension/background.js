@@ -53,17 +53,29 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 // ---- Authenticated fetch helper ----
-// Background service worker can send cookies via credentials:'include'
-// for domains listed in host_permissions.
+// chrome.cookies.getAll() can read ALL cookies (including HttpOnly, SameSite=Lax)
+// for domains in host_permissions. We pass them via a custom header because
+// SameSite=Lax cookies won't be sent by the browser on cross-origin fetch
+// from chrome-extension:// origin. The server middleware reads this header.
 
 async function authenticatedFetch(path, options = {}) {
   const url = `${API_BASE}${path}`;
 
+  // Read all cookies for the tiker domain
+  let cookieString = '';
+  try {
+    const cookies = await chrome.cookies.getAll({ url: API_BASE });
+    cookieString = cookies.map(c => `${c.name}=${c.value}`).join('; ');
+  } catch (e) {
+    console.warn('[Tiker] Could not read cookies:', e);
+  }
+
   const res = await fetch(url, {
     method: options.method || 'GET',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      'X-Extension-Cookies': cookieString,
+      'X-Tiker-Extension': '1',
       ...(options.headers || {}),
     },
     body: options.body || undefined,

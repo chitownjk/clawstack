@@ -18,17 +18,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const aiToggle = document.getElementById('ai-toggle');
   const aiToggleLabel = document.getElementById('ai-toggle-label');
 
-  // Check auth via cookies (Supabase stores sb-*-auth-token cookies)
-  const cookies = await chrome.cookies.getAll({ url: 'https://www.tiker.com' });
-  const hasAuth = cookies.some(c => c.name.includes('auth-token'));
-
-  if (!hasAuth) {
-    loadingEl.classList.add('hidden');
-    authEl.classList.remove('hidden');
-    return;
-  }
-
-  // We have cookies - try fetching account via background (which can send cookies)
+  // Try fetching account via background (reads cookies via chrome.cookies API
+  // and forwards them through a custom header to bypass SameSite restrictions)
   let user = null;
   try {
     user = await bgFetch('/api/account/me');
@@ -38,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   loadingEl.classList.add('hidden');
 
-  if (!user || user.error) {
+  if (!user || user.error || user.status === 401) {
     authEl.classList.remove('hidden');
     return;
   }
