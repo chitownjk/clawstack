@@ -5,6 +5,12 @@ const API_BASE = 'https://www.tiker.com';
 // opens instantly with the right info.
 const tabContexts = new Map();
 
+// ---- Agent job cache ----
+// Tracks active agent jobs (flight searches etc.) per originating tab.
+const tabJobs = new Map();
+// Pending flight search callbacks keyed by search tab ID.
+const pendingSearches = new Map();
+
 // ---- Context Menu ----
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -191,7 +197,6 @@ function generateSuggestion(classification, context) {
       } else if (locations.length === 1) {
         msg = `Travel to ${locations[0]}`;
       }
-      // Add price and date on separate lines for readability
       const details = [];
       if (prices.length > 0) details.push(`From ${prices[0]}`);
       if (dates.length > 0) details.push(dates[0]);
@@ -205,10 +210,23 @@ function generateSuggestion(classification, context) {
             ? locations[0]
             : (h1 || title);
 
+      // Check if this looks like a flight search (has origin/dest)
+      const canSearchFlights = !!(flightInfo?.from && flightInfo?.to);
+
       return {
         headline: msg,
-        suggestion: 'Want me to track this trip? I can compare options, watch for price drops, and add it to your calendar.',
+        suggestion: canSearchFlights
+          ? `I can search across all airlines for the best deal on ${flightInfo.from} to ${flightInfo.to}. Want me to find a better price?`
+          : 'Want me to track this trip? I can compare options and add it to your calendar.',
         taskTitle: `Book travel: ${taskRoute}`,
+        canSearchFlights,
+        flightParams: canSearchFlights ? {
+          origin: flightInfo.from,
+          destination: flightInfo.to,
+          dates: dates.slice(0, 2),
+          passengers: flightInfo.passengers || 1,
+          cabin_class: flightInfo.cabinClass || 'economy',
+        } : null,
       };
     }
     case 'shopping': {
@@ -393,6 +411,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
+  // Start agent job (flight search)
+  if (msg.type === 'startAgentJob') {
+    handleStartAgentJob(msg, sender)
+      .then(data => sendResponse(data))
+      .catch(err => sendResponse({ error: err.message }));
+    return true;
+  }
+
+  // Get agent job status
+  if (msg.type === 'getAgentJob') {
+    const job = tabJobs.get(msg.tabId);
+    sendResponse(job || null);
+    return;
+  }
+
+  // Flight search results from extractor content script
+  if (msg.type === 'flightSearchResults') {
+    handleFlightSearchResults(msg, sender);
+    return;
+  }
+
   // Badge refresh
   if (msg.type === 'refreshBadge') {
     refreshBadge().then(() => sendResponse({ ok: true }));
@@ -423,6 +462,183 @@ async function refreshBadge() {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'refresh-badge') refreshBadge();
 });
+
+// ---- Agent job: flight search orchestration ----
+
+async function handleStartAgentJob(msg, sender) {
+  const { originTabId, flightParams, sourceUrl } = msg;
+
+  // 1. Create job on server
+  const jobResult = await authenticatedFetch('/api/agents/jobs/create', {
+    method: 'POST',
+    body: JSON.stringify({
+      type: 'flight',
+      search_params: flightParams,
+      source_url: sourceUrl,
+    }),
+  });
+
+  if (jobResult?.error) {
+    return { error: jobResult.error };
+  }
+
+  const jobId = jobResult?.job?.id;
+  if (!jobId) return { error: 'No job ID returned' };
+
+  // 2. Store job state for this tab
+  const jobState = {
+    jobId,
+    status: 'searching',
+    flightParams,
+    options: [],
+    error: null,
+    timestamp: Date.now(),
+  };
+  tabJobs.set(originTabId, jobState);
+
+  // 3. Build Google Flights URL
+  const gfUrl = buildGoogleFlightsUrl(flightParams);
+  console.log('[Tiker] Opening Google Flights:', gfUrl);
+
+  // 4. Open background tab and inject extractor
+  try {
+    const searchTab = await chrome.tabs.create({ url: gfUrl, active: false });
+    pendingSearches.set(searchTab.id, { jobId, originTabId });
+
+    // Inject extractor script once page loads
+    chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+      if (tabId === searchTab.id && changeInfo.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        chrome.scripting.executeScript({
+          target: { tabId: searchTab.id },
+          files: ['extractors/google-flights.js'],
+        }).catch(err => {
+          console.error('[Tiker] Failed to inject extractor:', err);
+          handleSearchFailure(searchTab.id, 'Failed to inject extractor');
+        });
+      }
+    });
+
+    // Safety timeout: close tab after 30s if no results
+    setTimeout(() => {
+      if (pendingSearches.has(searchTab.id)) {
+        handleSearchFailure(searchTab.id, 'Search timed out');
+      }
+    }, 30000);
+
+  } catch (err) {
+    console.error('[Tiker] Failed to open search tab:', err);
+    jobState.status = 'failed';
+    jobState.error = 'Could not open search tab';
+    tabJobs.set(originTabId, jobState);
+    return { error: 'Failed to start search' };
+  }
+
+  return { jobId, status: 'searching' };
+}
+
+function handleFlightSearchResults(msg, sender) {
+  const searchTabId = sender.tab?.id;
+  if (!searchTabId) return;
+
+  const pending = pendingSearches.get(searchTabId);
+  if (!pending) return;
+
+  pendingSearches.delete(searchTabId);
+  const { jobId, originTabId } = pending;
+
+  // Close the search tab
+  chrome.tabs.remove(searchTabId).catch(() => {});
+
+  const jobState = tabJobs.get(originTabId);
+  if (!jobState) return;
+
+  if (msg.error || !msg.results || msg.results.length === 0) {
+    jobState.status = 'failed';
+    jobState.error = msg.error || 'No flights found';
+    tabJobs.set(originTabId, jobState);
+
+    // Update server
+    authenticatedFetch(`/api/agents/jobs/${jobId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'failed', error_message: jobState.error }),
+    }).catch(() => {});
+
+    // Update badge
+    updateBadgeForTab(originTabId);
+    return;
+  }
+
+  // Format results as options
+  const options = msg.results.map((r, i) => ({
+    provider: r.airline,
+    option_data: {
+      airline: r.airline,
+      depart_time: r.depart_time,
+      arrive_time: r.arrive_time,
+      duration: r.duration,
+      stops: r.stops,
+    },
+    display_summary: `${r.airline} - ${r.depart_time} to ${r.arrive_time} - ${r.stops} - $${r.price_cents / 100}`,
+    price_cents: r.price_cents,
+    currency: 'USD',
+    booking_url: r.booking_url || msg.url,
+    ranking: i + 1,
+    ranking_reason: i === 0 ? 'cheapest' : i === 1 ? 'best value' : 'alternative',
+  }));
+
+  // Update local state
+  jobState.status = 'options_ready';
+  jobState.options = options;
+  tabJobs.set(originTabId, jobState);
+
+  // Send options to server
+  authenticatedFetch(`/api/agents/jobs/${jobId}/options`, {
+    method: 'POST',
+    body: JSON.stringify({ options }),
+  }).catch(err => console.warn('[Tiker] Failed to save options to server:', err));
+
+  // Update badge to show results are ready
+  chrome.action.setBadgeText({ text: `${options.length}`, tabId: originTabId });
+  chrome.action.setBadgeBackgroundColor({ color: '#22c55e', tabId: originTabId });
+
+  console.log(`[Tiker] Flight search complete: ${options.length} options found`);
+}
+
+function handleSearchFailure(searchTabId, errorMsg) {
+  const pending = pendingSearches.get(searchTabId);
+  if (!pending) return;
+
+  pendingSearches.delete(searchTabId);
+  chrome.tabs.remove(searchTabId).catch(() => {});
+
+  const { jobId, originTabId } = pending;
+  const jobState = tabJobs.get(originTabId);
+  if (jobState) {
+    jobState.status = 'failed';
+    jobState.error = errorMsg;
+    tabJobs.set(originTabId, jobState);
+  }
+
+  authenticatedFetch(`/api/agents/jobs/${jobId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'failed', error_message: errorMsg }),
+  }).catch(() => {});
+}
+
+function buildGoogleFlightsUrl(params) {
+  // Google Flights URL format:
+  // https://www.google.com/travel/flights?q=flights+from+ORD+to+PHL+on+Mar+17
+  const { origin, destination, dates } = params;
+  let query = `flights from ${origin} to ${destination}`;
+  if (dates && dates.length > 0) {
+    query += ` on ${dates[0]}`;
+    if (dates.length > 1) {
+      query += ` return ${dates[1]}`;
+    }
+  }
+  return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`;
+}
 
 // ---- Helpers ----
 

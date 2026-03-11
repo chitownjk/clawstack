@@ -1,19 +1,21 @@
 {
   "manifest_version": 3,
   "name": "Tiker",
-  "version": "2.0.0",
-  "description": "Your AI life manager. Detects what you're doing and offers to help. Quick task capture, daily briefing, and smart context awareness.",
+  "version": "3.0.0",
+  "description": "Your AI life manager. Detects what you're doing, searches for better deals, and handles tasks for you.",
   "permissions": [
     "storage",
     "contextMenus",
     "alarms",
     "cookies",
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
     "https://tiker.com/*",
-    "https://www.tiker.com/*"
+    "https://www.tiker.com/*",
+    "https://www.google.com/*"
   ],
   "content_scripts": [
     {

@@ -16,10 +16,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const contextHeadline = document.getElementById('context-headline');
   const contextSuggestion = document.getElementById('context-suggestion');
   const contextAddBtn = document.getElementById('context-add');
+  const contextSearchBtn = document.getElementById('context-search');
   const contextDismissBtn = document.getElementById('context-dismiss');
   const noContext = document.getElementById('no-context');
   const aiToggle = document.getElementById('ai-toggle');
   const aiToggleLabel = document.getElementById('ai-toggle-label');
+  const agentJobCard = document.getElementById('agent-job-card');
+  const jobSearching = document.getElementById('job-searching');
+  const jobOptions = document.getElementById('job-options');
+  const jobFailed = document.getElementById('job-failed');
+  const jobOptionsTitle = document.getElementById('job-options-title');
+  const flightOptionsList = document.getElementById('flight-options-list');
+  const jobSearchDetail = document.getElementById('job-search-detail');
+  const jobErrorMsg = document.getElementById('job-error-msg');
+  const jobRetryBtn = document.getElementById('job-retry');
 
   // ---- Auth check ----
   let user = null;
@@ -65,7 +75,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('[Tiker] Context fetch failed:', e);
   }
 
-  if (currentContext?.classification) {
+  // Check for active agent job first, then context
+  let activeTabId = null;
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    activeTabId = tab?.id;
+  } catch {}
+
+  let agentJob = null;
+  if (activeTabId) {
+    agentJob = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: 'getAgentJob', tabId: activeTabId }, resolve);
+    });
+  }
+
+  if (agentJob) {
+    showAgentJob(agentJob);
+  } else if (currentContext?.classification) {
     showContextCard(currentContext);
   } else {
     noContext.classList.remove('hidden');
@@ -141,7 +167,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     noContext.classList.add('hidden');
     contextCard.classList.remove('hidden');
 
-    // Actually create the task when clicking "Add to Tiker"
+    // Show "Find me a deal" button for flights
+    if (suggestion.canSearchFlights) {
+      contextSearchBtn.classList.remove('hidden');
+      contextSearchBtn.onclick = () => startFlightSearch(ctx);
+    } else {
+      contextSearchBtn.classList.add('hidden');
+    }
+
+    // "Add to Tiker" creates a task
     contextAddBtn.onclick = async () => {
       contextAddBtn.disabled = true;
       contextAddBtn.textContent = 'Adding...';
@@ -186,6 +220,161 @@ document.addEventListener('DOMContentLoaded', async () => {
     contextCard.classList.add('hidden');
     noContext.classList.remove('hidden');
   });
+
+  // ---- Agent Job: Flight Search ----
+
+  async function startFlightSearch(ctx) {
+    const { suggestion } = ctx;
+    if (!suggestion.flightParams) return;
+
+    // Hide context card, show agent job card in searching state
+    contextCard.classList.add('hidden');
+    agentJobCard.classList.remove('hidden');
+    jobSearching.classList.remove('hidden');
+    jobOptions.classList.add('hidden');
+    jobFailed.classList.add('hidden');
+    jobSearchDetail.textContent = `Searching ${suggestion.flightParams.origin} to ${suggestion.flightParams.destination}...`;
+
+    // Tell background to start the search
+    const result = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({
+        type: 'startAgentJob',
+        originTabId: activeTabId,
+        flightParams: suggestion.flightParams,
+        sourceUrl: ctx.context?.url || '',
+      }, resolve);
+    });
+
+    if (result?.error) {
+      showJobFailed(result.error);
+      return;
+    }
+
+    // Poll for results
+    pollForResults(activeTabId);
+  }
+
+  function pollForResults(tabId) {
+    let attempts = 0;
+    const maxAttempts = 20; // 40 seconds total
+
+    const interval = setInterval(async () => {
+      attempts++;
+      const job = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: 'getAgentJob', tabId }, resolve);
+      });
+
+      if (!job) {
+        clearInterval(interval);
+        showJobFailed('Search lost');
+        return;
+      }
+
+      if (job.status === 'options_ready' && job.options?.length > 0) {
+        clearInterval(interval);
+        showJobOptions(job);
+        return;
+      }
+
+      if (job.status === 'failed') {
+        clearInterval(interval);
+        showJobFailed(job.error || 'Search failed');
+        return;
+      }
+
+      // Update searching text
+      const dots = '.'.repeat((attempts % 3) + 1);
+      jobSearchDetail.textContent = `Comparing prices across all airlines${dots}`;
+
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+        showJobFailed('Search timed out. Try again?');
+      }
+    }, 2000);
+  }
+
+  function showAgentJob(job) {
+    agentJobCard.classList.remove('hidden');
+    noContext.classList.add('hidden');
+    contextCard.classList.add('hidden');
+
+    if (job.status === 'searching') {
+      jobSearching.classList.remove('hidden');
+      jobOptions.classList.add('hidden');
+      jobFailed.classList.add('hidden');
+      pollForResults(activeTabId);
+    } else if (job.status === 'options_ready' && job.options?.length > 0) {
+      showJobOptions(job);
+    } else if (job.status === 'failed') {
+      showJobFailed(job.error || 'Search failed');
+    }
+  }
+
+  function showJobOptions(job) {
+    jobSearching.classList.add('hidden');
+    jobFailed.classList.add('hidden');
+    jobOptions.classList.remove('hidden');
+
+    const options = job.options || [];
+    jobOptionsTitle.textContent = `${options.length} flight${options.length !== 1 ? 's' : ''} found`;
+
+    flightOptionsList.innerHTML = '';
+    options.forEach((opt, i) => {
+      const data = opt.option_data || {};
+      const price = opt.price_cents ? `$${(opt.price_cents / 100).toFixed(0)}` : '';
+      const badge = i === 0 ? opt.ranking_reason || 'cheapest' : (opt.ranking_reason || '');
+
+      const card = document.createElement('div');
+      card.className = 'flight-card';
+      card.innerHTML = `
+        <div class="flight-card-top">
+          <span class="flight-airline">${escapeHtml(data.airline || opt.provider || 'Unknown')}</span>
+          <span class="flight-price">${price}</span>
+        </div>
+        <div class="flight-card-bottom">
+          <span class="flight-times">${escapeHtml(data.depart_time || '')} - ${escapeHtml(data.arrive_time || '')} ${data.duration ? '(' + data.duration + ')' : ''}</span>
+          <span class="flight-stops">${escapeHtml(data.stops || '')}</span>
+        </div>
+        ${badge ? `<span class="flight-badge">${escapeHtml(badge)}</span>` : ''}
+      `;
+
+      card.addEventListener('click', () => {
+        // Open booking URL if available
+        const bookingUrl = opt.booking_url;
+        if (bookingUrl) {
+          chrome.tabs.create({ url: bookingUrl });
+        }
+        // Also create a tracking task
+        bgFetch('/api/command/tasks/create', {
+          method: 'POST',
+          body: JSON.stringify({
+            title: `Book flight: ${data.airline || opt.provider} ${data.depart_time || ''} - ${price}`,
+            description: `${opt.display_summary || ''}\nBooking: ${bookingUrl || 'See extension'}`,
+            tags: ['extension', 'flight', 'agent-booked'],
+            priority: 'high',
+          }),
+        }).catch(() => {});
+      });
+
+      flightOptionsList.appendChild(card);
+    });
+  }
+
+  function showJobFailed(errorMsg) {
+    jobSearching.classList.add('hidden');
+    jobOptions.classList.add('hidden');
+    jobFailed.classList.remove('hidden');
+    jobErrorMsg.textContent = errorMsg || 'Could not find flights';
+  }
+
+  if (jobRetryBtn) {
+    jobRetryBtn.addEventListener('click', () => {
+      // Re-check context and try again
+      if (currentContext?.suggestion?.canSearchFlights) {
+        startFlightSearch(currentContext);
+      }
+    });
+  }
 
   // ---- Briefing ----
   async function loadBriefing() {

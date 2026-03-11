@@ -40,6 +40,42 @@
         </a>
       </div>
 
+      <!-- Agent Job card (flight search, etc.) -->
+      <div id="agent-job-card" class="agent-job-card hidden">
+        <!-- Searching state -->
+        <div id="job-searching" class="job-state hidden">
+          <div class="job-header">
+            <span class="job-icon">&#9992;&#65039;</span>
+            <span class="job-title">Searching flights...</span>
+          </div>
+          <div class="job-search-animation">
+            <div class="search-pulse"></div>
+            <div id="job-search-detail" class="job-detail">Comparing prices across all airlines</div>
+          </div>
+        </div>
+
+        <!-- Options ready state -->
+        <div id="job-options" class="job-state hidden">
+          <div class="job-header">
+            <span class="job-icon">&#9992;&#65039;</span>
+            <span id="job-options-title" class="job-title">3 flights found</span>
+          </div>
+          <div id="flight-options-list" class="flight-options-list">
+            <!-- Flight cards injected here by JS -->
+          </div>
+        </div>
+
+        <!-- Failed state -->
+        <div id="job-failed" class="job-state hidden">
+          <div class="job-header">
+            <span class="job-icon">&#128533;</span>
+            <span class="job-title">Search failed</span>
+          </div>
+          <div id="job-error-msg" class="job-detail">Could not find flights</div>
+          <button id="job-retry" class="btn btn-primary btn-sm">Try again</button>
+        </div>
+      </div>
+
       <!-- Context detection card (primary - shown first when detected) -->
       <div id="context-card" class="context-card hidden">
         <div class="context-header-row">
@@ -50,6 +86,7 @@
         <div id="context-suggestion" class="context-suggestion"></div>
         <div class="context-actions">
           <button id="context-add" class="btn btn-primary btn-sm">Add to Tiker</button>
+          <button id="context-search" class="btn btn-accent btn-sm hidden">Find me a deal</button>
           <button id="context-dismiss" class="btn btn-ghost btn-sm">Dismiss</button>
         </div>
       </div>

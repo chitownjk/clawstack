@@ -56,11 +56,12 @@ export async function POST(request: Request) {
     }
 
     // Gather all data sources in parallel
-    const [calendarData, tasksData, activitiesData, extractedData] = await Promise.all([
+    const [calendarData, tasksData, activitiesData, extractedData, agentJobsData] = await Promise.all([
       fetchCalendarEvents(session.user.id, todayStr),
       fetchTasks(adminClient, account.id),
       fetchRecentActivity(adminClient, account.id),
       fetchExtractedItems(adminClient, account.id),
+      fetchAgentJobs(adminClient, account.id),
     ])
 
     // Build the prompt for Claude Haiku
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
       tasks: tasksData,
       activities: activitiesData,
       extracted: extractedData,
+      agentJobs: agentJobsData,
     })
 
     // Call Claude Haiku for synthesis
@@ -117,6 +119,7 @@ export async function POST(request: Request) {
         review_tasks: tasksData.review.length,
         extracted_items: extractedData.length,
         recent_activities: activitiesData.length,
+        agent_jobs: agentJobsData.length,
       },
     }
 
@@ -304,6 +307,71 @@ async function fetchRecentActivity(adminClient: any, accountId: string): Promise
   }
 }
 
+async function fetchAgentJobs(adminClient: any, accountId: string): Promise<any[]> {
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+    const { data: jobs } = await adminClient
+      .from('agent_jobs')
+      .select('id, job_type, status, search_params, source_url, error_message, created_at, expires_at')
+      .eq('account_id', accountId)
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (!jobs || jobs.length === 0) return []
+
+    // For each job, fetch its options
+    const jobsWithOptions = await Promise.all(
+      jobs.map(async (job: any) => {
+        let searchParams = null
+        try {
+          if (job.search_params) {
+            searchParams = JSON.parse(decrypt(job.search_params as string))
+          }
+        } catch { /* leave null */ }
+
+        let options: any[] = []
+        if (['options_ready', 'selected', 'completed'].includes(job.status)) {
+          const { data: rawOptions } = await adminClient
+            .from('agent_job_options')
+            .select('provider, price_cents, display_summary, ranking, ranking_reason')
+            .eq('job_id', job.id)
+            .order('ranking', { ascending: true })
+            .limit(5)
+
+          options = (rawOptions || []).map((opt: any) => {
+            let summary = opt.display_summary
+            try {
+              if (summary) summary = decrypt(summary)
+            } catch { /* leave raw */ }
+            return {
+              provider: opt.provider,
+              price_cents: opt.price_cents,
+              summary,
+              ranking: opt.ranking,
+              ranking_reason: opt.ranking_reason,
+            }
+          })
+        }
+
+        return {
+          type: job.job_type,
+          status: job.status,
+          search_params: searchParams,
+          options,
+          created_at: job.created_at,
+        }
+      })
+    )
+
+    return jobsWithOptions
+  } catch (error) {
+    console.error('[Briefing] Agent jobs fetch error:', error)
+    return []
+  }
+}
+
 async function fetchExtractedItems(adminClient: any, accountId: string): Promise<any[]> {
   try {
     const { data: items } = await adminClient
@@ -331,8 +399,9 @@ function buildBriefingPrompt(data: {
   tasks: { active: any[]; review: any[]; blocked: any[]; dueToday: any[]; completedToday: any[] };
   activities: any[];
   extracted: any[];
+  agentJobs: any[];
 }): string {
-  const { date, calendar, tasks, activities, extracted } = data
+  const { date, calendar, tasks, activities, extracted, agentJobs } = data
 
   const calendarSection = calendar.length > 0
     ? `CALENDAR EVENTS (${calendar.length}):\n${calendar.map(e => {
@@ -361,6 +430,24 @@ function buildBriefingPrompt(data: {
       ).join('\n')}`
     : ''
 
+  const agentJobSection = agentJobs.length > 0
+    ? `AGENT ACTIVITY (last 24h - ${agentJobs.length} job${agentJobs.length !== 1 ? 's' : ''}):\n${agentJobs.map(j => {
+        const params = j.search_params || {}
+        const cheapest = j.options?.[0]
+        let line = `- [${j.type}] Status: ${j.status}`
+        if (params.origin && params.destination) {
+          line += ` | ${params.origin} to ${params.destination}`
+          if (params.departure_date) line += ` on ${params.departure_date}`
+        }
+        if (cheapest) {
+          const price = cheapest.price_cents ? `$${(cheapest.price_cents / 100).toFixed(0)}` : ''
+          line += ` | Best: ${cheapest.provider || 'Unknown'} ${price} (${cheapest.ranking_reason || ''})`
+        }
+        if (j.status === 'failed') line += ' | Search failed'
+        return line
+      }).join('\n')}`
+    : ''
+
   // Check for calendar conflicts
   const conflicts = findConflicts(calendar)
   const conflictSection = conflicts.length > 0
@@ -379,6 +466,8 @@ ${activitySection}
 
 ${extractedSection}
 
+${agentJobSection}
+
 ${conflictSection}
 
 Output JSON with this exact schema:
@@ -388,7 +477,7 @@ Output JSON with this exact schema:
     { "time": "9:00 AM", "title": "Event name", "type": "meeting|focus|personal", "note": "optional context" }
   ],
   "attention_items": [
-    { "type": "conflict|review|blocked|due|extracted", "title": "Short description", "action": "What to do" }
+    { "type": "conflict|review|blocked|due|extracted|agent_result|agent_failed", "title": "Short description", "action": "What to do" }
   ],
   "tasks_summary": {
     "active": number,

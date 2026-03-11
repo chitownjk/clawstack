@@ -331,3 +331,114 @@ body {
   text-align: center;
   padding: 12px;
 }
+
+/* Agent Job card */
+.agent-job-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.job-state { }
+.job-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.job-icon { font-size: 20px; }
+.job-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.job-detail {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+/* Search animation */
+.job-search-animation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.search-pulse {
+  width: 10px;
+  height: 10px;
+  background: #22c55e;
+  border-radius: 50%;
+  animation: pulse-glow 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Flight option cards */
+.flight-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.flight-card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.flight-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.15);
+}
+.flight-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.flight-airline {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.flight-price {
+  font-size: 15px;
+  font-weight: 700;
+  color: #16a34a;
+}
+.flight-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.flight-times {
+  font-size: 12px;
+  color: #525252;
+}
+.flight-stops {
+  font-size: 11px;
+  color: #a3a3a3;
+}
+.flight-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  background: #2563eb;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+/* Accent button */
+.btn-accent {
+  background: #16a34a;
+  color: white;
+}
+.btn-accent:hover { background: #15803d; }
+.btn-accent:disabled { background: #86efac; cursor: not-allowed; }
