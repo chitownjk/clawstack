@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 const createJobSchema = z.object({
   type: z.enum(['flight', 'hotel', 'shopping', 'restaurant', 'general']),
-  search_params: z.record(z.unknown()),
+  search_params: z.record(z.string(), z.unknown()),
   source_url: z.string().optional(),
 })
 

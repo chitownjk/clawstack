@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 const optionSchema = z.object({
   provider: z.string(),
-  option_data: z.record(z.unknown()),
+  option_data: z.record(z.string(), z.unknown()),
   display_summary: z.string(),
   price_cents: z.number().int().positive(),
   currency: z.string().default('USD'),
