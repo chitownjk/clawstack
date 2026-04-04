@@ -1,6 +1,7 @@
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { getComposio } from '@/lib/composio'
+import { GMAIL_SLUGS, executeWithSlugFallback } from '@/lib/composio-slugs'
 import Anthropic from '@anthropic-ai/sdk'
 
 // POST /api/email/scan
@@ -138,41 +139,30 @@ async function fetchGmailMessages(
   maxResults: number,
   firstRun: boolean = false
 ): Promise<Array<{ id: string; threadId?: string }>> {
-  const TOOL_SLUGS = [
-    'GMAIL_LIST_MESSAGES',
-    'GMAIL_FETCH_EMAILS',
-    'GMAIL_GET_MESSAGES',
-  ]
-
-  for (const slug of TOOL_SLUGS) {
-    try {
-      const result = await composio.tools.execute(slug, {
-        userId,
-        dangerouslySkipVersionCheck: true,
-        arguments: {
-          maxResults,
-          // First run scans 14 days for richer initial data, otherwise 3 days
-          q: `in:inbox newer_than:${firstRun ? '14d' : '3d'}`,
-          labelIds: ['INBOX'],
-        },
-      })
-
-      // Walk response tree to find messages array
-      const messages = findArray(result, ['messages', 'items', 'data'])
-      if (messages.length > 0) {
-        console.log(`[EmailScan] Found ${messages.length} messages with slug: ${slug}`)
-        return messages.slice(0, maxResults)
+  try {
+    const { result, slugUsed } = await executeWithSlugFallback(
+      composio,
+      userId,
+      GMAIL_SLUGS.listMessages,
+      {
+        maxResults,
+        // First run scans 14 days for richer initial data, otherwise 3 days
+        q: `in:inbox newer_than:${firstRun ? '14d' : '3d'}`,
+        labelIds: ['INBOX'],
       }
-    } catch (slugError: any) {
-      if (slugError?.message?.includes('Unable to retrieve tool')) {
-        console.log(`[EmailScan] Slug ${slug} not found, trying next...`)
-        continue
-      }
-      throw slugError
+    )
+
+    // Walk response tree to find messages array
+    const messages = findArray(result, ['messages', 'items', 'data'])
+    if (messages.length > 0) {
+      console.log(`[EmailScan] Found ${messages.length} messages with slug: ${slugUsed}`)
+      return messages.slice(0, maxResults)
     }
+  } catch (err) {
+    console.error('[EmailScan] fetchGmailMessages failed:', err instanceof Error ? err.message : err)
   }
 
-  console.log('[EmailScan] No valid Gmail list slug found')
+  console.log('[EmailScan] No Gmail messages found or no valid slug')
   return []
 }
 
@@ -181,44 +171,33 @@ async function fetchGmailMessage(
   userId: string,
   messageId: string
 ): Promise<any | null> {
-  const TOOL_SLUGS = [
-    'GMAIL_GET_MESSAGE',
-    'GMAIL_FETCH_MESSAGE',
-    'GMAIL_READ_MESSAGE',
-  ]
+  try {
+    const { result } = await executeWithSlugFallback(
+      composio,
+      userId,
+      GMAIL_SLUGS.getMessage,
+      { messageId, id: messageId, format: 'full' }
+    )
 
-  for (const slug of TOOL_SLUGS) {
-    try {
-      const result = await composio.tools.execute(slug, {
-        userId,
-        dangerouslySkipVersionCheck: true,
-        arguments: {
-          messageId,
-          id: messageId,
-          format: 'full',
-        },
-      })
+    if (!result) return null
 
-      if (!result) continue
-
-      // Extract useful fields from the message
-      const msg = unwrapResult(result)
-      if (msg) {
-        return {
-          id: messageId,
-          subject: extractHeader(msg, 'Subject') || msg.subject || '',
-          from: extractHeader(msg, 'From') || msg.from || '',
-          to: extractHeader(msg, 'To') || msg.to || '',
-          date: extractHeader(msg, 'Date') || msg.date || msg.internalDate || '',
-          snippet: msg.snippet || '',
-          body: extractBody(msg),
-        }
+    const msg = unwrapResult(result)
+    if (msg) {
+      return {
+        id: messageId,
+        subject: extractHeader(msg, 'Subject') || msg.subject || '',
+        from: extractHeader(msg, 'From') || msg.from || '',
+        to: extractHeader(msg, 'To') || msg.to || '',
+        date: extractHeader(msg, 'Date') || msg.date || msg.internalDate || '',
+        snippet: msg.snippet || '',
+        body: extractBody(msg),
       }
-    } catch (slugError: any) {
-      if (slugError?.message?.includes('Unable to retrieve tool')) continue
-      console.error(`[EmailScan] Error reading message ${messageId}:`, slugError?.message)
-      return null
     }
+  } catch (err: unknown) {
+    console.error(
+      `[EmailScan] Error reading message ${messageId}:`,
+      err instanceof Error ? err.message : err
+    )
   }
 
   return null

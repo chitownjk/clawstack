@@ -1,6 +1,7 @@
 import { createRealSupabaseClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { getComposio } from '@/lib/composio'
+import { GCAL_SLUGS, executeWithSlugFallback } from '@/lib/composio-slugs'
 
 // GET /api/command/calendar?start=YYYY-MM-DD&end=YYYY-MM-DD
 // Fetches Google Calendar events for the given date range
@@ -53,47 +54,21 @@ export async function GET(request: Request) {
 
       console.log('[Calendar] Fetching events:', { userId, timeMin, timeMax })
 
-      // Composio tool slugs follow TOOLKIT_RESOURCE_ACTION naming.
-      // Try known slug variants in order of likelihood.
-      const TOOL_SLUGS = [
-        'GOOGLECALENDAR_EVENTS_LIST',
-        'GOOGLECALENDAR_LIST_EVENTS',
-        'GOOGLECALENDAR_FIND_EVENTS',
-        'GOOGLECALENDAR_GET_EVENTS',
-      ]
-
-      let result: any = null
-      let usedSlug = ''
-      for (const slug of TOOL_SLUGS) {
-        try {
-          result = await composio.tools.execute(slug, {
-            userId,
-            dangerouslySkipVersionCheck: true,
-            arguments: {
-              timeMin,
-              timeMax,
-              singleEvents: true,
-              orderBy: 'startTime',
-              maxResults: 100,
-            },
-          })
-          usedSlug = slug
-          console.log(`[Calendar] Success with slug: ${slug}`)
-          break
-        } catch (slugError: any) {
-          const msg = slugError?.message || ''
-          if (msg.includes('Unable to retrieve tool')) {
-            console.log(`[Calendar] Slug ${slug} not found, trying next...`)
-            continue
-          }
-          // Non-slug error (auth, network, etc.) -- rethrow
-          throw slugError
+      const { result: rawResult, slugUsed: usedSlug } = await executeWithSlugFallback(
+        composio,
+        userId,
+        GCAL_SLUGS.listEvents,
+        {
+          timeMin,
+          timeMax,
+          singleEvents: true,
+          orderBy: 'startTime',
+          maxResults: 100,
         }
-      }
+      )
+      console.log(`[Calendar] Success with slug: ${usedSlug}`)
 
-      if (!result) {
-        throw new Error(`No valid Composio tool slug found. Tried: ${TOOL_SLUGS.join(', ')}`)
-      }
+      const result: unknown = rawResult
 
       // Log the full response structure to diagnose parsing issues
       console.log('[Calendar] Composio raw result keys:', result ? Object.keys(result) : 'null')
@@ -148,7 +123,7 @@ export async function GET(request: Request) {
           connected: true,
           _debug: {
             usedSlug,
-            rawResultKeys: result ? Object.keys(result) : null,
+            rawResultKeys: result && typeof result === 'object' ? Object.keys(result as object) : null,
             rawEventCount: rawEvents.length,
             parsedEventCount: events.length,
             firstRawEvent: rawEvents[0] ? JSON.parse(JSON.stringify(rawEvents[0])) : null,

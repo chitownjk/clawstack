@@ -26,6 +26,7 @@ export const COMPOSIO_TOOLKITS: Record<string, {
 }> = {
   gmail: {
     toolkit: 'GMAIL',
+    toolkitFallbacks: ['GMAIL_V2', 'GMAILV2'],
     name: 'Gmail',
     description: 'Send and read emails, manage drafts and labels',
     icon: '\u2709\uFE0F',
@@ -33,6 +34,7 @@ export const COMPOSIO_TOOLKITS: Record<string, {
   },
   'google-calendar': {
     toolkit: 'GOOGLECALENDAR',
+    toolkitFallbacks: ['GOOGLECALENDAR_V2', 'GOOGLE_CALENDAR'],
     name: 'Google Calendar',
     description: 'Create events, manage calendars, check availability',
     icon: '\uD83D\uDCC5',

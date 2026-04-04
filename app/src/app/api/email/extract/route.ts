@@ -1,6 +1,7 @@
 import { createRealSupabaseClient, createAdminClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { getComposio } from '@/lib/composio'
+import { GCAL_SLUGS, executeWithSlugFallback } from '@/lib/composio-slugs'
 
 // POST /api/email/extract
 // Takes an extracted_item ID and creates a calendar event from it.
@@ -137,37 +138,17 @@ async function createCalendarEvent(
     // Build event details based on extraction type
     const eventDetails = buildEventFromExtraction(item)
 
-    const TOOL_SLUGS = [
-      'GOOGLECALENDAR_EVENTS_CREATE',
-      'GOOGLECALENDAR_CREATE_EVENT',
-      'GOOGLECALENDAR_INSERT_EVENT',
-    ]
-
-    let result: any = null
-    for (const slug of TOOL_SLUGS) {
-      try {
-        result = await composio.tools.execute(slug, {
-          userId,
-          dangerouslySkipVersionCheck: true,
-          arguments: eventDetails,
-        })
-        console.log(`[Extract] Calendar event created with slug: ${slug}`)
-        break
-      } catch (slugError: any) {
-        if (slugError?.message?.includes('Unable to retrieve tool')) {
-          console.log(`[Extract] Slug ${slug} not found, trying next...`)
-          continue
-        }
-        throw slugError
-      }
-    }
-
-    if (!result) {
-      return { success: false, error: 'No valid Composio calendar create slug found' }
-    }
+    const { result, slugUsed } = await executeWithSlugFallback(
+      composio,
+      userId,
+      GCAL_SLUGS.createEvent,
+      eventDetails
+    )
+    console.log(`[Extract] Calendar event created with slug: ${slugUsed}`)
 
     // Try to extract the event ID from the result
-    const eventId = result?.data?.id || result?.id || result?.data?.eventId || 'created'
+    const r = result as Record<string, any>
+    const eventId = r?.data?.id || r?.id || r?.data?.eventId || 'created'
 
     return { success: true, eventId }
   } catch (error: any) {
