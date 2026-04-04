@@ -89,7 +89,7 @@ export default function AgentsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-neutral-500 dark:text-neutral-400">
-          Loading agents...
+          Loading your team...
         </div>
       </div>
     );
@@ -100,10 +100,10 @@ export default function AgentsPage() {
       <div className="max-w-6xl mx-auto px-6 py-12">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 mb-2">
-            Your Agents
+            Your Team
           </h1>
           <p className="text-neutral-600 dark:text-neutral-400">
-            Enable the agents you want to use. They'll be available when creating tasks.
+            Choose your AI team members. Once added, they'll be available when you create tasks.
           </p>
         </div>
 
@@ -117,7 +117,7 @@ export default function AgentsPage() {
                 : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
             }`}
           >
-            All Agents
+            All
           </button>
           <button
             onClick={() => setFilter('enabled')}
@@ -127,7 +127,7 @@ export default function AgentsPage() {
                 : 'border-transparent text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
             }`}
           >
-            Enabled ({enabledCount})
+            My Team ({enabledCount})
           </button>
         </div>
 
@@ -148,7 +148,7 @@ export default function AgentsPage() {
                       </h3>
                       {agent.enabled && (
                         <span className="text-xs bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
-                          Enabled
+                          On your team
                         </span>
                       )}
                       {agent.requires_upgrade && (
@@ -189,8 +189,8 @@ export default function AgentsPage() {
                       {togglingAgent === agent.id
                         ? 'Updating...'
                         : agent.enabled
-                        ? 'Enabled'
-                        : 'Enable Agent'}
+                        ? 'On your team'
+                        : 'Add to team'}
                     </button>
                   ) : (
                     <Link
@@ -210,8 +210,8 @@ export default function AgentsPage() {
           <div className="text-center py-12">
             <p className="text-neutral-500 dark:text-neutral-400">
               {filter === 'enabled'
-                ? 'No agents enabled yet. Enable an agent above to get started!'
-                : 'No agents available.'}
+                ? 'No team members added yet. Add one above to get started!'
+                : 'No assistants available.'}
             </p>
           </div>
         )}
@@ -219,18 +219,18 @@ export default function AgentsPage() {
         {/* Info Box */}
         <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-900 rounded-xl">
           <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            💡 How agents work
+            💡 How your team works
           </h3>
           <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
-            Agents are specialized capabilities your AI can use when working on tasks. Enable the
-            agents you need, then assign tasks to them from Command.
+            Each team member is a specialist — a writer, researcher, coder, or assistant. Add them
+            to your team, then assign tasks to them from Command.
           </p>
           <p className="text-sm text-blue-800 dark:text-blue-200">
-            Some agents require higher plan tiers or specific model access. Check your{' '}
+            Some team members are available on higher plans. Check your{' '}
             <Link href="/settings/usage" className="underline font-medium">
-              usage dashboard
+              plan details
             </Link>{' '}
-            to see your current plan.
+            to see what's included.
           </p>
         </div>
       </div>

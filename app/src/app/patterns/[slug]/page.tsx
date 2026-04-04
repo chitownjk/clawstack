@@ -76,6 +76,14 @@ export default async function PatternPage({
     }
   }
 
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'orchestration': return 'Workflows'
+      case 'coordination': return 'Coordination'
+      default: return category.charAt(0).toUpperCase() + category.slice(1)
+    }
+  }
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'security': return 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
@@ -106,7 +114,7 @@ export default async function PatternPage({
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getCategoryColor(pattern.category)}`}>
               <span>{getCategoryIcon(pattern.category)}</span>
-              <span className="capitalize">{pattern.category}</span>
+              <span>{getCategoryLabel(pattern.category)}</span>
             </span>
             
             {pattern.status === 'validated' && (

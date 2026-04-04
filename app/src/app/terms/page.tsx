@@ -10,7 +10,7 @@ export default function TermsOfUse() {
           </p>
 
           <p className="mb-6">
-            These Terms of Use ("Terms") govern your access to and use of Tiker Inc.'s ("we," "us," or "Tiker") website at tiker.com (the "Site") and AI agent orchestration platform (collectively, the "Service"). By accessing or using the Service, you agree to these Terms. If you don't agree, please don't use the Service.
+            These Terms of Use ("Terms") govern your access to and use of Tiker Inc.'s ("we," "us," or "Tiker") website at tiker.com (the "Site") and AI-powered personal chief of staff service (collectively, the "Service"). By accessing or using the Service, you agree to these Terms. If you don't agree, please don't use the Service.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">1. Eligibility</h2>

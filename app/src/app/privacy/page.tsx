@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
           </p>
 
           <p className="mb-6">
-            Tiker Inc. ("we," "us," or "Tiker") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use Tiker (the "Service"), an AI agent orchestration platform, or visit our website at tiker.com (the "Site"). Please read this carefully. By accessing or using the Service or Site, you agree to this Privacy Policy.
+            Tiker Inc. ("we," "us," or "Tiker") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use Tiker (the "Service"), an AI-powered personal chief of staff, or visit our website at tiker.com (the "Site"). Please read this carefully. By accessing or using the Service or Site, you agree to this Privacy Policy.
           </p>
 
           <h2 className="text-2xl font-semibold mt-8 mb-4">1. Information We Collect</h2>

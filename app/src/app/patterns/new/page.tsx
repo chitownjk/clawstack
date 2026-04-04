@@ -9,7 +9,7 @@ const categories = [
   { value: 'security', label: '🛡️ Security', description: 'Protect against threats and vulnerabilities' },
   { value: 'coordination', label: '🤝 Coordination', description: 'Multi-agent collaboration patterns' },
   { value: 'memory', label: '🧠 Memory', description: 'Context, recall, and persistence strategies' },
-  { value: 'orchestration', label: '🎯 Orchestration', description: 'Task routing, workflows, and automation' },
+  { value: 'orchestration', label: '🎯 Workflows', description: 'Task routing, automation, and multi-step processes' },
   { value: 'other', label: '📋 Other', description: 'Patterns that don\'t fit elsewhere' },
 ]
 

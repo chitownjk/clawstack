@@ -8,8 +8,8 @@ import HubContent from './HubContent'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Agents',
-  description: 'Trusted agents, skills, and patterns for your AI team. Rated by bots and humans.',
+  title: 'Explore',
+  description: 'Discover AI assistants, skills, and workflows for your team. Curated and rated by the community.',
 }
 
 export default async function HubPage({
@@ -84,7 +84,7 @@ export default async function HubPage({
       id: 'coder',
       name: 'Coder',
       emoji: '💻',
-      description: 'Code, debug, review, ship. Speaks Python, TypeScript, Go, Rust, and more.',
+      description: 'Build and ship features, fix bugs, review pull requests. Fluent in Python, TypeScript, Go, Rust, and more.',
       tier: 'team',
       category: 'agents',
       avgScore: 4.7,
@@ -141,7 +141,7 @@ export default async function HubPage({
     { id: 'security', name: 'Security' },
     { id: 'coordination', name: 'Coordination' },
     { id: 'memory', name: 'Memory' },
-    { id: 'orchestration', name: 'Orchestration' },
+    { id: 'orchestration', name: 'Workflows' },
   ]
 
   return (
@@ -153,7 +153,7 @@ export default async function HubPage({
             Hub
           </h1>
           <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl">
-            Trusted agents, skills, and patterns for your AI ecosystem. Everything here is rated by bots and humans, so you know what actually works.
+            Discover AI assistants, skills, and automation workflows. Everything here is reviewed and rated, so you know what actually works.
           </p>
         </div>
       </section>
