@@ -97,9 +97,6 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
       <div onClick={onClick} className="cursor-pointer">
         <div className="flex items-start justify-between gap-2 mb-1">
           <h3 className="font-medium text-gray-900 dark:text-neutral-100 text-sm flex-1">{task.title}</h3>
-          <span className="text-xs text-gray-400 dark:text-neutral-500 font-mono shrink-0" title="Task ID">
-            #{task.id.substring(0, 8)}
-          </span>
         </div>
 
         {isReview && (

@@ -80,6 +80,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
   const [briefingLoading, setBriefingLoading] = useState(false);
   const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
   const [scanningEmail, setScanningEmail] = useState(false);
+  const [lastScanAt, setLastScanAt] = useState<Date | null>(null);
+  const [gmailConnected, setGmailConnected] = useState<boolean | null>(null);
   const [showFirstRun, setShowFirstRun] = useState(false);
 
   const now = useMemo(() => new Date(), []);
@@ -193,6 +195,10 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
       });
       if (res.ok) {
         const data = await res.json();
+        setGmailConnected(data.connected !== false);
+        if (data.connected !== false) {
+          setLastScanAt(new Date());
+        }
         if (data.items) {
           setExtractedItems(prev => {
             const existingIds = new Set(prev.map(i => i.id));
@@ -300,9 +306,9 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
 
           {/* AI-generated summary */}
           {briefing?.sections?.summary && (
-            <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <p className="text-sm text-blue-900 dark:text-blue-200">{briefing.sections.summary}</p>
-            </div>
+            <p className="mt-3 text-base leading-relaxed text-neutral-700 dark:text-neutral-300">
+              {briefing.sections.summary}
+            </p>
           )}
           {briefingLoading && !briefing && (
             <div className="mt-3 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg animate-pulse">
@@ -322,8 +328,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
         {/* Attention Items (from AI briefing) */}
         {briefing?.sections?.attention_items && briefing.sections.attention_items.length > 0 && (
           <section>
-            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
-              Needs Your Attention
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+              Needs your attention
             </h2>
             <div className="space-y-2">
               {briefing.sections.attention_items.map((item, i) => (
@@ -346,8 +352,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
         {(!briefing?.sections?.attention_items || briefing.sections.attention_items.length === 0) &&
           (urgentTasks.length > 0 || reviewTasks.length > 0 || blockedTasks.length > 0) && (
           <section>
-            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
-              {isConsumer ? 'What Needs Your Attention' : 'Needs Your Attention'}
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+              {isConsumer ? 'What needs your attention' : 'Needs your attention'}
             </h2>
             <div className="space-y-2">
               {reviewTasks.map(task => (
@@ -375,8 +381,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
           {/* Today's Schedule */}
           <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
-                Today's Schedule
+              <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                Today's schedule
               </h2>
               {calendarConnected === false && (
                 <a href="/settings/connections" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
@@ -419,8 +425,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
 
           {/* In Progress + Inbox */}
           <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
-              In Progress
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+              In progress
             </h2>
 
             {inProgressTasks.length > 0 ? (
@@ -438,16 +444,18 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
         {/* Email Intelligence */}
         <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide">
-              Email Intelligence
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+              From your inbox
             </h2>
-            <button
-              onClick={scanEmail}
-              disabled={scanningEmail}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
-            >
-              {scanningEmail ? 'Scanning...' : 'Scan inbox'}
-            </button>
+            <span className="text-xs text-neutral-400 dark:text-neutral-500">
+              {scanningEmail
+                ? 'Checking your inbox...'
+                : gmailConnected === false
+                  ? 'Connect Gmail to see email highlights'
+                  : lastScanAt
+                    ? `Checked ${timeAgo(lastScanAt)}`
+                    : null}
+            </span>
           </div>
 
           {extractedItems.length > 0 ? (
@@ -463,8 +471,10 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
           ) : (
             <p className="text-sm text-neutral-400 dark:text-neutral-500 py-3 text-center">
               {scanningEmail
-                ? 'Scanning your inbox for flights, bills, and more...'
-                : 'Click "Scan inbox" to find actionable items in your email'}
+                ? 'Checking your inbox for flights, bills, and more...'
+                : gmailConnected === false
+                  ? 'Connect Gmail in Settings to see email highlights'
+                  : 'No items found in recent emails'}
             </p>
           )}
         </section>
@@ -472,7 +482,7 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
         {/* AI Suggestions */}
         {briefing?.sections?.suggestions && briefing.sections.suggestions.length > 0 && (
           <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
               Suggestions
             </h2>
             <div className="space-y-2">
@@ -489,8 +499,8 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
         {/* AI Activity - hidden in consumer mode */}
         {!isConsumer && recentActivities.length > 0 && (
           <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wide mb-3">
-              AI Activity
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
+              AI activity
             </h2>
             <div className="space-y-2">
               {recentActivities.map(activity => {
