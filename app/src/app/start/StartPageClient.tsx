@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase'
 
 interface ContributionModalProps {
   isOpen: boolean
@@ -295,52 +294,17 @@ interface StartPageClientProps {
 }
 
 export default function StartPageClient({ userName, initialBot, accountTier, trialExpiresAt }: StartPageClientProps) {
-  const [step, setStep] = useState<'consent' | 'customize' | 'complete'>('consent')
-  const [bot, setBot] = useState(initialBot)
+  const [step, setStep] = useState<'consent' | 'complete'>('consent')
   const router = useRouter()
-  const supabase = createClient()
-
-  async function handleCustomizeAgent(data: { name: string; emoji: string; personality: string }) {
-    // Update the bot in the database
-    const { error } = await supabase
-      .from('bots')
-      .update({
-        name: data.name,
-        emoji: data.emoji,
-        system_prompt: data.personality 
-          ? `You are ${data.name}. ${data.personality}`
-          : `You are ${data.name}, a helpful AI assistant.`,
-      })
-      .eq('id', bot.id)
-
-    if (error) throw error
-
-    // Update local state
-    setBot({ ...bot, name: data.name, emoji: data.emoji })
-    setStep('complete')
-  }
 
   if (step === 'consent') {
     return (
       <main className="min-h-screen flex items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950">
-        <OnboardingStep 
+        <OnboardingStep
           userName={userName}
           accountTier={accountTier}
           trialExpiresAt={trialExpiresAt}
-          onComplete={() => setStep('customize')} 
-        />
-      </main>
-    )
-  }
-
-  if (step === 'customize') {
-    return (
-      <main className="min-h-screen flex items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950">
-        <AgentCustomizationModal
-          isOpen={true}
-          bot={bot}
-          onClose={() => setStep('complete')}
-          onSave={handleCustomizeAgent}
+          onComplete={() => setStep('complete')}
         />
       </main>
     )
@@ -349,12 +313,12 @@ export default function StartPageClient({ userName, initialBot, accountTier, tri
   return (
     <main className="min-h-screen flex items-center justify-center p-6 bg-neutral-50 dark:bg-neutral-950">
       <div className="max-w-lg w-full text-center">
-        <div className="text-6xl mb-6">{bot?.emoji || '🚀'}</div>
+        <div className="text-6xl mb-6">{initialBot?.emoji || '🚀'}</div>
         <h1 className="text-3xl md:text-4xl font-semibold text-neutral-900 dark:text-neutral-100 mb-4">
           You're all set, {userName}!
         </h1>
         <p className="text-lg text-neutral-600 dark:text-neutral-400 mb-8">
-          Meet <strong>{bot?.name || 'your agent'}</strong>. They're ready to help you get things done.
+          You can customize your assistant anytime in Settings.
         </p>
 
         <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 mb-8 text-left">
@@ -366,7 +330,7 @@ export default function StartPageClient({ userName, initialBot, accountTier, tri
             </li>
             <li className="flex items-start gap-2">
               <span className="font-medium text-neutral-900 dark:text-neutral-100">2.</span>
-              <span>Create your first task in Command and assign it to {bot?.name?.split(' ')[0] || 'your agent'}</span>
+              <span>Create your first task in Command and assign it to {initialBot?.name?.split(' ')[0] || 'your agent'}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-medium text-neutral-900 dark:text-neutral-100">3.</span>

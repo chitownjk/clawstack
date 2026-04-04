@@ -32,7 +32,7 @@ const COLUMNS: { status: TaskStatus; title: string }[] = [
   { status: 'blocked', title: 'Blocked' },
   { status: 'review', title: 'Review' },
   { status: 'done', title: 'Done' },
-  { status: 'error', title: 'Error' }
+  { status: 'error', title: 'Needs attention' }
 ]
 
 export default function MissionControlClient() {
@@ -122,11 +122,9 @@ export default function MissionControlClient() {
   useEffect(() => {
     const reviewCount = tasks.filter(t => t.status === 'review').length
     if (reviewCount > 0) {
-      document.title = isConsumer
-        ? `(${reviewCount}) Tiker - Ready for you`
-        : `(${reviewCount}) Command - Needs Review`
+      document.title = `(${reviewCount}) Tiker — Ready for you`
     } else {
-      document.title = isConsumer ? 'Tiker' : 'Command - Tiker'
+      document.title = 'Tiker'
     }
   }, [tasks])
 
@@ -561,29 +559,52 @@ export default function MissionControlClient() {
             collisionDetection={closestCenter}
           >
             <div className="flex gap-4 pb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-neutral-600 scrollbar-track-transparent snap-x">
-              {COLUMNS.filter(col => {
-                // Hide "done" if toggle is on
-                if (hideDone && col.status === 'done') return false;
+              {isConsumer ? (
+                // Consumer mode: 3 simplified columns with merged statuses
+                [
+                  { status: 'inbox' as TaskStatus, title: 'To do', statuses: ['inbox', 'assigned'] as TaskStatus[] },
+                  { status: 'in_progress' as TaskStatus, title: 'In progress', statuses: ['in_progress', 'blocked', 'error'] as TaskStatus[] },
+                  ...(!hideDone ? [{ status: 'done' as TaskStatus, title: 'Done', statuses: ['done'] as TaskStatus[] }] : []),
+                ].map(column => (
+                  <div key={column.status} className="snap-start">
+                    <KanbanColumn
+                      status={column.status}
+                      title={column.title}
+                      tasks={filteredTasks.filter(t => column.statuses.includes(t.status as TaskStatus))}
+                      agents={agents}
+                      onTaskClick={setSelectedTask}
+                      onMarkDone={handleMarkDone}
+                      onDelete={handleDeleteClick}
+                    />
+                  </div>
+                ))
+              ) : (
+                // Advanced mode: all columns, error renamed to "Needs attention"
+                COLUMNS.filter(col => {
+                  // Hide "done" if toggle is on
+                  if (hideDone && col.status === 'done') return false;
 
-                // Hide "blocked" and "error" columns if no tasks have those statuses
-                if (col.status === 'blocked' || col.status === 'error') {
-                  return filteredTasks.some(t => t.status === col.status);
-                }
+                  // Hide "blocked" and "needs attention" columns if no tasks have those statuses
+                  if (col.status === 'blocked' || col.status === 'error') {
+                    return filteredTasks.some(t => t.status === col.status);
+                  }
 
-                return true;
-              }).map(column => (
-                <div key={column.status} className="snap-start">
-                  <KanbanColumn
-                    status={column.status}
-                    title={column.title}
-                    tasks={filteredTasks.filter(t => t.status === column.status)}
-                    agents={agents}
-                    onTaskClick={setSelectedTask}
-                    onMarkDone={handleMarkDone}
-                    onDelete={handleDeleteClick}
-                  />
-                </div>
-              ))}
+                  return true;
+                }).map(column => (
+                  <div key={column.status} className="snap-start">
+                    <KanbanColumn
+                      status={column.status}
+                      title={column.title}
+                      subtitle={column.status === 'error' ? "These tasks couldn't be completed automatically." : undefined}
+                      tasks={filteredTasks.filter(t => t.status === column.status)}
+                      agents={agents}
+                      onTaskClick={setSelectedTask}
+                      onMarkDone={handleMarkDone}
+                      onDelete={handleDeleteClick}
+                    />
+                  </div>
+                ))
+              )}
             </div>
             <DragOverlay>
               {activeId ? (

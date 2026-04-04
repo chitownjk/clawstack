@@ -22,6 +22,10 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [bot, setBot] = useState<{ id: string; name: string; emoji: string; system_prompt?: string } | null>(null)
+  const [botName, setBotName] = useState('')
+  const [botEmoji, setBotEmoji] = useState('🤖')
+  const [savingBot, setSavingBot] = useState(false)
   
   const supabase = createClient()
   const router = useRouter()
@@ -53,6 +57,21 @@ export default function SettingsPage() {
         }
       }
       
+      // Load bot (first assistant)
+      const { data: botData } = await supabase
+        .from('bots')
+        .select('id, name, emoji, system_prompt')
+        .eq('auth_uid', user.id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single()
+
+      if (botData) {
+        setBot(botData)
+        setBotName(botData.name || '')
+        setBotEmoji(botData.emoji || '🤖')
+      }
+
       // Load contribution preference (default to true)
       const savedContribution = localStorage.getItem('tiker_contribution_enabled')
       setContributionEnabled(savedContribution !== 'false')
@@ -60,7 +79,7 @@ export default function SettingsPage() {
       // Load manual agent selection preference (default to false)
       const savedManualAgent = localStorage.getItem('tiker_manual_agent_selection')
       setManualAgentSelection(savedManualAgent === 'true')
-      
+
       setLoading(false)
     }
     
@@ -97,6 +116,24 @@ export default function SettingsPage() {
     }
 
     setSaving(false)
+  }
+
+  const handleSaveBot = async () => {
+    if (!bot || !botName.trim()) return
+    setSavingBot(true)
+    try {
+      const { error } = await supabase
+        .from('bots')
+        .update({ name: botName.trim(), emoji: botEmoji })
+        .eq('id', bot.id)
+      if (error) throw error
+      setBot({ ...bot, name: botName.trim(), emoji: botEmoji })
+      setMessage({ type: 'success', text: 'Assistant updated' })
+    } catch (error) {
+      console.error('Failed to save bot:', error)
+      setMessage({ type: 'error', text: 'Failed to update assistant' })
+    }
+    setSavingBot(false)
   }
 
   const handleExport = async () => {
@@ -206,6 +243,61 @@ export default function SettingsPage() {
             </div>
           </div>
         </section>
+
+        {/* Your assistant */}
+        {bot && (
+          <section className="card p-6 mb-8">
+            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
+              Your assistant
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-5">
+              Give your assistant a name and pick an icon.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  Icon
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {['🤖', '🦾', '👾', '🧠', '⚡', '🔮', '🎯', '🚀', '💡', '🔧', '✨', '🎨'].map((e) => (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => setBotEmoji(e)}
+                      className={`w-10 h-10 text-2xl rounded-lg transition-colors ${
+                        botEmoji === e
+                          ? 'bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500'
+                          : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                      }`}
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  value={botName}
+                  onChange={(e) => setBotName(e.target.value)}
+                  className="w-full max-w-sm px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Name your assistant"
+                  maxLength={50}
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleSaveBot}
+              disabled={savingBot || !botName.trim()}
+              className="btn btn-primary mt-5"
+            >
+              {savingBot ? 'Saving...' : 'Save'}
+            </button>
+          </section>
+        )}
 
         {/* Mode Toggle */}
         <section className="card p-6 mb-8">

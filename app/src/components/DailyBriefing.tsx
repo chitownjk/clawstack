@@ -317,14 +317,6 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
           )}
         </div>
 
-        {/* Quick Stats Row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label={isConsumer ? 'To Do' : 'Active Tasks'} value={activeTasks.length} color="blue" />
-          <StatCard label={isConsumer ? 'Ready for You' : 'Needs Review'} value={reviewTasks.length} color={reviewTasks.length > 0 ? 'amber' : 'gray'} pulse={reviewTasks.length > 0} />
-          <StatCard label={isConsumer ? 'Needs Attention' : 'Blocked'} value={blockedTasks.length} color={blockedTasks.length > 0 ? 'red' : 'gray'} />
-          <StatCard label={isConsumer ? 'Done Today' : 'Done Today'} value={completedToday.length} color="green" />
-        </div>
-
         {/* Attention Items (from AI briefing) */}
         {briefing?.sections?.attention_items && briefing.sections.attention_items.length > 0 && (
           <section>

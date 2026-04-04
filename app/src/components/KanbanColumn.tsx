@@ -7,6 +7,7 @@ import { useDroppable } from '@dnd-kit/core'
 interface KanbanColumnProps {
   status: TaskStatus
   title: string
+  subtitle?: string
   tasks: Task[]
   agents: Agent[]
   onTaskClick: (task: Task) => void
@@ -24,7 +25,7 @@ const columnColors: Record<TaskStatus, string> = {
   blocked: 'border-red-500'
 }
 
-export default function KanbanColumn({ status, title, tasks, agents, onTaskClick, onMarkDone, onDelete }: KanbanColumnProps) {
+export default function KanbanColumn({ status, title, subtitle, tasks, agents, onTaskClick, onMarkDone, onDelete }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   const needsAttention = status === 'review' && tasks.length > 0
 
@@ -32,10 +33,15 @@ export default function KanbanColumn({ status, title, tasks, agents, onTaskClick
     <div className="flex-1 min-w-[260px] w-[260px] sm:min-w-[280px] sm:w-[280px]">
       <div className={`border-t-4 ${columnColors[status]} ${needsAttention ? 'ring-2 ring-orange-400 shadow-lg' : ''} bg-white dark:bg-neutral-900 rounded-lg p-4`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className={`font-semibold uppercase text-sm tracking-wide ${needsAttention ? 'text-orange-600' : 'text-gray-900 dark:text-neutral-100'}`}>
-            {title}
-            {needsAttention && ' ⚠️'}
-          </h2>
+          <div>
+            <h2 className={`font-semibold uppercase text-sm tracking-wide ${needsAttention ? 'text-orange-600' : 'text-gray-900 dark:text-neutral-100'}`}>
+              {title}
+              {needsAttention && ' ⚠️'}
+            </h2>
+            {subtitle && (
+              <p className="text-xs text-gray-500 dark:text-neutral-500 font-normal normal-case tracking-normal mt-0.5">{subtitle}</p>
+            )}
+          </div>
           <span className={`text-sm font-medium ${needsAttention ? 'bg-orange-500 text-white px-2 py-1 rounded-full' : 'text-gray-500 dark:text-neutral-400'}`}>
             {tasks.length}
           </span>

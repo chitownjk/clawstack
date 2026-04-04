@@ -42,6 +42,8 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
   const timeAgo = getTimeAgo(new Date(task.created_at))
   const isDone = task.status === 'done'
   const isReview = task.status === 'review'
+  const isBlocked = task.status === 'blocked'
+  const isError = task.status === 'error'
 
   return (
     <div
@@ -103,7 +105,23 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
           <div className="flex items-center gap-1 mb-1">
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded text-[10px] font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-              AI done - needs review
+              Ready for you
+            </span>
+          </div>
+        )}
+        {isBlocked && (
+          <div className="flex items-center gap-1 mb-1">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-[10px] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              Needs attention
+            </span>
+          </div>
+        )}
+        {isError && (
+          <div className="flex items-center gap-1 mb-1">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded text-[10px] font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              Couldn&apos;t complete
             </span>
           </div>
         )}

@@ -23,7 +23,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Gmail',
     description: 'Send and read emails, manage drafts and labels',
     icon: '✉️',
-    scopes: ['gmail.send', 'gmail.readonly', 'gmail.compose', 'gmail.modify'],
+    scopes: ['Send emails', 'Read emails', 'Manage drafts', 'Organize labels'],
     comingSoon: false,
     composio: true,
   },
@@ -32,7 +32,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Google Calendar',
     description: 'Create events, manage calendars, check availability',
     icon: '📅',
-    scopes: ['calendar', 'calendar.events'],
+    scopes: ['View events', 'Create & edit events'],
     comingSoon: false,
     composio: true,
   },
@@ -41,7 +41,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Google Drive',
     description: 'Upload files, manage folders, share documents',
     icon: '📁',
-    scopes: ['drive.file', 'drive.readonly'],
+    scopes: ['Upload & edit files', 'Read files'],
     comingSoon: false,
     composio: true,
   },
@@ -50,7 +50,7 @@ const CONNECTIONS: Connection[] = [
     name: 'AgentMail',
     description: 'Give each agent their own email inbox for async coordination',
     icon: '📧',
-    scopes: ['send', 'read', 'inbox.manage'],
+    scopes: ['Send messages', 'Read messages', 'Manage inbox'],
     comingSoon: false,
   },
   {
@@ -58,7 +58,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Slack',
     description: 'Send messages, read channels, manage workspace',
     icon: '💬',
-    scopes: ['chat:write', 'channels:read', 'users:read'],
+    scopes: ['Post messages', 'Read channels', 'Look up users'],
     comingSoon: false,
     composio: true,
   },
@@ -67,7 +67,7 @@ const CONNECTIONS: Connection[] = [
     name: 'GitHub',
     description: 'Manage repos, issues, PRs, and code reviews',
     icon: '🐙',
-    scopes: ['repo', 'user', 'read:org'],
+    scopes: ['Manage repos & PRs', 'View your profile', 'Read org info'],
     comingSoon: false,
     composio: true,
   },
@@ -76,7 +76,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Notion',
     description: 'Read and write pages, manage databases',
     icon: '📝',
-    scopes: ['read_content', 'update_content', 'insert_content'],
+    scopes: ['Read pages', 'Edit pages', 'Create content'],
     comingSoon: false,
     composio: true,
   },
@@ -85,7 +85,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Linear',
     description: 'Create issues, update status, manage projects',
     icon: '📐',
-    scopes: ['read', 'write', 'issues:create'],
+    scopes: ['View issues & projects', 'Update issues', 'Create issues'],
     comingSoon: false,
     composio: true,
   },
@@ -94,7 +94,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Twitter / X',
     description: 'Post tweets, read timelines, manage followers and lists',
     icon: '\uD835\uDD4F',
-    scopes: ['tweet.read', 'tweet.write', 'users.read'],
+    scopes: ['Read tweets', 'Post tweets', 'View profiles'],
     comingSoon: false,
     composio: true,
   },
@@ -103,7 +103,7 @@ const CONNECTIONS: Connection[] = [
     name: 'LinkedIn',
     description: 'Share posts, manage connections, send messages',
     icon: '\uD83D\uDCBC',
-    scopes: ['w_member_social', 'r_liteprofile', 'r_emailaddress'],
+    scopes: ['Post updates', 'View your profile', 'Read your email'],
     comingSoon: false,
     composio: true,
   },
@@ -112,7 +112,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Jira',
     description: 'Create and manage issues, track sprints, update boards',
     icon: '\uD83D\uDDD2\uFE0F',
-    scopes: ['read:jira-work', 'write:jira-work', 'read:jira-user'],
+    scopes: ['View projects & issues', 'Create & update issues', 'Read user info'],
     comingSoon: false,
     composio: true,
   },
@@ -121,7 +121,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Microsoft Outlook',
     description: 'Send emails and manage your Outlook calendar',
     icon: '📨',
-    scopes: ['Mail.Send', 'Mail.Read', 'Calendars.ReadWrite'],
+    scopes: ['Send email', 'Read email', 'Manage calendar'],
     comingSoon: true,
   },
   {
@@ -129,7 +129,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Discord',
     description: 'Send messages, manage servers, read channels',
     icon: '🎮',
-    scopes: ['bot', 'messages.read', 'messages.write'],
+    scopes: ['Bot access', 'Read messages', 'Send messages'],
     comingSoon: true,
   },
   {
@@ -137,7 +137,7 @@ const CONNECTIONS: Connection[] = [
     name: 'Dropbox',
     description: 'Upload and manage files in your Dropbox',
     icon: '📦',
-    scopes: ['files.content.write', 'files.content.read'],
+    scopes: ['Upload & edit files', 'Read files'],
     comingSoon: true,
   },
 ];
@@ -372,7 +372,7 @@ export default function ConnectionsPage() {
                       {connection.scopes.map((scope) => (
                         <span
                           key={scope}
-                          className="text-xs bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 px-2 py-1 rounded font-mono"
+                          className="text-xs bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 px-2 py-1 rounded"
                         >
                           {scope}
                         </span>
