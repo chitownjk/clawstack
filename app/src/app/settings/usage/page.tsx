@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
 import Link from 'next/link';
 import SettingsNav from '@/components/SettingsNav';
+import { getTierDisplayName } from '@/lib/stripe';
 
 export default function UsagePage() {
   const [loading, setLoading] = useState(true);
@@ -55,9 +56,16 @@ export default function UsagePage() {
         .eq('account_id', account.id)
         .gte('created_at', firstOfMonth.toISOString());
 
+      const tierDisplay = getTierDisplayName(account.plan_tier);
+      const tasksLimit =
+        tierDisplay === 'Team' ? 1000 :
+        tierDisplay === 'Developer' ? 400 :
+        tierDisplay === 'Solo' ? 200 :
+        null;
+
       setUsage({
         tasks_used: tasksThisMonth || 0,
-        tasks_limit: account.plan_tier === 'cloud-plus' ? 1000 : (account.plan_tier === 'cloud' || account.plan_tier === 'cloud-developer') ? 200 : null,
+        tasks_limit: tasksLimit,
         plan_tier: account.plan_tier,
         execution_mode: account.execution_mode,
         tokens_in_used: 0,
@@ -162,7 +170,7 @@ export default function UsagePage() {
                   </h2>
                   <div className="flex items-center gap-3">
                     <span className="text-2xl font-bold text-blue-600">
-                      {usage.plan_tier === 'cloud-plus' ? 'Team' : (usage.plan_tier === 'cloud' || usage.plan_tier === 'cloud-developer') ? 'Solo' : 'Free'}
+                      {getTierDisplayName(usage.plan_tier)}
                     </span>
                     <span className="text-sm text-neutral-600 dark:text-neutral-400">
                       {usage.tasks_limit} tasks/month

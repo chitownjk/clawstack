@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase'
+import { getTierDisplayName } from '@/lib/stripe'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -193,13 +194,13 @@ export default function SettingsPage() {
               </p>
               {account?.plan_tier && (
                 <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
-                  account.plan_tier === 'cloud-plus'
+                  getTierDisplayName(account.plan_tier) === 'Team'
                     ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300'
-                    : account.plan_tier === 'cloud' || account.plan_tier === 'cloud-developer'
+                    : getTierDisplayName(account.plan_tier) !== 'Free'
                     ? 'bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300'
                     : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
                 }`}>
-                  {account.plan_tier === 'cloud-plus' ? 'Team Plan' : account.plan_tier === 'cloud' || account.plan_tier === 'cloud-developer' ? 'Solo Plan' : 'Free Plan'}
+                  {getTierDisplayName(account.plan_tier)} Plan
                 </span>
               )}
             </div>

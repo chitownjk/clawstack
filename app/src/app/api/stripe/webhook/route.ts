@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getStripe, TIERS } from '@/lib/stripe'
+import { getStripe, STRIPE_PLAN_TO_DB_TIER } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase-server'
 import Stripe from 'stripe'
 
@@ -78,17 +78,15 @@ export async function POST(request: NextRequest) {
 
         const status = subscription.status
         // Get current period end from the first item's period
-        const periodEnd = (subscription as any).current_period_end || 
+        const periodEnd = (subscription as any).current_period_end ||
                           subscription.items?.data?.[0]?.current_period_end
         const currentPeriodEnd = periodEnd ? new Date(periodEnd * 1000) : new Date()
 
-        // Determine plan_tier based on subscription status
-        let planTier = 'free'
-        if (status === 'active' || status === 'trialing') {
-          planTier = plan // solo, developer, or team
-        }
-
-        const tierConfig = TIERS[planTier as keyof typeof TIERS]
+        // Normalize the incoming Stripe plan name to the canonical DB tier name
+        // so the DB trigger (update_features_on_tier_change) fires correctly and
+        // is_over_limit / get_monthly_usage work without modification.
+        const rawPlanTier = status === 'active' || status === 'trialing' ? plan : 'free'
+        const planTier = STRIPE_PLAN_TO_DB_TIER[rawPlanTier] ?? 'free'
 
         // Update account with plan tier and subscription details
         const updateData: any = {

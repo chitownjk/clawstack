@@ -79,3 +79,43 @@ export type TierName = keyof typeof TIERS
 export function getTierLimits(tier: TierName) {
   return TIERS[tier] || TIERS.free
 }
+
+// Map Stripe plan metadata names to canonical DB plan_tier values.
+// DB canonical names are used by SQL functions (is_over_limit, get_monthly_usage,
+// the trigger that auto-updates the features column, etc.)
+export const STRIPE_PLAN_TO_DB_TIER: Record<string, string> = {
+  // Current Stripe product plan names
+  solo: 'cloud',
+  developer: 'cloud-developer',
+  team: 'cloud-plus',
+  team_plus: 'cloud-plus',
+  // Pro/legacy aliases
+  pro: 'cloud',
+  // Pass-through for already-canonical names
+  free: 'free',
+  cloud: 'cloud',
+  'cloud-developer': 'cloud-developer',
+  'cloud-plus': 'cloud-plus',
+}
+
+// Return a human-readable plan name for any plan_tier value (handles both old
+// DB canonical names and incoming Stripe plan names).
+export function getTierDisplayName(planTier: string | null | undefined): string {
+  switch (planTier) {
+    case 'cloud-plus':
+    case 'team':
+    case 'team_plus':
+      return 'Team'
+    case 'cloud-developer':
+    case 'developer':
+      return 'Developer'
+    case 'cloud':
+    case 'solo':
+    case 'pro':
+      return 'Solo'
+    case 'free':
+      return 'Free'
+    default:
+      return 'Free'
+  }
+}
