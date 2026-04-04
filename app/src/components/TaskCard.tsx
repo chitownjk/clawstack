@@ -40,10 +40,10 @@ export default function TaskCard({ task, agents, onClick, onMarkDone, onDelete, 
 
   const assignedAgents = agents.filter(a => task.assigned_agent_ids?.includes(a.id))
   const timeAgo = getTimeAgo(new Date(task.created_at))
-  const isDone = task.status === 'done'
-  const isReview = task.status === 'review'
-  const isBlocked = task.status === 'blocked'
-  const isError = task.status === 'error'
+  const isDone = task.status === 'done' || task.status === 'cancelled'
+  const isReview = task.status === 'review' && !isDone
+  const isBlocked = task.status === 'blocked' && !isDone
+  const isError = task.status === 'error' && !isDone
 
   return (
     <div

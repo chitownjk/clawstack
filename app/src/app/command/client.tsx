@@ -564,7 +564,7 @@ export default function MissionControlClient() {
                 [
                   { status: 'inbox' as TaskStatus, title: 'To do', statuses: ['inbox', 'assigned'] as TaskStatus[] },
                   { status: 'in_progress' as TaskStatus, title: 'In progress', statuses: ['in_progress', 'blocked', 'error'] as TaskStatus[] },
-                  ...(!hideDone ? [{ status: 'done' as TaskStatus, title: 'Done', statuses: ['done'] as TaskStatus[] }] : []),
+                  ...(!hideDone ? [{ status: 'done' as TaskStatus, title: 'Done', statuses: ['done', 'cancelled'] as TaskStatus[] }] : []),
                 ].map(column => (
                   <div key={column.status} className="snap-start">
                     <KanbanColumn
@@ -596,7 +596,7 @@ export default function MissionControlClient() {
                       status={column.status}
                       title={column.title}
                       subtitle={column.status === 'error' ? "These tasks couldn't be completed automatically." : undefined}
-                      tasks={filteredTasks.filter(t => t.status === column.status)}
+                      tasks={filteredTasks.filter(t => column.status === 'done' ? (t.status === 'done' || t.status === 'cancelled') : t.status === column.status)}
                       agents={agents}
                       onTaskClick={setSelectedTask}
                       onMarkDone={handleMarkDone}
