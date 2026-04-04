@@ -2,66 +2,64 @@
 
 ## Quick Start (Self-Hosted)
 
-Run these SQL files in order using Supabase SQL Editor or `psql`:
+Run SQL files in order using Supabase SQL Editor or `psql`:
 
-```sql
--- 1. Core tables (accounts, bots)
-migrations/001-accounts.sql
-
--- 2. Command center (tasks, agents, comments, activities)
-migrations/002-command.sql
+```bash
+# Apply all migrations in order
+for f in supabase/migrations/*.sql; do psql "$DATABASE_URL" -f "$f"; done
 ```
 
-**That's it!** You now have a working Command center.
+All migrations are idempotent — safe to re-run on an existing database.
 
-## Hub (Optional)
+## Migration Index
 
-The **Hub** is Tiker's shared knowledge base — agent templates, coordination patterns, and best practices contributed by the community.
+| File | Description | Required |
+|------|-------------|----------|
+| `001-accounts.sql` | Users, accounts, auth foundations | ✅ Yes |
+| `002-command.sql` | Tasks, agents, comments, activities | ✅ Yes |
+| `003-hub.sql` | Templates, patterns (Hub feature) | Optional |
+| `004-cloud-support.sql` | Cloud execution modes, billing columns, Stripe fields, model usage tracking | Cloud only |
+| `005-trial-logic.sql` | Trial tracking, onboarding state, subscription status | Cloud only |
+| `006-usage-tracking.sql` | Monthly usage table, per-task cost tracking | Cloud only |
+| `007-feature-flags.sql` | `features` JSONB column, tier-driven feature gates | Cloud only |
+| `008-available-agents.sql` | Agent catalog, per-account agent enablement | Cloud only |
+| `009-agent-templates.sql` | Starter agent template seeding | Optional |
+| `010-file-storage.sql` | File attachment metadata | Optional |
+| `011-google-oauth.sql` | Google OAuth token storage | Optional |
+| `012-email-signature.sql` | User email signature storage | Optional |
+| `013-agentmail.sql` | AgentMail inbound routing | Optional |
+| `014-github-oauth.sql` | GitHub OAuth token storage | Optional |
+| `015-external-email-participants.sql` | Track external email CC/BCC participants | Optional |
+| `016-consumer-views.sql` | Simplified consumer-mode views | Cloud only |
+| `017-agent-comment-attribution.sql` | Link comments to the agent that created them | Optional |
+| `018-recurring-tasks.sql` | Recurring task schedules | Optional |
+| `019-briefings.sql` | Daily AI briefing storage | Cloud only |
+| `020-reminders.sql` | Reminder/nudge scheduling | Optional |
+| `021-smart-lists.sql` | Saved smart-filter lists | Optional |
+| `022-admin-role.sql` | Admin role column on accounts | Optional |
+| `023-actions.sql` | Action library (quick-run templates) | Optional |
+| `025-consumer-mode.sql` | Consumer-mode flag and simplified UX state | Cloud only |
+| `026-agent-jobs.sql` | Background job queue for agents | Cloud only |
+| `027-tier-name-aliases.sql` | Aliases for tier names (solo/developer/team) | Cloud only |
+| `028-tiker-email.sql` | `tiker_username` column for `user@tiker.com` routing | Cloud only |
 
-**For self-hosted installs, we recommend using the central Hub at [tiker.com/hub](https://tiker.com/hub)** rather than running your own. Benefits:
+> **Note:** Migration `024` was intentionally skipped — the numbering gap is expected and causes no issues.
 
-- Access 100+ community-contributed patterns
-- No additional tables to maintain
-- Patterns stay updated as community improves them
-- Your contributions help everyone
+## Naming Convention
 
-If you need a fully air-gapped install with private patterns, you can optionally run:
-
-```sql
--- 3. Hub tables (optional - for air-gapped/private installs only)
-migrations/003-hub.sql
-
--- Seed data (if running local Hub)
-seed/agent-templates.sql
-seed/patterns.sql
+```
+NNN-description.sql
 ```
 
-## Roadmap
+- `NNN` — zero-padded three-digit sequence number (001, 002, … 028)
+- `description` — lowercase, hyphen-separated, concise noun phrase
+- Each file is **idempotent**: uses `CREATE TABLE IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION`, and `DROP TRIGGER IF EXISTS` before re-creating triggers
 
-We're building deeper Hub integration for self-hosted installs:
-
-| Phase | Feature | Status |
-|-------|---------|--------|
-| **MVP** | Central Hub at tiker.com, OSS links out | ✅ Now |
-| **Phase 2** | Hub API — search/import patterns programmatically | 🔜 Coming |
-| **Phase 3** | Contribute from self-hosted → central Hub | 🔜 Coming |
-
-## File Overview
-
-```
-supabase/
-├── migrations/
-│   ├── 001-accounts.sql    # Users, bots, auth (required)
-│   ├── 002-command.sql     # Tasks, agents, comments (required)
-│   └── 003-hub.sql         # Templates, patterns (optional)
-└── seed/
-    ├── agent-templates.sql # Starter personas (if using local Hub)
-    └── patterns.sql        # Example patterns (if using local Hub)
-```
+**Do not create two files with the same prefix number.** If a migration needs to be amended after deployment, add a new file with the next sequence number rather than a `-fix` suffix.
 
 ## Database Options
 
-Tiker works with any Postgres database:
+Tiker works with any Postgres 14+ database:
 
 | Provider | Notes |
 |----------|-------|
@@ -73,9 +71,7 @@ Tiker works with any Postgres database:
 
 ## Row Level Security
 
-All tables use RLS policies:
-- Users can only access their own data
-- Service role bypasses RLS (for API routes)
+All tables use RLS policies. Users can only access their own data. The service role bypasses RLS (used by API routes).
 
 ## Encryption
 
@@ -93,8 +89,8 @@ Set `AUTH_MODE` in your `.env`:
 
 ## Troubleshooting
 
-**"relation already exists"** — Safe to ignore. `CREATE TABLE IF NOT EXISTS` skips existing tables.
+**"relation already exists"** — Safe to ignore. All migrations use `IF NOT EXISTS`.
+
+**"column already exists"** — Safe to ignore. All `ALTER TABLE ADD COLUMN` statements use `IF NOT EXISTS`.
 
 **"policy already exists"** — All migrations use `DROP POLICY IF EXISTS` before creating. Re-run is safe.
-
-**Missing columns on existing tables** — If you have old tables, the migrations won't add new columns. Drop and recreate, or manually `ALTER TABLE ADD COLUMN`.
