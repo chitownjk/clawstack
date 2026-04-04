@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { simpleParser } from 'mailparser';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { encrypt } from '@/lib/crypto';
 
 // Force dynamic rendering (don't pre-render at build time)
 export const dynamic = 'force-dynamic'
@@ -13,6 +14,10 @@ const ratelimit = new Ratelimit({
   limiter: Ratelimit.slidingWindow(10, '1 m'),
 });
 
+const TIKER_DOMAIN = 'tiker.com';
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /**
  * Verify Cloudflare webhook signature
  */
@@ -22,42 +27,48 @@ function verifyWebhookSignature(
   secret: string
 ): boolean {
   if (!signature) return false;
-  
-  // Cloudflare uses HMAC-SHA256
+
   const expectedSignature = crypto
     .createHmac('sha256', secret)
     .update(body)
     .digest('hex');
-  
-  // Constant-time comparison to prevent timing attacks
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+
+  const sigBuf = Buffer.from(signature);
+  const expBuf = Buffer.from(expectedSignature);
+  if (sigBuf.length !== expBuf.length) return false;
+  return crypto.timingSafeEqual(sigBuf, expBuf);
+}
+
+/**
+ * Extract the local part (before @) of an email address.
+ */
+function localPart(address: string): string {
+  return address.split('@')[0].toLowerCase();
 }
 
 /**
  * Inbound Email Webhook
- * 
- * Receives emails from Cloudflare Email Worker
- * Authenticated via webhook signature
- * Rate limited per IP
+ *
+ * Receives emails from the Cloudflare Email Worker.
+ * Handles two recipient patterns:
+ *
+ *   task-{uuid}@tiker.com  → threads the email as a comment on an existing task
+ *   {username}@tiker.com   → creates a new task in the account's inbox
+ *
+ * Authenticated via HMAC-SHA256 webhook signature.
+ * Rate limited per IP.
  */
 export async function POST(req: NextRequest) {
   try {
     // 1. Rate limiting (skip for localhost)
     const ip = req.headers.get('x-forwarded-for') || 'unknown';
     const isLocalhost = ip === '127.0.0.1' || ip === 'localhost' || ip.startsWith('127.');
-    
+
     if (!isLocalhost) {
       const { success: rateLimitSuccess } = await ratelimit.limit(ip);
-      
       if (!rateLimitSuccess) {
         console.warn('[inbound-email] Rate limit exceeded:', ip);
-        return NextResponse.json(
-          { error: 'Rate limit exceeded' },
-          { status: 429 }
-        );
+        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
       }
     }
 
@@ -66,188 +77,200 @@ export async function POST(req: NextRequest) {
     const timestamp = req.headers.get('X-Webhook-Timestamp');
     const body = await req.text();
     const webhookSecret = process.env.CLOUDFLARE_WEBHOOK_SECRET;
-    
+
     if (!webhookSecret) {
       console.error('[inbound-email] CLOUDFLARE_WEBHOOK_SECRET not configured');
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
-    
-    // Reject requests older than 5 minutes to prevent replay attacks
+
     if (timestamp) {
-      const ts = parseInt(timestamp, 10)
-      const age = Math.abs(Date.now() - ts)
+      const ts = parseInt(timestamp, 10);
+      const age = Math.abs(Date.now() - ts);
       if (isNaN(ts) || age > 5 * 60 * 1000) {
-        console.warn('[inbound-email] Stale webhook timestamp:', { ip, age })
-        return NextResponse.json(
-          { error: 'Request expired' },
-          { status: 401 }
-        )
+        console.warn('[inbound-email] Stale webhook timestamp:', { ip, age });
+        return NextResponse.json({ error: 'Request expired' }, { status: 401 });
       }
     }
 
     if (!verifyWebhookSignature(body, signature, webhookSecret)) {
       console.warn('[inbound-email] Invalid webhook signature:', ip);
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 3. Parse and validate body
-    let payload;
+    // 3. Parse body
+    let payload: Record<string, unknown>;
     try {
       payload = JSON.parse(body);
     } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON body' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    const { taskId, from, subject, rawEmail } = payload;
+    const { from, subject, rawEmail, to, taskId } = payload as {
+      from?: string;
+      subject?: string;
+      rawEmail?: string;
+      to?: string;      // recipient address, e.g. username@tiker.com or task-uuid@tiker.com
+      taskId?: string;  // legacy: explicit task UUID (omit `to` when using this)
+    };
 
-    // 4. Input validation
-    if (!taskId || !from || !rawEmail) {
-      console.error('[inbound-email] Missing required fields:', { taskId, from, subject });
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+    if (!from || !rawEmail) {
+      return NextResponse.json({ error: 'Missing required fields: from, rawEmail' }, { status: 400 });
     }
 
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(taskId)) {
-      return NextResponse.json(
-        { error: 'Invalid task ID format' },
-        { status: 400 }
-      );
+    if (!EMAIL_REGEX.test(from)) {
+      return NextResponse.json({ error: 'Invalid sender email format' }, { status: 400 });
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(from)) {
-      return NextResponse.json(
-        { error: 'Invalid sender email format' },
-        { status: 400 }
-      );
+    if (rawEmail.length > 500_000) {
+      return NextResponse.json({ error: 'Email too large (max 500KB)' }, { status: 413 });
     }
 
-    // 5. Size limits
-    if (rawEmail.length > 500000) { // 500KB max
-      return NextResponse.json(
-        { error: 'Email too large (max 500KB)' },
-        { status: 413 }
-      );
-    }
-
-    console.log('[inbound-email] Processing email for task:', taskId);
-
-    // 6. Create Supabase client
+    // 4. Determine routing mode
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-    
-    if (!serviceRoleKey) {
-      throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY');
-    }
-    
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      serviceRoleKey
-    );
+    if (!serviceRoleKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY');
 
-    // 7. Look up task (verifies it exists and gets account_id for RLS)
-    const { data: task, error: taskError } = await supabase
-      .from('mc_tasks')
-      .select('id, account_id, title')
-      .eq('id', taskId)
-      .single();
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
 
-    if (taskError || !task) {
-      console.error('[inbound-email] Task not found:', taskId, taskError);
-      return NextResponse.json(
-        { error: 'Task not found' },
-        { status: 404 }
-      );
-    }
-
-    // 8. Parse email
+    // Parse the raw email once — we'll use fields from this below
     const parsed = await simpleParser(rawEmail);
-    
-    // 9. Extract and clean body
     let emailBody = '';
     if (parsed.text) {
-      emailBody = parsed.text.trim();
+      emailBody = cleanEmailBody(parsed.text.trim());
     } else if (parsed.html) {
-      // Strip HTML tags for basic conversion
-      emailBody = parsed.html.replace(/<[^>]*>/g, '').trim();
+      emailBody = cleanEmailBody(parsed.html.replace(/<[^>]*>/g, '').trim());
     }
+    if (!emailBody) emailBody = '(No content)';
 
-    emailBody = cleanEmailBody(emailBody);
-
-    if (!emailBody) {
-      console.warn('[inbound-email] Empty email body after parsing');
-      emailBody = '(No content)';
-    }
-
-    // 10. Extract sender info
-    const senderName = parsed.from?.text || from;
     const senderEmail = extractEmail(from);
+    const senderName = parsed.from?.text || from;
 
-    console.log('[inbound-email] Parsed email, body length:', emailBody.length);
+    // Resolve the effective recipient from `to` or legacy `taskId`
+    const recipient = (to ?? '').toLowerCase();
+    const recipientLocal = localPart(recipient);
 
-    // 11. Create comment
-    const { data: comment, error: commentError } = await supabase
-      .from('mc_comments')
-      .insert({
-        account_id: task.account_id,
-        task_id: taskId,
-        agent_id: null,
-        content: emailBody,
-        external_author_email: senderEmail,
-        external_author_name: senderName,
-      })
-      .select()
+    // ------------------------------------------------------------------
+    // Path A: task-{uuid}@tiker.com — thread the email on an existing task
+    // ------------------------------------------------------------------
+    const taskIdFromRecipient = recipientLocal.startsWith('task-')
+      ? recipientLocal.slice('task-'.length)
+      : null;
+
+    const effectiveTaskId =
+      (taskIdFromRecipient && UUID_REGEX.test(taskIdFromRecipient) ? taskIdFromRecipient : null)
+      ?? (taskId && UUID_REGEX.test(taskId as string) ? (taskId as string) : null);
+
+    if (effectiveTaskId) {
+      console.log('[inbound-email] Threading email on task:', effectiveTaskId);
+
+      const { data: task, error: taskError } = await supabase
+        .from('mc_tasks')
+        .select('id, account_id')
+        .eq('id', effectiveTaskId)
+        .single();
+
+      if (taskError || !task) {
+        console.error('[inbound-email] Task not found:', effectiveTaskId);
+        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      }
+
+      const { data: comment, error: commentError } = await supabase
+        .from('mc_comments')
+        .insert({
+          account_id: task.account_id,
+          task_id: effectiveTaskId,
+          agent_id: null,
+          content: emailBody,
+          external_author_email: senderEmail,
+          external_author_name: senderName,
+        })
+        .select()
+        .single();
+
+      if (commentError) {
+        console.error('[inbound-email] Failed to create comment:', commentError);
+        return NextResponse.json({ error: 'Failed to create comment' }, { status: 500 });
+      }
+
+      console.log('[inbound-email] Comment created:', comment.id);
+      return NextResponse.json({ success: true, mode: 'task_thread', commentId: comment.id, taskId: effectiveTaskId, from: senderEmail });
+    }
+
+    // ------------------------------------------------------------------
+    // Path B: {username}@tiker.com — create a new task in personal inbox
+    // ------------------------------------------------------------------
+    const isPersonalInbox =
+      recipient.endsWith(`@${TIKER_DOMAIN}`) &&
+      recipientLocal.length > 0 &&
+      !recipientLocal.startsWith('task-');
+
+    if (!isPersonalInbox) {
+      console.warn('[inbound-email] Could not determine routing for recipient:', recipient);
+      return NextResponse.json({ error: 'Cannot route email: unrecognized recipient format' }, { status: 422 });
+    }
+
+    const tikerUsername = recipientLocal;
+    console.log('[inbound-email] Creating task for username:', tikerUsername);
+
+    const { data: account, error: accountError } = await supabase
+      .from('accounts')
+      .select('id')
+      .eq('tiker_username', tikerUsername)
       .single();
 
-    if (commentError) {
-      console.error('[inbound-email] Failed to create comment:', commentError);
-      return NextResponse.json(
-        { error: 'Failed to create comment' },
-        { status: 500 }
-      );
+    if (accountError || !account) {
+      console.warn('[inbound-email] No account for tiker_username:', tikerUsername);
+      // Return 200 so Cloudflare does not retry — the inbox simply doesn't exist yet
+      return NextResponse.json({ success: false, reason: 'unknown_recipient' }, { status: 200 });
     }
 
-    console.log('[inbound-email] Comment created:', comment.id);
+    const taskTitle = (typeof subject === 'string' && subject.trim())
+      ? subject.trim().slice(0, 200)
+      : `Email from ${senderEmail}`;
 
+    const { data: newTask, error: taskCreateError } = await supabase
+      .from('mc_tasks')
+      .insert({
+        account_id: account.id,
+        title: encrypt(taskTitle),
+        description: encrypt(
+          `From: ${senderEmail}\n\n${emailBody}`
+        ),
+        status: 'inbox',
+        priority: 'medium',
+        tags: ['email'],
+        source: 'email',
+        source_email: senderEmail,
+      })
+      .select('id')
+      .single();
+
+    if (taskCreateError || !newTask) {
+      console.error('[inbound-email] Failed to create task:', taskCreateError);
+      return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
+    }
+
+    console.log('[inbound-email] Task created from personal inbox email:', newTask.id);
     return NextResponse.json({
       success: true,
-      commentId: comment.id,
-      taskId,
+      mode: 'personal_inbox',
+      taskId: newTask.id,
       from: senderEmail,
     });
   } catch (error) {
     console.error('[inbound-email] Error processing email:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-/**
- * Extract email address from various formats
- */
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function extractEmail(fromField: string): string {
   const match = fromField.match(/<(.+?)>/);
   return match ? match[1] : fromField;
 }
 
-/**
- * Clean email body by removing signatures and quoted text
- */
 function cleanEmailBody(body: string): string {
   const lines = body.split('\n');
   const cleanLines: string[] = [];
@@ -275,15 +298,11 @@ function cleanEmailBody(body: string): string {
       break;
     }
 
-    if (inQuotedSection) {
-      continue;
-    }
-
+    if (inQuotedSection) continue;
     cleanLines.push(line);
   }
 
   return cleanLines.join('\n').trim();
 }
 
-// Import crypto for HMAC
 import crypto from 'crypto';

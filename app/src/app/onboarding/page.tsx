@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 export default function OnboardingPage() {
   const [loading, setLoading] = useState(true);
   const [selecting, setSelecting] = useState<string | null>(null);
+  const [tikerEmail, setTikerEmail] = useState<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
@@ -25,6 +26,9 @@ export default function OnboardingPage() {
     const res = await fetch('/api/account/me');
     if (res.ok) {
       const account = await res.json();
+      if (account?.tiker_username) {
+        setTikerEmail(`${account.tiker_username}@tiker.com`);
+      }
       if (account?.onboarding_completed) {
         router.push('/command');
         return;
@@ -92,6 +96,22 @@ export default function OnboardingPage() {
             Your AI life operator. Start free or unlock everything with Solo.
           </p>
         </div>
+
+        {tikerEmail && (
+          <div className="max-w-2xl mx-auto mb-8 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-xl flex items-start gap-3">
+            <span className="text-xl mt-0.5">📬</span>
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                Your Tiker email is ready
+              </p>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-0.5">
+                Forward emails or share{' '}
+                <span className="font-mono font-semibold">{tikerEmail}</span>{' '}
+                with anyone — emails sent here become tasks in your inbox automatically.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto mb-8">
           {/* Free */}

@@ -2,6 +2,7 @@ import { createServerSupabaseClient, createAdminClient, createRealSupabaseClient
 import { NextResponse } from 'next/server'
 import { encrypt } from '@/lib/crypto'
 import crypto from 'crypto'
+import { generateUniqueTikerUsername } from '@/lib/tiker-username'
 
 /**
  * Generate a secure API key for a bot
@@ -140,6 +141,13 @@ export async function GET(request: Request) {
         .single()
 
       if (!existingAccount) {
+        // Generate a unique tiker username for the personal email address
+        const tikerUsername = await generateUniqueTikerUsername(
+          adminClient,
+          data.user.email!,
+          data.user.user_metadata?.full_name || null
+        )
+
         // Create new account with team tier
         const { data: newAccount, error: createError } = await adminClient
           .from('accounts')
@@ -152,6 +160,7 @@ export async function GET(request: Request) {
             verified_at: new Date().toISOString(),
             google_id: data.user.user_metadata?.provider_id || null,
             tier: 'solo', // Free trial tier (100 tasks/month)
+            tiker_username: tikerUsername,
           })
           .select('id, name')
           .single()
