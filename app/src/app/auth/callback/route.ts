@@ -178,7 +178,8 @@ export async function GET(request: Request) {
         }
 
         // New user - redirect to onboarding (pricing selection)
-        return NextResponse.redirect(`${origin}/onboarding`)
+        // The new_signup param triggers the sign_up GA4 event on the client
+        return NextResponse.redirect(`${origin}/onboarding?new_signup=1`)
       }
 
       return NextResponse.redirect(`${origin}${next}`)

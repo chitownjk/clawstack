@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { trackEvent, getStoredUTMParams } from '@/lib/analytics';
 
 export default function OnboardingPage() {
   const [loading, setLoading] = useState(true);
@@ -10,6 +11,7 @@ export default function OnboardingPage() {
   const [tikerEmail, setTikerEmail] = useState<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     checkOnboarding();
@@ -36,10 +38,24 @@ export default function OnboardingPage() {
     }
 
     setLoading(false);
+
+    // Fire sign_up event once when landing here from a fresh OAuth signup
+    if (searchParams.get('new_signup') === '1') {
+      trackEvent('sign_up', {
+        method: 'google',
+        ...getStoredUTMParams(),
+      });
+    }
   }
 
   async function selectPlan(tier: 'free' | 'solo') {
     setSelecting(tier);
+
+    // Fire install event — user has chosen a plan and is activating their account
+    trackEvent('install', {
+      plan: tier,
+      ...getStoredUTMParams(),
+    });
 
     try {
       if (tier === 'free') {

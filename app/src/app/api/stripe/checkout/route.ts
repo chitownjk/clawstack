@@ -78,6 +78,12 @@ async function createCheckoutSession(request: NextRequest) {
     // Get origin for success/cancel URLs
     const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
+    // Extract GA4 client_id from the _ga cookie so we can attribute the
+    // subscription_started event server-side via Measurement Protocol.
+    // Cookie format: GA1.1.<client_id_part1>.<client_id_part2>
+    const gaCookie = request.cookies.get('_ga')?.value ?? ''
+    const gaClientId = gaCookie.split('.').slice(2).join('.') || null
+
     // Create Stripe Checkout Session
     const sessionConfig: any = {
       customer: customerId,
@@ -99,6 +105,7 @@ async function createCheckoutSession(request: NextRequest) {
         metadata: {
           account_id: account.id,
           plan: plan,
+          ...(gaClientId ? { ga_client_id: gaClientId } : {}),
         },
       },
       allow_promotion_codes: true,

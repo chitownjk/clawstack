@@ -21,6 +21,14 @@ export async function POST(request: Request) {
 
     const { title, description, assigned_agent_ids, tags, priority } = validation.data
 
+    // Check if this is the user's first task (before inserting)
+    const { count: existingCount } = await adminClient
+      .from('mc_tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('account_id', account.id)
+
+    const isFirstTask = (existingCount ?? 0) === 0
+
     // Create task with encrypted fields
     const { data: task, error } = await adminClient
       .from('mc_tasks')
@@ -44,11 +52,13 @@ export async function POST(request: Request) {
       }, { status: 500 })
     }
 
-    // Return with decrypted fields for immediate use
+    // Return with decrypted fields for immediate use.
+    // Include first_task flag so the client can fire the GA4 event.
     return NextResponse.json({
       ...task,
       title,
       description: description || null,
+      first_task: isFirstTask,
     })
   } catch (error) {
     console.error('[Tasks/Create] Unhandled error:', error)

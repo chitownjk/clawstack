@@ -1,6 +1,7 @@
 // Command API client
 // Note: Encryption/decryption happens server-side in API routes
 import { createClient } from '@/lib/supabase'
+import { trackEvent, getStoredUTMParams } from '@/lib/analytics'
 
 // Re-export Task from views for consistency
 import type { Task as ViewTask } from '@/types/views'
@@ -137,7 +138,14 @@ export async function createTask(task: {
     const error = await response.json()
     throw new Error(error.error || 'Failed to create task')
   }
-  return response.json()
+  const created = await response.json()
+
+  // Fire first_task_created once — the API tells us when it's the first task
+  if (created.first_task) {
+    trackEvent('first_task_created', { ...getStoredUTMParams() })
+  }
+
+  return created
 }
 
 export async function createComment(taskId: string, content: string, agentId?: string): Promise<Comment> {

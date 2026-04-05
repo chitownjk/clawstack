@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getStripe, STRIPE_PLAN_TO_DB_TIER } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase-server'
 import Stripe from 'stripe'
+import { trackServerEvent } from '@/lib/analytics'
 
 // Disable body parsing - we need the raw body for signature verification
 export const runtime = 'nodejs'
@@ -107,6 +108,21 @@ export async function POST(request: NextRequest) {
           .from('accounts')
           .update(updateData)
           .eq('id', accountId)
+
+        // Fire subscription_started for new active/trialing subscriptions.
+        // We use event.type === 'created' to avoid duplicate fires on updates.
+        if (
+          event.type === 'customer.subscription.created' &&
+          (status === 'active' || status === 'trialing')
+        ) {
+          // Retrieve the GA client_id stored in subscription metadata (set during checkout)
+          const gaClientId = subscription.metadata.ga_client_id ?? null
+          await trackServerEvent(gaClientId, 'subscription_started', {
+            plan: planTier,
+            subscription_id: subscription.id,
+            trial: status === 'trialing',
+          })
+        }
 
         console.log(`Subscription ${subscription.id} updated for account ${accountId}: ${planTier} (${status})`)
         break
