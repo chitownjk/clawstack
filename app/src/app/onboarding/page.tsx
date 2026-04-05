@@ -109,7 +109,7 @@ export default function OnboardingPage() {
             Welcome to Tiker!
           </h1>
           <p className="text-lg text-neutral-600 dark:text-neutral-400">
-            Your AI life operator. Start free or unlock everything with Solo.
+            Your personal chief of staff. Start free or unlock everything with Solo.
           </p>
         </div>
 
@@ -178,7 +178,7 @@ export default function OnboardingPage() {
             </div>
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100 mb-2">Solo</h3>
             <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-              Your AI life operator
+              Your personal chief of staff
             </p>
             <div className="mb-6">
               <span className="text-4xl font-bold">$19</span>

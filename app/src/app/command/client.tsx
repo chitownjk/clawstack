@@ -336,7 +336,7 @@ export default function MissionControlClient() {
               <div className="flex items-center gap-3">
                 {!isConsumer && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                    <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{totalAgents}</span> agents
+                    <span className="text-neutral-900 dark:text-neutral-100 font-semibold">{totalAgents}</span> helpers
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 dark:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-400">
@@ -393,7 +393,7 @@ export default function MissionControlClient() {
                         <span>{selectedAgent}</span>
                       </>
                     ) : (
-                      <span>All agents</span>
+                      <span>Everyone</span>
                     )}
                     <svg className="w-3.5 h-3.5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -512,7 +512,7 @@ export default function MissionControlClient() {
             <p className="text-neutral-600 dark:text-neutral-400 mb-6 max-w-md mx-auto">
               {isConsumer
                 ? "Let's get started! Add your first task and let AI help you get things done."
-                : 'Start by adding an agent to your team. Agents help you automate tasks, manage workflows, and get things done.'}
+                : 'Create your first task or add a team member to help you get things done.'}
             </p>
             <div className="flex items-center justify-center gap-4">
               {!isConsumer && (

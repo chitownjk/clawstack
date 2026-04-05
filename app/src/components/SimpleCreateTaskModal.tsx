@@ -396,7 +396,7 @@ export default function SimpleCreateTaskModal({
                 }`}
               >
                 <div className="text-2xl mb-1">🤖</div>
-                <div className="font-medium text-neutral-900 dark:text-neutral-100">Yes, get AI help</div>
+                <div className="font-medium text-neutral-900 dark:text-neutral-100">Yes, help with this</div>
               </button>
             </div>
           </div>

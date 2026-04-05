@@ -319,7 +319,7 @@ export default function CalendarView({ tasks, onTaskClick, onDayClick }: Calenda
             <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Calendar
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> AI completed
+            <span className="w-2 h-2 rounded-full bg-purple-500 inline-block" /> Completed
           </span>
         </div>
       )}
@@ -395,7 +395,7 @@ export default function CalendarView({ tasks, onTaskClick, onDayClick }: Calenda
                   </span>
                   <div className="flex items-center gap-1">
                     {hasReviewTasks && (
-                      <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" title="AI completed work - needs review" />
+                      <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" title="Ready for your review" />
                     )}
                     {onDayClick && (
                       <span

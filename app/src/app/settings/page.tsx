@@ -392,7 +392,7 @@ export default function SettingsPage() {
                     Enable pattern contribution suggestions
                   </p>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Agents will suggest sharing valuable patterns back to the Tiker Hub after completing tasks. You review and approve each suggestion.
+                    After tasks are done, we can suggest improvements to share back with the Tiker community. You review each one.
                   </p>
                 </div>
               </label>
@@ -408,10 +408,10 @@ export default function SettingsPage() {
                 />
                 <div>
                   <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                    Manual agent selection
+                    Choose who handles each task
                   </p>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Show the "+ Add Agent" button in Command and choose which agent skill handles each task. When off, tagging "AI help needed" auto-selects the best agent.
+                    Show an option to pick which assistant works on a task. Off by default — we&apos;ll choose automatically.
                   </p>
                 </div>
               </label>
@@ -424,7 +424,7 @@ export default function SettingsPage() {
                     Email Signature
                   </p>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-3">
-                    This signature will be appended to all emails sent by your agents via Gmail. Recipients will know it was sent by your AI assistant.
+                    This signature will be appended to all emails sent by your assistant via Gmail.
                   </p>
                   <textarea
                     value={emailSignature}

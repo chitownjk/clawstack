@@ -488,11 +488,11 @@ export default function DailyBriefing({ tasks, agents, activities, onTaskClick, 
           </section>
         )}
 
-        {/* AI Activity - hidden in consumer mode */}
+        {/* Recent Activity - hidden in consumer mode */}
         {!isConsumer && recentActivities.length > 0 && (
           <section className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4">
             <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">
-              AI activity
+              Recent activity
             </h2>
             <div className="space-y-2">
               {recentActivities.map(activity => {
@@ -576,7 +576,7 @@ function BriefingTaskRow({ task, agents, badge, badgeColor, onClick, isConsumer 
         )}
         {isConsumer && assignedAgents.length > 0 && (
           <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-            AI is working on this
+            In progress
           </p>
         )}
       </div>
