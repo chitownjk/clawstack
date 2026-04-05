@@ -43,7 +43,7 @@ async function addBuzz() {
     process.exit(1);
   }
 
-  console.log('✅ Buzz added to Mission Control');
+  console.log('✅ Buzz added to Tiker');
   console.log(data);
 }
 

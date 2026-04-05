@@ -234,7 +234,7 @@ const commands = {
     }
     
     // Output
-    console.log('\n📬 MISSION CONTROL CHECK\n')
+    console.log('\n📬 TIKER CHECK\n')
     
     if (newInbox.length > 0) {
       console.log(`🆕 NEW INBOX ITEMS (${newInbox.length}):`)

@@ -1,7 +1,7 @@
 {
   "name": "tiker",
   "version": "0.1.0",
-  "description": "Tiker Mission Control and Agent Marketplace integration",
+  "description": "Tiker Tiker and Agent Marketplace integration",
   "main": "tiker.js",
   "bin": {
     "tiker": "./tiker.js"
@@ -17,7 +17,7 @@
   "keywords": [
     "openclaw",
     "tiker",
-    "mission-control",
+    "tiker",
     "agents"
   ],
   "author": "Tiker",

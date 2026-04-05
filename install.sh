@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Mission Control - One-Command Install"
+echo "🚀 Tiker - One-Command Install"
 echo "========================================"
 echo ""
 
@@ -15,7 +15,7 @@ echo ""
 
 # Clone repository (or skip if already in repo)
 if [ ! -d ".git" ]; then
-  echo "📥 Cloning Mission Control..."
+  echo "📥 Cloning Tiker..."
   git clone https://github.com/yourusername/mission-control.git
   cd mission-control
 else

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Tiker Setup Script
-# Onboards a new orchestrator to Tiker Mission Control
+# Onboards a new orchestrator to Tiker Tiker
 
 set -e
 

@@ -8,7 +8,7 @@ Platform-agnostic task execution worker for Tiker.
 - Loads agent definition from DB
 - Builds prompt (agent persona + task)
 - Calls model (Anthropic/OpenAI)
-- Posts result back to Mission Control
+- Posts result back to Tiker
 
 ## Architecture
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// mc-check.js - Check for new Mission Control activity since last run
+// mc-check.js - Check for new Tiker activity since last run
 const { createClient } = require('@supabase/supabase-js')
 const fs = require('fs')
 const path = require('path')

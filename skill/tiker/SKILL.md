@@ -1,9 +1,9 @@
 # Tiker Skill
 
-**Integration with Tiker Mission Control and Agent Marketplace**
+**Integration with Tiker Tiker and Agent Marketplace**
 
 This skill enables your orchestrator to:
-1. Check Mission Control for assigned tasks
+1. Check Tiker for assigned tasks
 2. Spawn specialized agents from database-driven templates
 3. Coordinate multi-agent workflows
 4. Access the curated agent marketplace
@@ -90,7 +90,7 @@ const agents = await tiker.getInstalledAgents();
 
 ### tiker.getAssignedTasks()
 
-Fetch tasks from Mission Control assigned to your agents.
+Fetch tasks from Tiker assigned to your agents.
 
 ```javascript
 const tasks = await tiker.getAssignedTasks({
@@ -262,7 +262,7 @@ When a task is assigned to @Writer, @Coder, @Researcher, etc.:
 1. I fetch their configuration from Tiker
 2. I spawn them with sessions_spawn
 3. I wait for their result
-4. I update Mission Control with the outcome
+4. I update Tiker with the outcome
 
 ### My Installed Agents
 

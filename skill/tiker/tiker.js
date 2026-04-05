@@ -2,7 +2,7 @@
 /**
  * Tiker Integration Module
  * 
- * Provides orchestrators with Mission Control and Agent Marketplace access.
+ * Provides orchestrators with Tiker and Agent Marketplace access.
  * 
  * Usage:
  *   const tiker = require('./tiker');

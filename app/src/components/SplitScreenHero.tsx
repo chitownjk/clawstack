@@ -88,7 +88,7 @@ export function SplitScreenHero() {
             >
               <img 
                 src="/images/screenshots/mc-hero.png" 
-                alt="Mission Control: Organized task board"
+                alt="Tiker: Organized task board"
                 className="w-full h-full object-cover object-left"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent"></div>
