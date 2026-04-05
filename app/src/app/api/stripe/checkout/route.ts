@@ -95,7 +95,7 @@ async function createCheckoutSession(request: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/dashboard?success=true`,
+      success_url: `${origin}/onboarding/default-view`,
       cancel_url: `${origin}/?canceled=true`,
       metadata: {
         account_id: account.id,

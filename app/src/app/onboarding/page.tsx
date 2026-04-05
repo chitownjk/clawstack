@@ -67,7 +67,7 @@ export default function OnboardingPage() {
         });
 
         if (res.ok) {
-          router.push('/command');
+          router.push('/onboarding/default-view');
         } else {
           const err = await res.json();
           console.error('Plan selection failed:', err);
